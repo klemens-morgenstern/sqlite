@@ -17,16 +17,21 @@
 namespace boost {
 namespace sqlite {
 
-/// The type of error code used by the library
+/// The type of error code used by the library \ingroup reference
 using error_code = boost::system::error_code;
 
-/// The type of system error thrown by the library
+/// The type of system error thrown by the library \ingroup reference
 using system_error = boost::system::system_error;
 
-/// The type of error category used by the library
+/// The type of error category used by the library \ingroup reference
 using error_category = boost::system::error_category;
 
-/// Error codes returned from library operations
+/** \brief Error codes returned from library operations
+    \ingroup reference
+
+    [related sqlite documentation](https://www.sqlite.org/rescode.html)
+ */
+
 enum class error
 {
     ok         =  SQLITE_OK,         /**< Successful result */
@@ -73,6 +78,7 @@ make_error_code(error e);
 
 /**
  * \brief Additional information about error conditions
+ * \ingroup reference
  * \details Contains an error message describing what happened. Not all error
  * conditions are able to generate this extended information - those that
  * can't have an empty error message.

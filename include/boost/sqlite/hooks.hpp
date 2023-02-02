@@ -251,13 +251,41 @@ bool update_hook(sqlite3 * db,
 
 }
 
+/**
+  @brief Install a commit hook
+  @ingroup reference
+
+  @see [related sqlite documentation](https://www.sqlite.org/c3ref/commit_hook.html)
+
+  The commit hook gets called before a commit gets performed.
+  If `func` returns true, the commit goes, otherwise it gets rolled back.
+
+  @note If the function is not a free function pointer, this function will *NOT* take ownership.
+
+  @param conn The database connection to install the hook in
+  @param func The hook function
+  @return True if an hook has been replaced.
+ */
 template<typename Func>
 bool commit_hook(connection & conn, Func && func)
 {
   return detail::commit_hook(conn.native_handle(), std::forward<Func>(func));
 }
 
+/**
+  @brief Install a rollback hook
+  @ingroup reference
 
+  @see [related sqlite documentation](https://www.sqlite.org/c3ref/commit_hook.html)
+
+  The rollback hook gets called when a rollback gets performed.
+
+  @note If the function is not a free function pointer, this function will *NOT* take ownership.
+
+  @param conn The database connection to install the hook in
+  @param func The hook function
+  @return True if an hook has been replaced.
+ */
 template<typename Func>
 bool rollback_hook(connection & conn, Func && func)
 {
@@ -274,6 +302,23 @@ bool preupdate_hook(connection & conn, Func && func)
 
 #endif
 
+/**
+  @brief Install an update hook
+  @ingroup reference
+
+  @see [related sqlite documentation](https://www.sqlite.org/c3ref/update_hook.html)
+
+  The update hook gets called when an update was performed.
+
+  @note If the function is not a free function pointer, this function will *NOT* take ownership.
+
+  The signature of the function is `void(int op, core::string_view db, core::string_view table, sqlite3_int64 id)`.
+  `op` is either `SQLITE_INSERT`, `SQLITE_DELETE` and `SQLITE_UPDATE`.
+
+  @param conn The database connection to install the hook in
+  @param func The hook function
+  @return True if an hook has been replaced.
+ */
 template<typename Func>
 bool update_hook(connection & conn, Func && func)
 {

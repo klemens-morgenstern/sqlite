@@ -58,8 +58,27 @@ struct binder
 
 }
 
+/** @brief A statement used for a prepared-statement.
+    @ingroup reference
+
+ */
 struct statement
 {
+    ///@{
+    /** @brief execute the prepared statement.
+
+      @param params The arguments to be passed to the prepared statement.
+      @param ec     The error_code used to deliver errors for the exception less overload.
+      @param info   The error_info used to deliver errors for the exception less overload.
+      @return The resultset of the query.
+
+      @code{.cpp}
+        extern sqlite::connection conn;
+        statement st = conn.prepare("select id from users where name = $1;");
+        resultset q = std::move(st).execute(std::make_tuple("peter"));
+      @endcode
+
+     */
     template <typename ... Args>
     resultset execute(
             const std::tuple<Args...>& params,
@@ -83,7 +102,10 @@ struct statement
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
     }
+    ///@}
 
+
+    /// Get the sql used to construct the prepared statement.
     core::string_view sql()
     {
         return sqlite3_sql(impl_.get());

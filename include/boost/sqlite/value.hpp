@@ -12,51 +12,67 @@
 namespace boost {
 namespace sqlite {
 
+/** @brief The type of a value
+  @ingroup reference
+
+  [related sqlite documentation](https://www.sqlite.org/datatype3.html)
+*/
 enum class value_type
 {
+    /// An integral value
     integer = SQLITE_INTEGER,
+    /// A floating piont value
     floating = SQLITE_FLOAT,
+    /// A textual value
     text = SQLITE_TEXT,
+    /// A binary value
     blob = SQLITE_BLOB,
+    /// No value
     null = SQLITE_NULL,
 };
 
+/** @brief A holder for a sqlite values used for internal APIs
+    @ingroup reference
+
+ */
 struct value
 {
+    /// The type of the value
     value_type type() const
     {
         return static_cast<value_type>(sqlite3_value_type(value_));
     }
-
+    /// The subtype of the value, see
     int subtype() const
     {
         return sqlite3_value_subtype(value_);
     }
-
+    /// Is the held value null
     bool is_null() const
     {
         return type() == value_type::null;
     }
-
+    /// Is the held value is not null
     explicit operator bool () const
     {
         return type() != value_type::null;
     }
-
+    /// Get the value as regular `int`.
     int get_int() const
     {
         return sqlite3_value_int(value_);
     }
+    /// Get the value as an `int64`.
     sqlite3_int64 get_int64() const
     {
         return sqlite3_value_int64(value_);
     }
-
+    /// Get the value as an `double`.
     double get_double() const
     {
         return sqlite3_value_double(value_);
     }
-
+    /// Get the value as text, i.e. a string_view. Note that this value may be invalidated`.
     core::string_view get_text() const
     {
         const auto ptr = sqlite3_value_text(value_);
@@ -70,7 +86,7 @@ struct value
         const auto sz = sqlite3_value_bytes(value_);
         return core::string_view(reinterpret_cast<const char*>(ptr), sz);
     }
-
+    /// Get the value as blob, i.e. raw memory. Note that this value may be invalidated`.
     blob_view get_blob() const
     {
         const auto ptr = sqlite3_value_blob(value_);
@@ -84,9 +100,12 @@ struct value
         const auto sz = sqlite3_value_bytes(value_);
         return blob_view(ptr, sz);
     }
+    /// Construct value from a native_handle.
     explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
 
+    /// The native handle of the value.
     using native_handle_type = sqlite3_value *;
+    /// Get the native_handle.
     native_handle_type native_handle() const {return value_;}
   private:
     sqlite3_value * value_ = nullptr;

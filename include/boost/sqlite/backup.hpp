@@ -9,60 +9,67 @@
 #define BOOST_SQLITE_BACKUP_HPP
 
 #include <boost/sqlite/detail/config.hpp>
-#include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/error.hpp>
 
 namespace boost
 {
 namespace sqlite
 {
 
+struct connection ;
 
-inline void
-  backup(connection & source,
-         connection & target,
-         const std::string & source_name,
-         const std::string & target_name,
-         system::error_code & ec,
-         error_info & ei)
-{
-  struct del
-  {
-    void operator()(sqlite3_backup * bp)
-    {
-      sqlite3_backup_finish(bp);
-    }
-  };
+///@{
+/**
+ @brief Backup a database
+ @ingroup reference
 
-  std::unique_ptr<sqlite3_backup, del> bu{
-        sqlite3_backup_init(target.native_handle(), target_name.c_str(),
-                            source.native_handle(), source_name.c_str())};
-  if (bu == nullptr)
-  {
-    BOOST_SQLITE_ASSIGN_EC(ec, sqlite3_errcode(target.native_handle()));
-    ei.set_message(sqlite3_errmsg(target.native_handle()));
-    return ;
-  }
+ This function will create a backup of an existing database.
+ This can be useful to write an in memory database to disk et vice versa.
 
-  const auto res = sqlite3_backup_step(bu.get(), -1);
-  if (SQLITE_DONE != res)
-    BOOST_SQLITE_ASSIGN_EC(ec, res);
-}
+ @param source The source database to backup
+ @param target The target of the backup
+ @param source_name The source database to read the backup from. Default is 'main'.
+ @param target_name The target database to write the backup to.  Default is 'main'.
 
+ @par Error Handling
 
-inline void
+ @throws system_error from overload without `ec` & `ei`
+
+ or you need to pass
+
+ @param ec The error_code to capture any possibly errors
+ @param ei Additional error_info when error occurs.
+
+ @par Example
+
+ @code{.cpp}
+
+ sqlite::connection conn{":memory:"};
+ {
+    sqlite::connection read{"./read_only_db.db", SQLITE_READONLY};
+    backup(read, target);
+ }
+
+ @endcode
+ */
+BOOST_SQLITE_DECL
+void
+backup(connection & source,
+       connection & target,
+       const std::string & source_name,
+       const std::string & target_name,
+       system::error_code & ec,
+       error_info & ei);
+
+BOOST_SQLITE_DECL
+void
 backup(connection & source,
        connection & target,
        const std::string & source_name = "main",
-       const std::string & target_name = "main")
-{
-  system::error_code ec;
-  error_info ei;
-  backup(source, target, source_name, target_name, ec, ei);
-  if (ec)
-    throw_exception(system::system_error(ec, ei.message()));
-}
+       const std::string & target_name = "main");
 
 }
 }
+///@}
 
 #endif //BOOST_SQLITE_BACKUP_HPP

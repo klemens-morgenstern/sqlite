@@ -10,13 +10,20 @@
 namespace boost {
 namespace sqlite {
 
+/** @brief Representation of a row in a database.
+ @ingroup reference
+
+ Is a random-access range.
+
+ */
 struct row
 {
+    /// The size of the row
     std::size_t size() const
     {
         return sqlite3_column_count(stm_);
     }
-
+    /// Get the field at `idx`, @throw std::out_of_range
     field at(std::size_t idx) const
     {
         if (idx >= size())
@@ -29,7 +36,7 @@ struct row
             return f;
         }
     }
-
+    /// Get the field at `idx`.
     field operator[](std::size_t idx) const
     {
         field f;
@@ -37,7 +44,7 @@ struct row
         f.col_ = static_cast<int>(idx);
         return f;
     }
-
+    /// Random access iterator used to iterate over the columns.
     struct const_iterator
     {
         using difference_type   = int;
@@ -142,7 +149,7 @@ struct row
         friend struct row;
         field f_;
     };
-
+    /// Get the begin of the column-range.
     const_iterator begin() const
     {
         const_iterator ci;
@@ -150,7 +157,7 @@ struct row
         ci.f_.stm_ = stm_;
         return ci;
     }
-
+    /// Get the end of the column-range.
     const_iterator end() const
     {
         const_iterator ci;

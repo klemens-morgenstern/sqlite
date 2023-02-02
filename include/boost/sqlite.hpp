@@ -5,6 +5,11 @@
 #ifndef BOOST_SQLITE_HPP
 #define BOOST_SQLITE_HPP
 
+/** @defgroup reference Reference
+ *
+ *  This page contains the documentation of the Aedis high-level API.
+ */
+
 #include <boost/sqlite/backup.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/collation.hpp>

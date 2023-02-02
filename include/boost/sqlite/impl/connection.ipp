@@ -16,19 +16,18 @@ namespace sqlite
 {
 
 
-void connection::connect(const char * filename)
+void connection::connect(const char * filename, int flags)
 {
     system::error_code ec;
-    connect(filename, ec);
+    connect(filename, flags, ec);
     if (ec)
         throw_exception(system::system_error(ec, "connect"));
 }
 
-void connection::connect(const char * filename, system::error_code & ec)
+void connection::connect(const char * filename, int flags, system::error_code & ec)
 {
     sqlite3 * res;
-    auto r = sqlite3_open_v2(filename, &res,
-                             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
+    auto r = sqlite3_open_v2(filename, &res, flags,
                              nullptr);
     if (r != SQLITE_OK)
         BOOST_SQLITE_ASSIGN_EC(ec, r)

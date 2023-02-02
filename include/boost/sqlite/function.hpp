@@ -11,8 +11,8 @@
 #include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/detail/set_result.hpp>
 #include <boost/sqlite/value.hpp>
-#include <boost/variant2/variant.hpp>
 #include <boost/callable_traits/args.hpp>
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/callable_traits/return_type.hpp>
@@ -21,104 +21,86 @@ namespace boost
 {
 namespace sqlite
 {
-namespace detail
-{
-
-inline void set_result(sqlite3_context * ctx, blob b)
-{
-  auto sz = b.size();
-  sqlite3_result_blob(ctx, std::move(b).release(), sz, &operator delete);
-}
-
-inline void set_result(sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
-
-template<typename I,
-    typename = std::enable_if_t<std::is_integral<I>::value>>
-inline void set_result(sqlite3_context * ctx, I value)
-{
-  BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)  || (sizeof(I) > sizeof(int)))
-    sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
-  else
-    sqlite3_result_int(ctx, static_cast<int>(value));
-}
-
-inline void set_result(sqlite3_context * ctx, std::nullptr_t) { sqlite3_result_null(ctx); }
-inline void set_result(sqlite3_context * ctx, string_view str)
-{
-  auto ptr = new char[str.size()];
-  std::memcpy(ptr, str.data(), str.size());
-  sqlite3_result_text(
-      ctx, ptr, str.size(),
-      +[](void * ptr) noexcept
-      {
-        auto p = static_cast<char*>(ptr);
-        delete[] p;
-      });
-}
-
-inline void set_result(sqlite3_context * ctx, variant2::monostate) { sqlite3_result_null(ctx); }
-inline void set_result(sqlite3_context * ctx, const value & val)
-{
-  sqlite3_result_value(ctx, val.native_handle());
-}
-
-struct set_variant_result
-{
-  sqlite3_context * ctx;
-  template<typename T>
-  void operator()(T && val)
-  {
-    set_result(ctx, std::forward<T>(val));
-  }
-};
-
-template<typename ... Args>
-inline void set_result(sqlite3_context * ctx, const variant2::variant<Args...> & var)
-{
-  visit(set_variant_result{ctx}, var);
-}
 
 
-}
+/** @brief A context that can be passed into scalar functions.
+  @ingroup reference
 
+  @tparam Args The argument that can be stored in the context.
+
+  @code{.cpp}
+  extern sqlite::connection conn;
+
+  sqlite::create_function(
+    conn, "my_sum,,
+    [](sqlite::context<std::size_t> ctx,
+       boost::span<sqlite::value, 1u> args) -> std::size_t
+    {
+        auto value = args[0].get_int64();
+        auto p = ctx.get_if<0>();
+        if (p != nullptr) // increment the counter
+            return (*p) += value;
+        else // set the initial value
+            ctx.set<0>(value);
+        return value;
+    });
+  @endcode
+
+*/
 template<typename ... Args>
 struct context
 {
-  template<std::size_t Idx, typename T>
-  void set(T && value)
+  template<std::size_t N>
+  using element = mp11::mp_take_c<mp11::mp_list<Args...>, N>;
+
+  /// Set the value in the context at position `Idx`
+  template<std::size_t Idx>
+  void set(element<Idx> value)
   {
-    using type = typename std::tuple_element<Idx, std::tuple<Args...>>::type;
     sqlite3_set_auxdata(ctx_, Idx, *static_cast<void**>(&value),
-                        new type(std::forward<T>(value)),
+                        new element<Idx>(std::move(value)),
                         +[](void * ptr)
                         {
-                          delete static_cast<type*>(ptr);
+                          delete static_cast<element<Idx> *>(ptr);
                         });
   }
 
+  /// Get the value in the context at position `Idx`. Throws if the value isn't set.
   template<std::size_t Idx>
-  auto get() -> typename std::tuple_element<Idx, std::tuple<Args...>>::type &
+  auto get() -> element<Idx>  &
   {
-    using type = typename std::tuple_element<Idx, std::tuple<Args...>>::type;
+    using type = element<Idx> ;
     auto p = static_cast<type*>(sqlite3_get_auxdata(ctx_, Idx));
     if (p == nullptr)
       throw_exception(std::invalid_argument("argument not set"));
     return p;
   }
 
+  /// Get the value in the context at position `Idx`. Returns nullptr .value isn't set.
   template<std::size_t Idx>
-  auto get_if() -> typename std::tuple_element<Idx, std::tuple<Args...>>::type *
+  auto get_if() -> element<Idx>  *
   {
-    using type = typename std::tuple_element<Idx, std::tuple<Args...>>::type;
+    using type = element<Idx> ;
     return static_cast<type*>(sqlite3_get_auxdata(ctx_, Idx));
   }
 
+
   explicit context(sqlite3_context * ctx) noexcept : ctx_(ctx) {}
+
+  /// Set the result through the context, instead of returning it.
   template<typename T>
-  auto set_result(T && val) ->
-      decltype(detail::set_result(static_cast<sqlite3_context*>(nullptr), std::forward<T>(val)))
+  auto set_result(T && val)
+#if !defined(BOOST_SQLITE_GENERATING_DOCS)
+    -> decltype(detail::set_result(static_cast<sqlite3_context*>(nullptr), std::forward<T>(val)))
+#endif
   {
     detail::set_result(ctx_, std::forward<T>(val));
+  }
+
+  /// Set the an error through the context, instead of returning it.
+  auto set_error(const char * message, int code = SQLITE_ERROR)
+  {
+    sqlite3_result_error(ctx_, message, code);
   }
  private:
   sqlite3_context * ctx_;
@@ -513,13 +495,48 @@ auto create_window_function(sqlite3 * db,
 
 }
 
+///@{
+/** @brief create a scalar function
+   @ingroup reference
 
+ @param conn The connection to add the function to.
+ @param name The name of the function
+ @param func The function to be added
+ @param ec The error_code
+
+ @throws `system::system_error` when the overload without `ec` is used.
+
+ `func` must take `context<Args...>` as the first and a `span<value, N>` as the second value.
+ If `N` is not `dynamic_extent` it will be used to deduce the number of arguments for the function.
+
+ @par Example
+
+ @code{.cpp}
+  extern sqlite::connection conn;
+
+  sqlite::create_function(
+    conn, "my_sum",,
+    [](sqlite::context<std::size_t> ctx,
+       boost::span<sqlite::value, 1u> args) -> std::size_t
+    {
+        auto value = args[0].get_int64();
+        auto p = ctx.get_if<0>();
+        if (p != nullptr) // increment the counter
+            return (*p) += value;
+        else // set the initial value
+            ctx.set<0>(value);
+        return value;
+    });
+  @endcode
+
+ */
 template<typename Func>
 auto create_scalar_function(
     connection & conn,
     const std::string & name,
     Func && func,
     system::error_code & ec)
+#if !defined(BOOST_SQLITE_GENERATING_DOCS)
     -> typename std::enable_if<
         std::is_same<
           decltype(
@@ -527,13 +544,47 @@ auto create_scalar_function(
                   static_cast<sqlite3*>(nullptr), name,
                   std::declval<Func>())
               ), int>::value>::type
+#endif
 {
     auto res = detail::create_scalar_function(conn.native_handle(), name, std::forward<Func>(func));
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
 }
 
+///@{
+/** @brief create a scalar function
+   @ingroup reference
 
+ @param conn The connection to add the function to.
+ @param name The name of the function
+ @param func The function to be added
+ @param ec The error_code
+
+ @throws `system::system_error` when the overload without `ec` is used.
+
+ `func` must take `context<Args...>` as the first and a `span<value, N>` as the second value.
+ If `N` is not `dynamic_extent` it will be used to deduce the number of arguments for the function.
+
+ @par Example
+
+ @code{.cpp}
+  extern sqlite::connection conn;
+
+  sqlite::create_function(
+    conn, "to_upper",
+    [](sqlite::context<> ctx,
+       boost::span<sqlite::value, 1u> args) -> std::string
+    {
+        std::string res;
+        auto txt = val[0].get_text();
+        res.resize(txt.size());
+        std::transform(txt.begin(), txt.end(), res.begin(),
+                       [](char c){return std::toupper(c);});
+        return value;
+    });
+  @endcode
+
+ */
 template<typename Func>
 auto create_scalar_function(
     connection & conn,
@@ -552,7 +603,58 @@ auto create_scalar_function(
     if (ec)
         throw_exception(system::system_error(ec));
 }
+///@}
 
+
+///@{
+/** @brief create a aggregate function
+   @ingroup reference
+
+ @param conn The connection to add the function to.
+ @param name The name of the function
+ @param func The function to be added
+ @param ec The error_code
+
+ @throws `system::system_error` when the overload without `ec` is used.
+
+
+ `func` needs to be an object with two functions:
+
+ @code{.cpp}
+ void step(State &, boost::span<sqlite::value, N> args);
+ T final(State &);
+ @endcode
+
+ `State` can be any type and will get deduced together with `N`.
+ An aggregrate function will create a new `State` for a new `aggregate` and call `step` for every step.
+ When the aggregation is done `final` is called and the result is returned to sqlite.
+
+ @par Example
+
+ @code{.cpp}
+  extern sqlite::connection conn;
+
+  struct aggregate_func
+  {
+      std::size_t counter;
+      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      {
+        counter += val[0].get_text().size();
+      }
+
+      std::size_t final(std::size_t & counter)
+      {
+        return counter;
+      }
+  };
+
+  sqlite::create_function(
+    conn, "char_counter",
+    aggregate_func{});
+
+  @endcode
+
+ */
 template<typename Func>
 void create_aggregate_function(
     connection & conn,
@@ -576,8 +678,62 @@ void create_aggregate_function(
     if (ec)
         throw_exception(system::system_error(ec));
 }
+///@}
 
 
+///@{
+/** @brief create a aggregate window function
+   @ingroup reference
+
+ @param conn The connection to add the function to.
+ @param name The name of the function
+ @param func The function to be added
+ @param ec The error_code
+
+ @throws `system::system_error` when the overload without `ec` is used.
+
+ `func` needs to be an object with three functions:
+
+ @code{.cpp}
+ void step(State &, boost::span<sqlite::value, N> args);
+ void inverse(State & , boost::span<sqlite::value, N> args);
+ T final(State &);
+ @endcode
+
+ `State` can be any type and will get deduced together with `N`.
+ An aggregrate function will create a new `State` for a new `aggregate` and call `step` for every step.
+ When an element is removed from the window `inverse` is called.
+ When the aggregation is done `final` is called and the result is returned to sqlite.
+
+ @par Example
+
+ @code{.cpp}
+  extern sqlite::connection conn;
+
+  struct window_func
+  {
+      std::size_t counter;
+      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      {
+        counter += val[0].get_text().size();
+      }
+
+      void inverse(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      {
+        counter -= val[0].get_text().size();
+      }
+
+      std::size_t final(std::size_t & counter)
+      {
+        return counter;
+      }
+  };
+
+  sqlite::create_function(
+    conn, "win_char_counter",
+    aggregate_func{});
+  @endcode
+ */
 template<typename Func>
 void create_window_function(
     connection & conn,
@@ -601,6 +757,9 @@ void create_window_function(
     if (ec)
         throw_exception(system::system_error(ec));
 }
+
+///@}
+
 
 }
 }

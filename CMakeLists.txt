@@ -5,7 +5,10 @@ if(BOOST_SUPERPROJECT_VERSION)
     set(BOOST_SQLITE_VERSION ${BOOST_SUPERPROJECT_VERSION})
 endif()
 
-project(boost_sqlite VERSION "${BOOST_SQLITE_VERSION}" LANGUAGES CXX)
+project(boost_sqlite
+        VERSION "${BOOST_SQLITE_VERSION}"
+        DESCRIPTION "A sqlite wrapper library"
+        LANGUAGES CXX)
 
 set(BOOST_SQLITE_IS_ROOT OFF)
 
@@ -49,6 +52,19 @@ if (NOT BOOST_SQLITE_BUILD_INLINE)
     include_directories(include)
 endif()
 
+
+find_package(Doxygen REQUIRED doxygen)
+
+set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/doc")
+configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
+
+add_custom_target(
+        doc
+        COMMAND doxygen "${PROJECT_BINARY_DIR}/doc/Doxyfile"
+        COMMENT "Building documentation using Doxygen"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        VERBATIM
+)
 
 find_package(SQLite3 REQUIRED)
 

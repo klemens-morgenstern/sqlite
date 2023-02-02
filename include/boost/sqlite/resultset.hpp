@@ -12,39 +12,67 @@
 namespace boost {
 namespace sqlite {
 
+/**
+  @brief Representation of a result from a database.
+  @ingroup reference
+
+  If is a forward-range with input iterators.
+
+  @par Example
+
+  @code{.cpp}
+
+  extern sqlite::connection conn;
+
+  sqlite::resultset rs = conn.query("select * from users;");
+
+  sqlite::row r;
+  while (rs.read_one(r)) // read it line by line
+    handle_row(r.current());
+
+    @endcode
+
+*/
 struct resultset
 {
+    /// Get the current row.
     row current() const
     {
         row r;
         r.stm_ = impl_.get();
         return r;
     }
-
+    /// Checks if the last row has been reached.
     bool done() const {return done_;}
 
+    ///@{
+    /// Read one row. Returns false if there's nothing more to read.
     BOOST_SQLITE_DECL bool read_one(row& r, error_code & ec, error_info & ei);
     BOOST_SQLITE_DECL bool read_one(row & r);
+    ///@}
 
+    ///
     std::size_t column_count() const
     {
       return sqlite3_column_count(impl_.get());
     }
-
+    /// Get the name of the column idx.
     core::string_view column_name(std::size_t idx) const
     {
       return sqlite3_column_name(impl_.get(), idx);
     }
-
+    /// Get the name of the source table for column idx.
     core::string_view table_name(std::size_t idx) const
     {
       return sqlite3_column_table_name(impl_.get(), idx);
     }
-
+    /// Get the origin name of the column for column idx.
     core::string_view column_origin_name(std::size_t idx) const
     {
       return sqlite3_column_origin_name(impl_.get(), idx);
     }
+
+    /// The input iterator can be used to read every row in a for-loop
     struct iterator
     {
       using value_type = row;
@@ -96,7 +124,9 @@ struct resultset
       bool sentinel_ = true;
     };
 
+    /// Return an input iterator to the currently unread row
     iterator begin() { return iterator(impl_.get(), done_);}
+    /// Sentinel iterator.
     iterator   end() { return iterator(impl_.get(), true); }
 
   private:

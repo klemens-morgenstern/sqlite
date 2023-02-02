@@ -7,6 +7,7 @@
 
 
 #include <boost/sqlite/backup.hpp>
+#include <boost/sqlite/connection.hpp>
 
 #include "test.hpp"
 
