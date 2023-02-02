@@ -20,10 +20,8 @@ namespace sqlite {
 struct connection
 {
     using native_handle_type = sqlite3*;
-    native_handle_type native_handle()
-    {
-        return impl_.get();
-    }
+    native_handle_type native_handle() { return impl_.get(); }
+    native_handle_type release() &&    { return impl_.release(); }
 
     connection() = default;
     explicit connection(native_handle_type native_handle) : impl_(native_handle) {}
@@ -33,113 +31,41 @@ struct connection
     connection(const char * filename) { connect(filename); }
 
 
-    void connect(const char * filename)
-    {
-        system::error_code ec;
-        connect(filename, ec);
-        if (ec)
-            throw_exception(system::system_error(ec, "connect"));
-    }
-
-    void connect(const char * filename, system::error_code & ec)
-    {
-        sqlite3 * res;
-        auto r = sqlite3_open(filename, &res);
-        if (r != SQLITE_OK)
-            BOOST_SQLITE_ASSIGN_EC(ec, r)
-        else
-            impl_.reset(res);
-    }
-
-    void close()
-    {
-        system::error_code ec;
-        error_info ei;
-        close(ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-    }
-
-    void close(error_code & ec,
-               error_info & ei)
-    {
-        if (impl_)
-        {
-            auto tmp = impl_.release();
-            auto cc = sqlite3_close(tmp);
-            if (SQLITE_OK != cc)
-            {
-                impl_.reset(tmp);
-                BOOST_SQLITE_ASSIGN_EC(ec, cc);
-                ei.set_message(sqlite3_errmsg(impl_.get()));
-            }
-        }
-    }
+    BOOST_SQLITE_DECL void connect(const char * filename);
+    BOOST_SQLITE_DECL void connect(const char * filename, system::error_code & ec);
+    BOOST_SQLITE_DECL void close();
+    BOOST_SQLITE_DECL void close(error_code & ec, error_info & ei);
     bool valid() const {return impl_ != nullptr;}
 
-    resultset query(
+    BOOST_SQLITE_DECL resultset query(
             core::string_view q,
             error_code & ec,
-            error_info & ei)
-    {
-        resultset res;
-        sqlite3_stmt * ss;
-        const auto cc = sqlite3_prepare_v2(impl_.get(),
-                           q.data(), q.size(),
-                           &ss, nullptr);
+            error_info & ei);
 
-        if (cc != SQLITE_OK)
-        {
-            BOOST_SQLITE_ASSIGN_EC(ec, cc);
-            ei.set_message(sqlite3_errmsg(impl_.get()));
-        }
-        else
-            res.impl_.reset(ss);
-        return res;
-    }
-
-    resultset query(core::string_view q)
-    {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = query(q, ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-        return tmp;
-    }
-
-    statement prepare_statement(
+    BOOST_SQLITE_DECL resultset query(core::string_view q);
+    BOOST_SQLITE_DECL statement prepare_statement(
             core::string_view q,
             error_code & ec,
-            error_info & ei)
-    {
-        statement res;
-        sqlite3_stmt * ss;
-        const auto cc = sqlite3_prepare_v2(impl_.get(),
-                                           q.data(), q.size(),
-                                           &ss, nullptr);
+            error_info & ei);
 
-        if (cc != SQLITE_OK)
-        {
-            BOOST_SQLITE_ASSIGN_EC(ec, cc);
-            ei.set_message(sqlite3_errmsg(impl_.get()));
-        }
-        else
-            res.impl_.reset(ss);
-        return res;
+    BOOST_SQLITE_DECL statement prepare_statement(core::string_view q);
+    std::size_t changes() const
+    {
+        return sqlite3_changes(impl_.get());
     }
 
-    statement prepare_statement(core::string_view q)
+    std::size_t total_changes() const
     {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = prepare_statement(q, ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-        return tmp;
+        return sqlite3_total_changes(impl_.get());
     }
 
-  private:
+    core::string_view filename(const std::string & db_name = "main")
+    {
+       return sqlite3_db_filename(impl_.get(), db_name.c_str());
+    }
+
+
+ private:
     struct deleter_
     {
         void operator()(sqlite3  *impl)

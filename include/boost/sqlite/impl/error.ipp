@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_REQUESTS_IMPL_ERROR_IPP
-#define BOOST_REQUESTS_IMPL_ERROR_IPP
+#ifndef BOOST_SQLITE_IMPL_ERROR_IPP
+#define BOOST_SQLITE_IMPL_ERROR_IPP
 
 #include <boost/sqlite/error.hpp>
 #include <boost/core/detail/string_view.hpp>
@@ -18,20 +18,15 @@ namespace sqlite {
 
 struct sqlite_category_t final : system::error_category
 {
+  sqlite_category_t() : system::error_category(0x7d4c7b49d8a3edull) {}
+
   std::string message( int ev ) const override
   {
-    return std::string(message_impl(ev));
+    return message(ev, nullptr, 0u);
   }
-  char const * message( int ev, char * buffer, std::size_t len ) const BOOST_NOEXCEPT  override
+  char const * message( int ev, char * buffer, std::size_t len ) const noexcept override
   {
-    const auto sv = message_impl(ev);
-    auto itr = std::copy_n(sv.begin(), (std::min)(len, sv.size() - 1), buffer);
-    *itr = '\0';
-    return buffer;
-  }
 
-  core::string_view message_impl( int ev ) const
-  {
     switch (ev)
     {
     case SQLITE_OK:          return "Successful result";
@@ -71,7 +66,7 @@ struct sqlite_category_t final : system::error_category
 
   const char * name() const BOOST_NOEXCEPT override
   {
-    return "request.error";
+    return "sqlite3";
   }
 };
 
@@ -93,4 +88,4 @@ make_error_code(error e)
 } // boost
 
 
-#endif // BOOST_REQUESTS_IMPL_ERROR_IPP
+#endif // BOOST_SQLITE_IMPL_ERROR_IPP

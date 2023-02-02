@@ -1,6 +1,10 @@
 
 file(GLOB_RECURSE ALL_TEST_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-add_executable(tests ${ALL_TEST_FILES})
-target_link_libraries(tests PUBLIC Boost::system SQLite::SQLite3)
-target_compile_definitions(tests PUBLIC BOOST_REQUESTS_SEPARATE_COMPILATION=1 BOOST_REQUESTS_USE_STD_FS=1)
+add_executable(boost_sqlite_tests ${ALL_TEST_FILES})
+target_link_libraries(boost_sqlite_tests PUBLIC Boost::system SQLite::SQLite3 Boost::json)
+target_compile_definitions(boost_sqlite_tests PUBLIC BOOST_SQLITE_SEPARATE_COMPILATION=1)
+
+enable_testing()
+
+add_test(NAME boost_sqlite_tests COMMAND $<TARGET_FILE:boost_sqlite_tests>)

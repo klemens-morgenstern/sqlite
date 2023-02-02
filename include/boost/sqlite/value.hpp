@@ -7,6 +7,7 @@
 
 #include <sqlite3.h>
 #include <boost/sqlite/value.hpp>
+#include <boost/core/detail/string_view.hpp>
 
 namespace boost {
 namespace sqlite {
@@ -20,13 +21,16 @@ enum class value_type
     null = SQLITE_NULL,
 };
 
-
-
 struct value
 {
     value_type type() const
     {
         return static_cast<value_type>(sqlite3_value_type(value_));
+    }
+
+    int subtype() const
+    {
+        return sqlite3_value_subtype(value_);
     }
 
     bool is_null() const
@@ -80,7 +84,7 @@ struct value
         const auto sz = sqlite3_value_bytes(value_);
         return blob_view(ptr, sz);
     }
-
+    explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
   private:
     sqlite3_value * value_ = nullptr;
 };

@@ -9,6 +9,17 @@
 #define BOOST_SQLITE_DETAIL_CONFIG_HPP
 
 #include <boost/config.hpp>
+#include <boost/core/detail/string_view.hpp>
+
+namespace boost
+{
+namespace sqlite
+{
+
+using string_view = boost::core::string_view;
+
+}
+}
 
 #ifndef BOOST_SQLITE_HEADER_ONLY
 # ifndef BOOST_SQLITE_SEPARATE_COMPILATION

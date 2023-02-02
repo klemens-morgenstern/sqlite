@@ -5,8 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_REQUESTS_ERROR_HPP
-#define BOOST_REQUESTS_ERROR_HPP
+#ifndef BOOST_SQLITE_ERROR_HPP
+#define BOOST_SQLITE_ERROR_HPP
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/system/error_code.hpp>
@@ -118,4 +118,4 @@ struct is_error_code_enum<::boost::sqlite::error>
 #include <boost/sqlite/impl/error.ipp>
 #endif
 
-#endif // BOOST_REQUESTS_ERROR_HPP
+#endif // BOOST_SQLITE_ERROR_HPP

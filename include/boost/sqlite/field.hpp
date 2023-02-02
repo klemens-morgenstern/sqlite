@@ -72,6 +72,26 @@ struct field
         return blob_view(ptr, sz);
     }
 
+    value get_value() const
+    {
+      return value(sqlite3_column_value(stm_, col_));
+    }
+
+    core::string_view column_name() const
+    {
+      return sqlite3_column_name(stm_, col_);
+    }
+
+    core::string_view table_name() const
+    {
+      return sqlite3_column_table_name(stm_, col_);
+    }
+
+    core::string_view column_origin_name() const
+    {
+      return sqlite3_column_origin_name(stm_, col_);
+    }
+
   private:
     friend struct row;
     sqlite3_stmt * stm_;

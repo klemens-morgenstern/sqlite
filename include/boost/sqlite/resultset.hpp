@@ -14,7 +14,6 @@ namespace sqlite {
 
 struct resultset
 {
-
     row current() const
     {
         row r;
@@ -24,37 +23,82 @@ struct resultset
 
     bool done() const {return done_;}
 
-    bool read_one(row& r,
-                  error_code & ec,
-                  error_info & ei) // could also return row* instead!
+    BOOST_SQLITE_DECL bool read_one(row& r, error_code & ec, error_info & ei);
+    BOOST_SQLITE_DECL bool read_one(row & r);
+
+    std::size_t column_count() const
     {
-        if (done_)
-            return false;
-        auto cc = sqlite3_step(impl_.get());
-        if (cc == SQLITE_DONE)
-        {
-            done_ = true;
-            return false;
-        }
-        else if (cc == SQLITE_ROW)
-            r.stm_ = impl_.get();
-        else
-        {
-            BOOST_SQLITE_ASSIGN_EC(ec, cc);
-            ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
-        }
-        return !done_;
+      return sqlite3_column_count(impl_.get());
     }
 
-    bool read_one(row & r)
+    core::string_view column_name(std::size_t idx) const
     {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = read_one(r, ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-        return tmp;
+      return sqlite3_column_name(impl_.get(), idx);
     }
+
+    core::string_view table_name(std::size_t idx) const
+    {
+      return sqlite3_column_table_name(impl_.get(), idx);
+    }
+
+    core::string_view column_origin_name(std::size_t idx) const
+    {
+      return sqlite3_column_origin_name(impl_.get(), idx);
+    }
+    struct iterator
+    {
+      using value_type = row;
+      using difference_type   = int;
+      using reference         = field&;
+      using iterator_category = std::random_access_iterator_tag;
+
+      iterator() {}
+      explicit iterator(sqlite3_stmt * stmt, bool sentinel) : sentinel_(sentinel )
+      {
+          row_.stm_ = stmt;
+          if (!sentinel && sqlite3_data_count(row_.stm_) == 0)
+              (*this)++;
+
+      }
+
+      bool operator!=(iterator rhs)
+      {
+        return sentinel_ != rhs.sentinel_;
+      }
+
+      row &operator*()  { return row_; }
+      row *operator->() { return &row_; }
+
+      iterator operator++()
+      {
+        if (sentinel_)
+          return *this;
+
+        auto cc = sqlite3_step(row_.stm_);
+        if (cc == SQLITE_DONE)
+          sentinel_ = true;
+        else if (cc != SQLITE_ROW)
+        {
+          system::error_code ec;
+          BOOST_SQLITE_ASSIGN_EC(ec, cc);
+          throw_exception(system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
+        }
+        return *this;
+      }
+
+      void operator++(int)
+      {
+        ++(*this);
+      }
+
+     private:
+      row row_;
+      bool sentinel_ = true;
+    };
+
+    iterator begin() { return iterator(impl_.get(), done_);}
+    iterator   end() { return iterator(impl_.get(), true); }
+
   private:
     friend struct connection;
     friend struct statement;

@@ -5,12 +5,18 @@
 #ifndef BOOST_SQLITE_HPP
 #define BOOST_SQLITE_HPP
 
+#include <boost/sqlite/backup.hpp>
 #include <boost/sqlite/blob.hpp>
+#include <boost/sqlite/collation.hpp>
 #include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/error.hpp>
 #include <boost/sqlite/field.hpp>
+#include <boost/sqlite/function.hpp>
+#include <boost/sqlite/hooks.hpp>
+#include <boost/sqlite/json.hpp>
 #include <boost/sqlite/resultset.hpp>
 #include <boost/sqlite/row.hpp>
 #include <boost/sqlite/statement.hpp>
+#include <boost/sqlite/value.hpp>
 
 #endif //BOOST_SQLITE_HPP

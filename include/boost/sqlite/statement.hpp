@@ -84,6 +84,11 @@ struct statement
         return tmp;
     }
 
+    core::string_view sql()
+    {
+        return sqlite3_sql(impl_.get());
+    }
+
   private:
 
     template<std::size_t Idx, typename Tuple>

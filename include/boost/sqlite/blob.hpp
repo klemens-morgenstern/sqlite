@@ -41,6 +41,7 @@ struct blob
 
     explicit blob(std::size_t n) : impl_(operator new(n)), size_(n) {}
 
+    void * release() && {return std::move(impl_).release(); }
   private:
     struct deleter_ {void operator()(void *p) {operator delete(p);}};
     std::unique_ptr<void, deleter_> impl_;
