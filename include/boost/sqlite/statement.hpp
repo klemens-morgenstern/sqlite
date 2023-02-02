@@ -65,7 +65,7 @@ struct binder
 struct statement
 {
     ///@{
-    /** @brief execute the prepared statement.
+    /** @brief execute the prepared statement once.
 
       @param params The arguments to be passed to the prepared statement.
       @param ec     The error_code used to deliver errors for the exception less overload.
@@ -98,6 +98,49 @@ struct statement
         system::error_code ec;
         error_info ei;
         auto tmp = std::move(*this).execute(params, ec, ei);
+        if (ec)
+            throw_exception(system::system_error(ec, ei.message()));
+        return tmp;
+    }
+    ///@}
+
+    ///@{
+    /** @brief execute the prepared statement and reset it afterwards.
+
+      @warning The handle is shared between the statement & resultset. The statement need to be keapt alive
+
+      @param params The arguments to be passed to the prepared statement.
+      @param ec     The error_code used to deliver errors for the exception less overload.
+      @param info   The error_info used to deliver errors for the exception less overload.
+      @return The resultset of the query.
+
+      @code{.cpp}
+        extern sqlite::connection conn;
+        statement st = conn.prepare("select id from users where name = $1;");
+        resultset q = std::move(st).execute(std::make_tuple("peter"));
+      @endcode
+
+     */
+    template <typename ... Args>
+    resultset execute(
+            const std::tuple<Args...>& params,
+            error_code& ec,
+            error_info& info) &
+    {
+        bind_impl(params, ec, info, std::make_index_sequence<sizeof...(Args)>{});
+        resultset rs;
+        rs.impl_.get_deleter().delete_ = false;
+        rs.impl_.reset(impl_.get());
+        return rs;
+    }
+
+
+    template <typename ... Args>
+    resultset execute(const std::tuple<Args...>& params) &
+    {
+        system::error_code ec;
+        error_info ei;
+        auto tmp = execute(params, ec, ei);
         if (ec)
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;

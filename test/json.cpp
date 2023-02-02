@@ -17,7 +17,7 @@ TEST_CASE("json")
 #include "test-db.sql"
   );
 
-  auto q = conn.prepare_statement("select 'foo', json_array($1, '2', null)").execute(std::make_tuple(1));
+  auto q = conn.prepare("select 'foo', json_array($1, '2', null)").execute(std::make_tuple(1));
 
   sqlite::row r;
   q.read_one(r);

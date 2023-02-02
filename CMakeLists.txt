@@ -96,5 +96,5 @@ endif()
 
 
 if(BOOST_SQLITE_BUILD_EXAMPLES)
-    #add_subdirectory(example)
+    add_subdirectory(example)
 endif()

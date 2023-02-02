@@ -92,7 +92,7 @@ resultset connection::query(core::string_view q)
     return tmp;
 }
 
-statement connection::prepare_statement(
+statement connection::prepare(
         core::string_view q,
         error_code & ec,
         error_info & ei)
@@ -113,11 +113,11 @@ statement connection::prepare_statement(
     return res;
 }
 
-statement connection::prepare_statement(core::string_view q)
+statement connection::prepare(core::string_view q)
 {
     system::error_code ec;
     error_info ei;
-    auto tmp = prepare_statement(q, ec, ei);
+    auto tmp = prepare(q, ec, ei);
     if (ec)
         throw_exception(system::system_error(ec, ei.message()));
     return tmp;

@@ -134,10 +134,19 @@ struct resultset
     friend struct statement;
     struct deleter_
     {
+        constexpr deleter_() noexcept {}
+        bool delete_ = true;
         void operator()(sqlite3_stmt * sm)
         {
             while ( sqlite3_step(sm) == SQLITE_ROW);
-            sqlite3_finalize(sm);
+            if (delete_)
+                sqlite3_finalize(sm);
+            else
+            {
+                sqlite3_clear_bindings(sm);
+                sqlite3_reset(sm);
+            }
+
         }
     };
     std::unique_ptr<sqlite3_stmt, deleter_> impl_;

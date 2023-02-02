@@ -98,12 +98,12 @@ struct connection
 
     ///@{
     /// Perform a query with parameters. Can only execute a single statement.
-    BOOST_SQLITE_DECL statement prepare_statement(
+    BOOST_SQLITE_DECL statement prepare(
             core::string_view q,
             error_code & ec,
             error_info & ei);
 
-    BOOST_SQLITE_DECL statement prepare_statement(core::string_view q);
+    BOOST_SQLITE_DECL statement prepare(core::string_view q);
     ///@}
 
     /// The changes applied to the database.
