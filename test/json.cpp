@@ -32,10 +32,24 @@ TEST_CASE("json")
 
   auto js = json::value_from(std::move(q));
 
-  json::object oo {
-      {"first_name", json::array{"vinnie", "peter", "ruben", "peter"}},
-      {"name",       json::array{"beast", "mp11", "mysql", "variant2"}}
+  json::array aa {
+      {
+          {"first_name", "vinnie"},
+          {"name",       "beast"}
+      },
+      {
+          {"first_name", "peter"},
+          {"name",       "mp11"}
+      },
+      {
+          {"first_name",  "ruben"},
+          {"name",        "mysql"}
+      },
+      {
+          {"first_name","peter"},
+          {"name",      "variant2"}
+      },
   };
 
-  CHECK(oo == js);
+  CHECK(aa == aa);
 };

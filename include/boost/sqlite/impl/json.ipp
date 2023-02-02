@@ -108,13 +108,14 @@ void tag_invoke( const json::value_from_tag &, json::value& val, const field & f
 
 void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs)
 {
-  auto & obj = val.emplace_object();
-  for (auto i = 0; i < rs.column_count(); i++)
-    obj[rs.column_name(i)].emplace_array();
+  auto & obj = val.emplace_array();
 
   for (auto r : rs)
+  {
+    auto & row = obj.emplace_back(json::object(obj.storage())).get_object();
     for (auto c : r)
-      json::value_from(c, obj[c.column_name()].get_array().emplace_back(nullptr));
+      row[c.column_name()] =  json::value_from(c, row.storage());
+  }
 }
 
 }
