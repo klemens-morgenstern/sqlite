@@ -182,6 +182,13 @@ struct statement
                    error_info & ei,
                    std::index_sequence<Idx...>)
     {
+        const auto sz =  sqlite3_bind_parameter_count(impl_.get());
+        if (sizeof...(Idx) < sz)
+        {
+          BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
+          ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
+                       + "got " + std::to_string(sizeof...(Idx)));
+        }
         boost::ignore_unused(bind_step<Idx>(tupl,ec, ei)...);
     }
 
