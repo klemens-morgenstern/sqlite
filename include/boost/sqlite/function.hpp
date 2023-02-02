@@ -8,11 +8,11 @@
 #ifndef BOOST_SQLITE_FUNCTION_HPP
 #define BOOST_SQLITE_FUNCTION_HPP
 
-#include <sqlite3.h>
-
 #include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
+#include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/value.hpp>
+#include <boost/variant2/variant.hpp>
 #include <boost/callable_traits/args.hpp>
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/callable_traits/return_type.hpp>
@@ -21,6 +21,65 @@ namespace boost
 {
 namespace sqlite
 {
+namespace detail
+{
+
+inline void set_result(sqlite3_context * ctx, blob b)
+{
+  auto sz = b.size();
+  sqlite3_result_blob(ctx, std::move(b).release(), sz, &operator delete);
+}
+
+inline void set_result(sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
+
+template<typename I,
+    typename = std::enable_if_t<std::is_integral<I>::value>>
+inline void set_result(sqlite3_context * ctx, I value)
+{
+  BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)  || (sizeof(I) > sizeof(int)))
+    sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
+  else
+    sqlite3_result_int(ctx, static_cast<int>(value));
+}
+
+inline void set_result(sqlite3_context * ctx, std::nullptr_t) { sqlite3_result_null(ctx); }
+inline void set_result(sqlite3_context * ctx, string_view str)
+{
+  auto ptr = new char[str.size()];
+  std::memcpy(ptr, str.data(), str.size());
+  sqlite3_result_text(
+      ctx, ptr, str.size(),
+      +[](void * ptr) noexcept
+      {
+        auto p = static_cast<char*>(ptr);
+        delete[] p;
+      });
+}
+
+inline void set_result(sqlite3_context * ctx, variant2::monostate) { sqlite3_result_null(ctx); }
+inline void set_result(sqlite3_context * ctx, const value & val)
+{
+  sqlite3_result_value(ctx, val.native_handle());
+}
+
+struct set_variant_result
+{
+  sqlite3_context * ctx;
+  template<typename T>
+  void operator()(T && val)
+  {
+    set_result(ctx, std::forward<T>(val));
+  }
+};
+
+template<typename ... Args>
+inline void set_result(sqlite3_context * ctx, const variant2::variant<Args...> & var)
+{
+  visit(set_variant_result{ctx}, var);
+}
+
+
+}
 
 template<typename ... Args>
 struct context
@@ -55,6 +114,12 @@ struct context
   }
 
   explicit context(sqlite3_context * ctx) noexcept : ctx_(ctx) {}
+  template<typename T>
+  auto set_result(T && val) ->
+      decltype(detail::set_result(static_cast<sqlite3_context*>(nullptr), std::forward<T>(val)))
+  {
+    detail::set_result(ctx_, std::forward<T>(val));
+  }
  private:
   sqlite3_context * ctx_;
 };
@@ -62,37 +127,6 @@ struct context
 namespace detail
 {
 
-inline void set_result(sqlite3_context * ctx, blob b)
-{
-  auto sz = b.size();
-  sqlite3_result_blob(ctx, std::move(b).release(), sz, &operator delete);
-}
-
-inline void set_result(sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
-
-template<typename I,
-         typename = std::enable_if_t<std::is_integral<I>::value>>
-inline void set_result(sqlite3_context * ctx, I value)
-{
-  BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)  || (sizeof(I) > sizeof(int)))
-    sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
-  else
-    sqlite3_result_int(ctx, static_cast<int>(value));
-}
-
-inline void set_result(sqlite3_context * ctx, std::nullptr_t) { sqlite3_result_null(ctx); }
-inline void set_result(sqlite3_context * ctx, string_view str)
-{
-  auto ptr = new char[str.size()];
-  std::memcpy(ptr, str.data(), str.size());
-  sqlite3_result_text(
-      ctx, ptr, str.size(),
-      +[](void * ptr) noexcept
-      {
-          auto p = static_cast<char*>(ptr);
-          delete[] p;
-      });
-}
 
 template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
@@ -103,20 +137,20 @@ auto create_scalar_function_impl(sqlite3 * db,
                           std::false_type /* is pointer */) -> int
 {
   using func_type = typename std::decay<Func>::type;
-  return sqlite3_create_scalar_function_v2(
+  return sqlite3_create_function_v2(
       db, name.c_str(),
-      Extent == boost::dynamic_extent ? -1 : Extent,
+      Extent == boost::dynamic_extent ? -1 : static_cast<int>(Extent),
       SQLITE_UTF8,
       new func_type(std::forward<Func>(func)),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
-        auto cc = context<Args...>(&ctx);
+        auto cc = context<Args...>(ctx);
         auto aa =  reinterpret_cast<value*>(args);
         auto &f = *reinterpret_cast<func_type*>(sqlite3_user_data(ctx));
 
         try
         {
-          set_result(ctx, f(cc, boost::span<value, Extent>{aa, len}));
+          set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
         }
         catch(system::system_error & se)
         {
@@ -144,7 +178,7 @@ auto create_scalar_function_impl(sqlite3 * db,
                           std::false_type /* is pointer */) -> int
 {
   using func_type = typename std::decay<Func>::type;
-  return sqlite3_create_scalar_function_v2(
+  return sqlite3_create_function_v2(
       db,
       name.c_str(),
       (Extent == boost::dynamic_extent) ? -1 : static_cast<int>(Extent),
@@ -199,7 +233,8 @@ auto create_scalar_function_impl(sqlite3 * db,
 
         try
         {
-          set_result(ctx, f(cc, boost::span<value, Extent>{aa, len}));        }
+          set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
+        }
         catch(system::system_error & se)
         {
           auto code = SQLITE_ERROR;
@@ -225,7 +260,7 @@ auto create_scalar_function_impl(sqlite3 * db,
                                  std::true_type /* void return */,
                                  std::true_type /* is pointer */) -> int
 {
-  return sqlite3_create_scalar_function_v2(
+  return sqlite3_create_function_v2(
       db, name.c_str(),
       Extent == boost::dynamic_extent ? -1 : Extent,
       SQLITE_UTF8, func,
@@ -237,7 +272,7 @@ auto create_scalar_function_impl(sqlite3 * db,
 
         try
         {
-          f(cc, boost::span<value, Extent>{aa, len});
+          f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
         }
         catch(system::system_error & se)
         {
@@ -363,13 +398,12 @@ auto create_window_function(sqlite3 * db,
   using span_type    = typename std::tuple_element<2U, args_type>::type;
   using func_type    = typename std::decay<Func>::type;
 
-  return sqlite3_create_function_v2(
+  return sqlite3_create_window_function(
       db, name.c_str(),
       span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
       SQLITE_UTF8,
       new func_type(std::forward<Func>(func)),
-      nullptr,
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args) noexcept
+      +[](sqlite3_context* ctx, int len, sqlite3_value** args) noexcept //xStep
       {
         auto aa =  reinterpret_cast<value*>(args);
         auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
@@ -395,7 +429,7 @@ auto create_window_function(sqlite3 * db,
           sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
         }
       },
-      [](sqlite3_context* ctx)
+      [](sqlite3_context* ctx) // xFinal
       {
         auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
 
@@ -422,7 +456,7 @@ auto create_window_function(sqlite3 * db,
           sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
         }
       },
-      [](sqlite3_context* ctx)
+      [](sqlite3_context* ctx) //xValue
       {
         auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
@@ -447,7 +481,7 @@ auto create_window_function(sqlite3 * db,
           sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
         }
       },
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args)
+      +[](sqlite3_context* ctx, int len, sqlite3_value** args) // xInverse
       {
         auto aa =  reinterpret_cast<value*>(args);
         auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
@@ -473,7 +507,7 @@ auto create_window_function(sqlite3 * db,
           sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
         }
       },
-      [](void * ptr) { delete static_cast<func_type*>(ptr);}
+      [](void * ptr) /* xDestroy */ { delete static_cast<func_type*>(ptr);}
   );
 }
 

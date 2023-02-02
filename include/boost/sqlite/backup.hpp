@@ -21,7 +21,7 @@ inline void
   backup(connection & source,
          connection & target,
          const std::string & source_name,
-         const std::string & sink_name,
+         const std::string & target_name,
          system::error_code & ec,
          error_info & ei)
 {
@@ -34,9 +34,9 @@ inline void
   };
 
   std::unique_ptr<sqlite3_backup, del> bu{
-        sqlite3_backup_init(target.native_handle(), sink_name.c_str(),
+        sqlite3_backup_init(target.native_handle(), target_name.c_str(),
                             source.native_handle(), source_name.c_str())};
-  if (bu != nullptr)
+  if (bu == nullptr)
   {
     BOOST_SQLITE_ASSIGN_EC(ec, sqlite3_errcode(target.native_handle()));
     ei.set_message(sqlite3_errmsg(target.native_handle()));
@@ -53,11 +53,11 @@ inline void
 backup(connection & source,
        connection & target,
        const std::string & source_name = "main",
-       const std::string & sink_name = "main")
+       const std::string & target_name = "main")
 {
   system::error_code ec;
   error_info ei;
-  backup(source, target, source_name, sink_name);
+  backup(source, target, source_name, target_name, ec, ei);
   if (ec)
     throw_exception(system::system_error(ec, ei.message()));
 }

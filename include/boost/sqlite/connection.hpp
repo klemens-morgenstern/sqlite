@@ -43,6 +43,24 @@ struct connection
             error_info & ei);
 
     BOOST_SQLITE_DECL resultset query(core::string_view q);
+
+    BOOST_SQLITE_DECL void execute(
+      const char * q,
+        error_code & ec,
+        error_info & ei);
+
+    BOOST_SQLITE_DECL void execute(const char * q);
+    BOOST_SQLITE_DECL void execute(
+        const std::string & q,
+        error_code & ec,
+        error_info & ei)
+    {
+        execute(q.c_str(), ec, ei);
+    }
+
+    void execute(const std::string & q) { execute(q.c_str());}
+
+
     BOOST_SQLITE_DECL statement prepare_statement(
             core::string_view q,
             error_code & ec,

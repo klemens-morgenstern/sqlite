@@ -7,6 +7,7 @@
 
 #include <type_traits>
 #include <memory>
+#include <cstring>
 
 namespace boost {
 namespace sqlite {

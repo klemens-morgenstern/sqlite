@@ -6,7 +6,7 @@
 #define BOOST_SQLITE_VALUE_HPP
 
 #include <sqlite3.h>
-#include <boost/sqlite/value.hpp>
+#include <boost/sqlite/blob.hpp>
 #include <boost/core/detail/string_view.hpp>
 
 namespace boost {
@@ -85,6 +85,9 @@ struct value
         return blob_view(ptr, sz);
     }
     explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
+
+    using native_handle_type = sqlite3_value *;
+    native_handle_type native_handle() const {return value_;}
   private:
     sqlite3_value * value_ = nullptr;
 };

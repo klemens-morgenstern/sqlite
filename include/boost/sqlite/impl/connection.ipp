@@ -124,6 +124,31 @@ statement connection::prepare_statement(core::string_view q)
     return tmp;
 }
 
+void connection::execute(
+    const char * q,
+    error_code & ec,
+    error_info & ei)
+{
+    char * msg = nullptr;
+
+    auto res = sqlite3_exec(impl_.get(), q, nullptr, nullptr, &msg);
+    if (res != SQLITE_OK)
+    {
+        BOOST_SQLITE_ASSIGN_EC(ec, res);
+        if (msg != nullptr)
+            ei.set_message(msg);
+    }
+}
+
+void connection::execute(const char * q)
+{
+    system::error_code ec;
+    error_info ei;
+    execute(q, ec, ei);
+    if (ec)
+      throw_exception(system::system_error(ec, ei.message()));
+}
+
 
 }
 }

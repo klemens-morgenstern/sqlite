@@ -26,6 +26,7 @@ struct row
              field f;
              f.stm_ = stm_;
              f.col_ = static_cast<int>(idx);
+            return f;
         }
     }
 

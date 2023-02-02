@@ -41,14 +41,14 @@ void detail::set_result(sqlite3_context * ctx, const json::value & value)
 }
 
 
-json::value as_json(const value & v)
+json::value as_json(const value & v, json::storage_ptr ptr)
 {
-  return json::parse(v.get_text());
+  return json::parse(v.get_text(), ptr);
 }
 
-json::value as_json(const field & f)
+json::value as_json(const field & f, json::storage_ptr ptr)
 {
-  return json::parse(f.get_text());
+  return json::parse(f.get_text(), ptr);
 }
 
 
@@ -70,6 +70,7 @@ void tag_invoke( const json::value_from_tag &, json::value& val, const value & f
       else
         val.emplace_string() = txt;
     }
+    break;
     case value_type::blob:
       throw_exception(std::invalid_argument("cannot convert blob to json"));
     case value_type::null:
@@ -96,6 +97,7 @@ void tag_invoke( const json::value_from_tag &, json::value& val, const field & f
       else
         val.emplace_string() = txt;
     }
+    break;
     case value_type::blob:
       throw_exception(std::invalid_argument("cannot convert blob to json"));
     case value_type::null:
@@ -104,9 +106,9 @@ void tag_invoke( const json::value_from_tag &, json::value& val, const field & f
   }
 }
 
-void tag_invoke( const json::value_from_tag &, json::value& val, resultset & rs)
+void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs)
 {
-  auto obj = val.emplace_object();
+  auto & obj = val.emplace_object();
   for (auto i = 0; i < rs.column_count(); i++)
     obj[rs.column_name(i)].emplace_array();
 

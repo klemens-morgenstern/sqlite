@@ -5,47 +5,34 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/collation.hpp>
-#include <boost/sqlite/function.hpp>
-#include <boost/sqlite/hooks.hpp>
-#include <boost/sqlite/json.hpp>
-#include <boost/callable_traits.hpp>
 
-#include "doctest.h"
+#include "test.hpp"
 
-using namespace boost::sqlite;
+using namespace boost;
 
-struct aggregate_function
+struct collate_length
 {
-    struct my_ctx
-    {
-      int i = 42;
-    };
-
-    void step(my_ctx & ctx, boost::span<value> args)
-    {
-
-    }
-
-    int final(my_ctx & ctx)
-    {
-      return 42;
-    }
+  int operator()(core::string_view l, const std::string r)
+  {
+    return std::stoull(r) - l.size();
+  }
 };
 
 TEST_CASE("collation")
 {
-  connection conn(":memory:");
+  sqlite::connection conn(":memory:");
+  conn.execute(
+#include "test-db.sql"
+  );
+  sqlite::create_collation(conn, "length", collate_length{});
 
-  CHECK_NOTHROW(conn.query("create table users (id integer primary key autoincrement, name text)"));
-  CHECK_NOTHROW(conn.query("insert into users (name) values ('dick'), ('head')"));
-  for (auto r : conn.query("select 42 as i, json_object('ex','[52,3.14159]') as js, json_array(1,2,'3',4) as ja;"))
-  {
-    for (auto c : r)
-    {
-      printf("Name: %s, Type %d, sub-type %d\n", c.column_name().data(), c.type(), c.get_value().subtype());
-      printf("Data: %s\n", c.get_text().data());
-    }
-  }
+  std::vector<std::string> names;
+
+  // language=sqlite
+  for (auto r : conn.query("select first_name from author where first_name = 5 collate length order by last_name asc;"))
+    names.emplace_back(r.at(0).get_text());
+
+  std::vector<std::string> cmp = {"peter", "ruben"};
+  CHECK(names == cmp);
 }

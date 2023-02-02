@@ -8,6 +8,8 @@
 #ifndef BOOST_SQLITE_COLLATION_HPP
 #define BOOST_SQLITE_COLLATION_HPP
 
+#include <boost/sqlite/connection.hpp>
+
 namespace boost
 {
 namespace sqlite

@@ -9,6 +9,7 @@
 #define BOOST_SQLITE_HOOKS_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/function.hpp>
 #include <boost/system/result.hpp>
 #include <sqlite3.h>
 
@@ -72,9 +73,9 @@ bool commit_hook_impl(sqlite3 * db,
   using func_type    = typename std::decay<Func>::type;
 
   return sqlite3_commit_hook(
-      db, new func_type(std::forward<Func>(func)),
+      db,
       [](void * data) { return (*static_cast<Func *>(data))() ? 1 : 0; },
-     +[](void * ptr) {delete static_cast<func_type>(ptr);}) != nullptr;
+      &func) != nullptr;
 }
 
 inline bool commit_hook(sqlite3 * db, std::nullptr_t, std::false_type)
@@ -113,9 +114,9 @@ bool rollback_hook_impl(sqlite3 * db,
   using func_type    = typename std::decay<Func>::type;
 
   return sqlite3_rollback_hook(
-      db, new func_type(std::forward<Func>(func)),
+      db,
       [](void * data) { (*static_cast<Func *>(data))(); },
-      +[](void * ptr) {delete static_cast<func_type>(ptr);}) != nullptr;
+      &func) != nullptr;
 }
 
 inline bool rollback_hook_impl(sqlite3 * db, std::nullptr_t, std::false_type)
@@ -132,7 +133,6 @@ bool rollback_hook(sqlite3 * db,
 }
 
 #if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
-
 
 template<typename Func>
 bool preupdate_hook_impl(sqlite3 * db,
@@ -157,14 +157,14 @@ bool preupdate_hook_impl(sqlite3 * db,
 
 template<typename Func>
 bool preupdate_hook_impl(sqlite3 * db,
-                      Func && func,
+                      Func & func,
                       std::false_type)
 {
   static_assert(noexcept(func(preupdate_context(nullptr), SQLITE_SELECT, "", "", 0, 0)));
   using func_type    = typename std::decay<Func>::type;
 
   return sqlite3_preupdate_hook(
-      db, new func_type(std::forward<Func>(func)),
+      db,
       [](void * data,
          sqlite3* db,
          int op,
@@ -174,8 +174,7 @@ bool preupdate_hook_impl(sqlite3 * db,
          sqlite_int64 key2)
       {
         (*static_cast<Func *>(data))(preupdate_context(db), op, db_name, table_name, key1, key2);
-      },
-      +[](void * ptr) {delete static_cast<func_type>(ptr);}) != nullptr;
+      }, &func) != nullptr;
 }
 
 inline bool preupdate_hook_impl(sqlite3 * db, std::nullptr_t, std::false_type)
@@ -198,7 +197,7 @@ bool update_hook_impl(sqlite3 * db,
                       Func * func,
                       std::true_type)
 {
-  static_assert(noexcept(func(nullptr, SQLITE_SELECT, "", "", 0)));
+  static_assert(noexcept(func(SQLITE_SELECT, "", "", 0)));
   return sqlite3_update_hook(
       db, func,
       [](void * data,
@@ -215,24 +214,22 @@ bool update_hook_impl(sqlite3 * db,
 
 template<typename Func>
 bool update_hook_impl(sqlite3 * db,
-                      Func && func,
+                      Func & func,
                       std::false_type)
 {
-  static_assert(noexcept(func(nullptr, SQLITE_SELECT, "", "", 0)));
+  static_assert(noexcept(func(SQLITE_SELECT, "", "", 0)));
   using func_type    = typename std::decay<Func>::type;
 
   return sqlite3_update_hook(
-      db, new func_type(std::forward<Func>(func)),
+      db,
       [](void * data,
-         sqlite3*,
          int op,
          const char * db,
          const char * name,
          sqlite_int64 key)
       {
-        (*static_cast<Func *>(data))(op, db, name, key);
-      },
-      +[](void * ptr) {delete static_cast<func_type>(ptr);}) != nullptr;
+        (*static_cast<func_type*>(data))(op, db, name, key);
+      }, &func) != nullptr;
 }
 
 inline
