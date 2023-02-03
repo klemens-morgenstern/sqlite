@@ -12,6 +12,7 @@
 namespace boost {
 namespace sqlite {
 
+
 namespace detail {
 
 struct binder
@@ -19,6 +20,10 @@ struct binder
     sqlite3_stmt * stm_;
     int col;
 
+    int operator()(variant2::monostate)
+    {
+      return sqlite3_bind_null(stm_, col);
+    }
     int operator()(std::nullptr_t)
     {
         return sqlite3_bind_null(stm_, col);
@@ -41,7 +46,7 @@ struct binder
             return sqlite3_bind_blob64(stm_, col, blob.data(), blob.size(), nullptr);
     }
 
-    int operator()(core::string_view text)
+    int operator()(string_view text)
     {
         if (text.size() > std::numeric_limits<int>::max())
             return sqlite3_bind_text(stm_, col, text.data(), text.size(), nullptr);
@@ -53,10 +58,33 @@ struct binder
     {
         return sqlite3_bind_double(stm_, col, value);
     }
+
+    template<typename T>
+    int operator()(std::unique_ptr<T> ptr)
+    {
+      return sqlite3_bind_pointer(stm_, col, ptr.release(), typeid(T).name(),
+                                  +[](void * ptr){delete static_cast<T*>(ptr);});
+    }
+
+    template<typename T>
+    int operator()(std::unique_ptr<T, void(*)(T*)> ptr)
+    {
+      return sqlite3_bind_pointer(stm_, col, ptr.release(), typeid(T).name(),
+                                  static_cast<void(*)(void*)>(ptr.get_deleter()));
+    }
+
+    template<typename T, typename Deleter>
+    auto operator()(std::unique_ptr<T, Deleter> ptr)
+        -> typename std::enable_if<std::is_empty<Deleter>::value &&
+                                   std::is_default_constructible<Deleter>::value, int>::type
+    {
+      return sqlite3_bind_pointer(stm_, col, ptr.release(), typeid(T).name(),
+                                  +[](void * ptr){Deleter()(static_cast<T*>(ptr));});
+    }
 };
 
-
 }
+
 
 /** @brief A statement used for a prepared-statement.
     @ingroup reference
@@ -98,6 +126,30 @@ struct statement
         system::error_code ec;
         error_info ei;
         auto tmp = std::move(*this).execute(params, ec, ei);
+        if (ec)
+            throw_exception(system::system_error(ec, ei.message()));
+        return tmp;
+    }
+
+    template <typename ... Args>
+    resultset execute(
+            std::tuple<Args...>&& params,
+            error_code& ec,
+            error_info& info) &&
+    {
+        bind_impl(std::move(params), ec, info, std::make_index_sequence<sizeof...(Args)>{});
+        resultset rs;
+        rs.impl_.reset(impl_.release());
+        return rs;
+    }
+
+
+    template <typename ... Args>
+    resultset execute(std::tuple<Args...>&& params) &&
+    {
+        system::error_code ec;
+        error_info ei;
+        auto tmp = std::move(*this).execute(std::move(params), ec, ei);
         if (ec)
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
@@ -145,6 +197,30 @@ struct statement
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
     }
+    template <typename ... Args>
+    resultset execute(
+            std::tuple<Args...>&& params,
+            error_code& ec,
+            error_info& info) &
+    {
+        bind_impl(std::move(params), ec, info, std::make_index_sequence<sizeof...(Args)>{});
+        resultset rs;
+        rs.impl_.get_deleter().delete_ = false;
+        rs.impl_.reset(impl_.get());
+        return rs;
+    }
+
+
+    template <typename ... Args>
+    resultset execute(std::tuple<Args...>&& params) &
+    {
+        system::error_code ec;
+        error_info ei;
+        auto tmp = execute(std::move(params), ec, ei);
+        if (ec)
+            throw_exception(system::system_error(ec, ei.message()));
+        return tmp;
+    }
     ///@}
 
 
@@ -156,15 +232,16 @@ struct statement
 
   private:
 
-    template<std::size_t Idx, typename Tuple>
+    template<typename T>
     bool bind_step(
-            Tuple & tupl,
+            T && value,
+            std::size_t idx,
             error_code & ec,
             error_info & ei)
     {
         if (!ec)
         {
-            auto cc = detail::binder{impl_.get(), Idx + 1}(std::get<Idx>(tupl));
+            auto cc = detail::binder{impl_.get(), static_cast<int>(idx)}(std::forward<T>(value));
             if (cc != SQLITE_OK)
             {
                 BOOST_SQLITE_ASSIGN_EC(ec, cc);
@@ -174,10 +251,8 @@ struct statement
         return !ec;
     }
 
-
-
-    template<typename Tuple, std::size_t ... Idx>
-    void bind_impl(Tuple tupl,
+    template<typename ... Args, std::size_t ... Idx>
+    void bind_impl(std::tuple<Args...> && tupl,
                    error_code & ec,
                    error_info & ei,
                    std::index_sequence<Idx...>)
@@ -190,7 +265,25 @@ struct statement
                        + " got " + std::to_string(sizeof...(Idx)));
         }
 
-        boost::ignore_unused(bind_step<Idx>(tupl,ec, ei)...);
+        boost::ignore_unused(bind_step(std::move(std::get<Idx>(tupl)), Idx + 1, ec, ei)...);
+    }
+
+
+    template<typename ... Args, std::size_t ... Idx>
+    void bind_impl(const std::tuple<Args...> & tupl,
+                   error_code & ec,
+                   error_info & ei,
+                   std::index_sequence<Idx...>)
+    {
+      const auto sz =  sqlite3_bind_parameter_count(impl_.get());
+      if (sizeof...(Idx) < sz)
+      {
+        BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
+        ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
+                       + " got " + std::to_string(sizeof...(Idx)));
+      }
+
+      boost::ignore_unused(bind_step(std::get<Idx>(tupl), Idx + 1, ec, ei)...);
     }
 
 

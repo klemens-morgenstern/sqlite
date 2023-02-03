@@ -12,6 +12,7 @@
 namespace boost {
 namespace sqlite {
 
+
 /// @brief a view to a binary large object  @ingroup reference
 struct blob_view
 {
@@ -23,11 +24,14 @@ struct blob_view
     blob_view(const void * data, std::size_t size) : data_(data), size_(size) {}
 
     /// Construct a blob from some other blob-like structure.
-    template<typename T,
-             typename = std::enable_if_t<std::is_pointer<decltype(std::declval<T>().data())>::value>,
-             typename = std::enable_if_t<std::is_convertible<decltype(std::declval<T>().size()), std::size_t>::value>>
-    explicit blob_view(const T & value) : data_(value.data()), size_(value.size()) {}
+    template<typename T>
+    explicit blob_view(const T & value,
+                       typename std::enable_if<
+                           std::is_pointer<decltype(std::declval<T>().data())>::value
+                        && std::is_convertible<decltype(std::declval<T>().size()), std::size_t>::value
+                           >::type * = nullptr) : data_(value.data()), size_(value.size()) {}
 
+    inline blob_view(const struct blob & b);
   private:
     const void * data_{nullptr};
     std::size_t size_{0u};
@@ -37,7 +41,7 @@ struct blob_view
 struct blob
 {
     /// The data in the blob
-    void * data() {return impl_.get();}
+    void * data() const {return impl_.get();}
     /// The size of the data int he blob, in bytes
     std::size_t size() const {return size_;}
 
@@ -52,11 +56,14 @@ struct blob
     explicit blob(std::size_t n) : impl_(operator new(n)), size_(n) {}
     /// Release & take ownership of the blob.
     void * release() && {return std::move(impl_).release(); }
-  private:
+   private:
     struct deleter_ {void operator()(void *p) {operator delete(p);}};
     std::unique_ptr<void, deleter_> impl_;
     std::size_t size_{0u};
 };
+
+
+blob_view::blob_view(const blob & b) : data_(b.data()), size_(b.size()) {}
 
 }
 }

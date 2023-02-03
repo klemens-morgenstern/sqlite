@@ -79,6 +79,25 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const variant2::va
   visit(set_variant_result{ctx}, var);
 }
 
+template<typename T>
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T> ptr)
+{
+  sqlite3_result_pointer(ctx, ptr.release(), typeid(T).name(), +[](void * ptr){delete static_cast<T*>(ptr);});
+}
+
+template<typename T>
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T, void(*)(T*)> ptr)
+{
+  sqlite3_result_pointer(ctx, ptr.release(), typeid(T).name(), static_cast<void(*)(void*)>(ptr.get_deleter()));
+}
+
+template<typename T, typename Deleter>
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T> ptr)
+    -> typename std::enable_if<std::is_empty<Deleter>::value &&
+                               std::is_default_constructible<Deleter>::value>::type
+{
+  sqlite3_result_pointer(ctx, ptr.release(), typeid(T).name(), +[](void * ptr){Deleter()(static_cast<T*>(ptr));});
+}
 
 namespace detail
 {
