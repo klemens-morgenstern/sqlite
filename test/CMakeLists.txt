@@ -7,4 +7,4 @@ target_compile_definitions(boost_sqlite_tests PUBLIC BOOST_SQLITE_SEPARATE_COMPI
 
 enable_testing()
 
-add_test(NAME boost_sqlite_tests COMMAND $<TARGET_FILE:boost_sqlite_tests>)
+add_test(NAME boost_sqlite_tests COMMAND boost_sqlite_tests)

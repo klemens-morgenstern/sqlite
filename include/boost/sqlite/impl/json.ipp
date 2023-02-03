@@ -20,7 +20,7 @@ namespace boost
 namespace sqlite
 {
 
-void detail::set_result(sqlite3_context * ctx, const json::value & value)
+void tag_invoke(const struct set_result_tag &, sqlite3_context * ctx, const json::value & value)
 {
   json::serializer ser;
   ser.reset(&value);

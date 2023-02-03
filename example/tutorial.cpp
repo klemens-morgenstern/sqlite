@@ -28,7 +28,7 @@ create table library(
 );
 )");
 
-  conn.prepare("insert into author (first_name, last_name) values ($1, $2), ($3, $4), ($5, $6), ($7, $8)")
+  conn.prepare("insert into author (last_name, first_name) values (?2, ?1), (?4, ?3), (?6, ?5), (?8, ?7)")
       .execute(std::make_tuple("vinnie", "falco", "richard", "hodges", "ruben", "perez", "peter", "dimov"));
 
 

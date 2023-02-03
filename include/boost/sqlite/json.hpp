@@ -27,12 +27,9 @@ struct value;
 /// The subtype value used by the sqlite json extension. See the [sqlite reference](https://www.sqlite.org/json1.html)
 constexpr int json_subtype = static_cast<int>('J');
 
-namespace detail
-{
+BOOST_SQLITE_DECL void tag_invoke(const struct set_result_tag &, sqlite3_context * ctx, const json::value & value);
 
-BOOST_SQLITE_DECL void set_result(sqlite3_context * ctx, const json::value & value);
 
-}
 ///@{
 /// Qbrief Check if the value or field is a json. @ingroup reference
 inline bool is_json(const value & v) { return v.type() == value_type::text && v.subtype() == json_subtype; }

@@ -11,7 +11,7 @@
 #include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
-#include <boost/sqlite/detail/set_result.hpp>
+#include <boost/sqlite/result.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/callable_traits/args.hpp>
 #include <boost/callable_traits/has_void_return.hpp>

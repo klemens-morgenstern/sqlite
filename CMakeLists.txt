@@ -26,8 +26,8 @@ option(BOOST_SQLITE_BUILD_INLINE "Configure as if part of the boost source tree"
 
 if(NOT BOOST_SUPERPROJECT_VERSION)
     option(BOOST_SQLITE_INSTALL "Install boost::sqlite files" ON)
-    option(BOOST_SQLITE_BUILD_TESTS "Build boost::sqlite tests" ${BUILD_TESTING})
-    option(BOOST_SQLITE_BUILD_EXAMPLES "Build boost::sqlite examples" ${BOOST_SQLITE_IS_ROOT})
+    option(BOOST_SQLITE_BUILD_TESTS "Build boost::sqlite tests" ON)
+    option(BOOST_SQLITE_BUILD_EXAMPLES "Build boost::sqlite examples" ON)
 else()
     set(BOOST_SQLITE_BUILD_TESTS ${BUILD_TESTING})
 endif()

@@ -187,8 +187,9 @@ struct statement
         {
           BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
           ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
-                       + "got " + std::to_string(sizeof...(Idx)));
+                       + " got " + std::to_string(sizeof...(Idx)));
         }
+
         boost::ignore_unused(bind_step<Idx>(tupl,ec, ei)...);
     }
 
