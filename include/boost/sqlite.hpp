@@ -7,7 +7,7 @@
 
 /** @defgroup reference Reference
  *
- *  This page contains the documentation of the Aedis high-level API.
+ *  This page contains the documentation of the sqlite high-level API.
  */
 
 #include <boost/sqlite/backup.hpp>
@@ -23,5 +23,6 @@
 #include <boost/sqlite/row.hpp>
 #include <boost/sqlite/statement.hpp>
 #include <boost/sqlite/value.hpp>
+#include <boost/sqlite/vtable.hpp>
 
 #endif //BOOST_SQLITE_HPP

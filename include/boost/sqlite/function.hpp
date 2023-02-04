@@ -11,7 +11,7 @@
 #include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
-#include <boost/sqlite/detail/result_catch.hpp>
+#include <boost/sqlite/detail/catch.hpp>
 #include <boost/sqlite/result.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/callable_traits/args.hpp>
@@ -561,11 +561,15 @@ void create_aggregate_function(
     connection & conn,
     const std::string & name,
     Func && func,
-    system::error_code & ec)
+    system::error_code & ec,
+    error_info & ei)
 {
     auto res = detail::create_aggregate_function(conn.native_handle(), name, std::forward<Func>(func));
     if (res != 0)
+    {
         BOOST_SQLITE_ASSIGN_EC(ec, res);
+        ei.set_message(sqlite3_errmsg(conn.native_handle()));
+    }
 }
 
 template<typename Func>
@@ -575,9 +579,10 @@ void create_aggregate_function(
     Func && func)
 {
     system::error_code ec;
-    create_aggregate_function(conn, name, std::forward<Func>(func), ec);
+    error_info ei;
+    create_aggregate_function(conn, name, std::forward<Func>(func), ec, ei);
     if (ec)
-        throw_exception(system::system_error(ec));
+        throw_exception(system::system_error(ec, ei.message()));
 }
 ///@}
 

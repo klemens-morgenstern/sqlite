@@ -9,6 +9,7 @@
 #include <boost/sqlite/blob.hpp>
 #include <boost/core/detail/string_view.hpp>
 
+
 namespace boost {
 namespace sqlite {
 
