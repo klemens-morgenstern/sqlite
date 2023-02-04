@@ -13,7 +13,7 @@ using namespace boost;
 
 struct collate_length
 {
-  int operator()(core::string_view l, const std::string r)
+  int operator()(core::string_view l, core::string_view r) noexcept
   {
     return std::stoull(r) - l.size();
   }

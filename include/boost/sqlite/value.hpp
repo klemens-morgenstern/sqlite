@@ -107,11 +107,15 @@ struct value
     using native_handle_type = sqlite3_value *;
     /// Get the native_handle.
     native_handle_type native_handle() const {return value_;}
+    native_handle_type & native_handle() {return value_;}
 
     /// Get a value that was passed through the pointer interface.
     /// A value can be set as a pointer by binding/returning a unique_ptr.
     template<typename T>
     T * get_pointer() {return static_cast<T*>(sqlite3_value_pointer(value_, typeid(T).name()));}
+
+
+    sqlite3_value ** operator&() {return &value_;}
   private:
     sqlite3_value * value_ = nullptr;
 };

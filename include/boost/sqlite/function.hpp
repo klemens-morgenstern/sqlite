@@ -11,6 +11,7 @@
 #include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/detail/result_catch.hpp>
 #include <boost/sqlite/result.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/callable_traits/args.hpp>
@@ -134,17 +135,7 @@ auto create_scalar_function_impl(sqlite3 * db,
         {
           set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
 
       }, nullptr, nullptr,
       +[](void * ptr) noexcept {delete static_cast<func_type*>(ptr);}
@@ -176,17 +167,7 @@ auto create_scalar_function_impl(sqlite3 * db,
         {
           f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
 
       }, nullptr, nullptr,
       +[](void * ptr){delete static_cast<func_type*>(ptr);}
@@ -217,17 +198,8 @@ auto create_scalar_function_impl(sqlite3 * db,
         {
           set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
+
 
       }, nullptr, nullptr,
       nullptr
@@ -256,17 +228,8 @@ auto create_scalar_function_impl(sqlite3 * db,
         {
           f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
+
 
       }, nullptr, nullptr,
       nullptr
@@ -285,9 +248,9 @@ auto create_scalar_function(sqlite3 * db,
                          ))
 {
   return create_scalar_function_impl(db, name, std::forward<Func>(func),
-                              static_cast<callable_traits::args_t<Func>*>(nullptr),
-                              callable_traits::has_void_return<Func>{},
-                              std::is_pointer<typename std::decay<Func>::type>{});
+                                     static_cast<callable_traits::args_t<Func>*>(nullptr),
+                                     callable_traits::has_void_return<Func>{},
+                                     std::is_pointer<typename std::decay<Func>::type>{});
 }
 
 
@@ -323,18 +286,7 @@ auto create_aggregate_function(sqlite3 * db,
           }
           f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
-
+        BOOST_SQLITE_CATCH_RESULT(ctx)
       },
       [](sqlite3_context* ctx)
       {
@@ -351,19 +303,7 @@ auto create_aggregate_function(sqlite3 * db,
           set_result(ctx, f->final(*c));
           c->~context_type();
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
-
-
+        BOOST_SQLITE_CATCH_RESULT(ctx)
       },
       [](void * ptr) noexcept { delete static_cast<func_type*>(ptr);}
   );
@@ -399,17 +339,7 @@ auto create_window_function(sqlite3 * db,
           }
           f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
       },
       [](sqlite3_context* ctx) // xFinal
       {
@@ -426,17 +356,7 @@ auto create_window_function(sqlite3 * db,
           set_result(ctx, f->value(*c));
           c->~context_type();
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
       },
       [](sqlite3_context* ctx) //xValue
       {
@@ -451,17 +371,7 @@ auto create_window_function(sqlite3 * db,
           }
           set_result(ctx, f->value(*c));
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
       },
       +[](sqlite3_context* ctx, int len, sqlite3_value** args) // xInverse
       {
@@ -477,17 +387,8 @@ auto create_window_function(sqlite3 * db,
           }
           f->inverse(*c, span_type{aa, static_cast<std::size_t>(len)});
         }
-        catch(system::system_error & se)
-        {
-          auto code = SQLITE_ERROR;
-          if (se.code().category() == sqlite_category())
-            code = se.code().value();
-          sqlite3_result_error(ctx, se.what(), code);
-        }
-        catch(std::exception & ex)
-        {
-          sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR);
-        }
+        BOOST_SQLITE_CATCH_RESULT(ctx)
+
       },
       [](void * ptr) /* xDestroy */ { delete static_cast<func_type*>(ptr);}
   );

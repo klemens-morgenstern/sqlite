@@ -23,8 +23,8 @@ void create_collation(
     Func && func,
     typename std::enable_if<
         std::is_convertible<
-          decltype(func(string_view(), string_view())),
-          int>::value,
+            decltype(func(string_view(), string_view())),
+            int>::value,
         system::error_code>::type & ec)
 {
     using func_type = typename std::decay<Func>::type;
@@ -37,7 +37,10 @@ void create_collation(
         {
           string_view l(static_cast<const char*>(str_l), len_l);
           string_view r(static_cast<const char*>(str_r), len_r);
-          return (*static_cast<func_type*>(data))(l, r);
+          auto & impl = (*static_cast<func_type*>(data));
+          static_assert(noexcept(impl(l, r)),
+                        "Collation function must be noexcept");
+          return impl(l, r);
         },
         +[](void * p) { delete static_cast<func_type*>(p); }
       );
@@ -59,7 +62,7 @@ void create_collation(
  @code{.cpp}
 
  // a case insensitive string omparison, e.g. from boost.urls
- int ci_compare(string_view s0, string_view s1);
+ int ci_compare(string_view s0, string_view s1) noexcept;
 
  extern sqlite::connection conn;
 

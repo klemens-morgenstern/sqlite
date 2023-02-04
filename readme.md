@@ -1,4 +1,4 @@
-# boost.sqlite
+# boost_sqlite
 
 This library provides a simple C++ wrapper around sqlite.
 
