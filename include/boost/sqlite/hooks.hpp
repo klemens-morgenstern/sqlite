@@ -269,7 +269,7 @@ bool update_hook(sqlite3 * db,
 template<typename Func>
 bool commit_hook(connection & conn, Func && func)
 {
-  return detail::commit_hook(conn.native_handle(), std::forward<Func>(func));
+  return detail::commit_hook(conn.handle(), std::forward<Func>(func));
 }
 
 /**
@@ -289,7 +289,7 @@ bool commit_hook(connection & conn, Func && func)
 template<typename Func>
 bool rollback_hook(connection & conn, Func && func)
 {
-  return detail::rollback_hook(conn.native_handle(), std::forward<Func>(func));
+  return detail::rollback_hook(conn.handle(), std::forward<Func>(func));
 }
 
 #if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
@@ -297,7 +297,7 @@ bool rollback_hook(connection & conn, Func && func)
 template<typename Func>
 bool preupdate_hook(connection & conn, Func && func)
 {
-  return detail::preupdate_hook(conn.native_handle(), std::forward<Func>(func));
+  return detail::preupdate_hook(conn.handle(), std::forward<Func>(func));
 }
 
 #endif
@@ -322,7 +322,7 @@ bool preupdate_hook(connection & conn, Func && func)
 template<typename Func>
 bool update_hook(connection & conn, Func && func)
 {
-  return detail::update_hook(conn.native_handle(), std::forward<Func>(func));
+  return detail::update_hook(conn.handle(), std::forward<Func>(func));
 }
 
 

@@ -60,7 +60,7 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, string_view str)
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, variant2::monostate) { sqlite3_result_null(ctx); }
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const value & val)
 {
-  sqlite3_result_value(ctx, val.native_handle());
+  sqlite3_result_value(ctx, val.handle());
 }
 
 struct set_variant_result

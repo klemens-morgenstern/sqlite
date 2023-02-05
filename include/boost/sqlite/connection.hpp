@@ -30,17 +30,17 @@ namespace sqlite {
  */
 struct connection
 {
-    /// The native handle of the connection
-    using native_handle_type = sqlite3*;
-    /// Get the native handle
-    native_handle_type native_handle() { return impl_.get(); }
+    /// The handle of the connection
+    using handle_type = sqlite3*;
+    /// Get the handle
+    handle_type handle() { return impl_.get(); }
     /// Release the owned handle.
-    native_handle_type release() &&    { return impl_.release(); }
+    handle_type release() &&    { return impl_.release(); }
 
     ///Default constructor
     connection() = default;
-    /// Construct the connection from a native handle. This will take ownership.
-    explicit connection(native_handle_type native_handle) : impl_(native_handle) {}
+    /// Construct the connection from a handle. This will take ownership.
+    explicit connection(handle_type handle) : impl_(handle) {}
     /// Move constructor.
     connection(connection && ) = default;
     /// Move assign operator.

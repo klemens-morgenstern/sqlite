@@ -24,13 +24,13 @@ auto table_column_meta_data(connection& conn,
     const char * data_type= "", *collation = "";
     int nn, pk, ai;
 
-    int res = sqlite3_table_column_metadata(conn.native_handle(), db_name, table_name, column_name,
+    int res = sqlite3_table_column_metadata(conn.handle(), db_name, table_name, column_name,
                                             &data_type, &collation, &nn, &pk, &ai);
 
     if (res != SQLITE_OK)
     {
       BOOST_SQLITE_ASSIGN_EC(ec, res)
-      ei.set_message(sqlite3_errmsg(conn.native_handle()));
+      ei.set_message(sqlite3_errmsg(conn.handle()));
     }
 
     return {data_type, collation, nn != 0, pk != 0, ai != 0};
@@ -45,13 +45,13 @@ auto table_column_meta_data(connection& conn,
   const char * data_type= "", *collation = "";
   int nn, pk, ai;
 
-  int res = sqlite3_table_column_metadata(conn.native_handle(), nullptr, table_name, column_name,
+  int res = sqlite3_table_column_metadata(conn.handle(), nullptr, table_name, column_name,
                                           &data_type, &collation, &nn, &pk, &ai);
 
   if (res != SQLITE_OK)
   {
     BOOST_SQLITE_ASSIGN_EC(ec, res)
-    ei.set_message(sqlite3_errmsg(conn.native_handle()));
+    ei.set_message(sqlite3_errmsg(conn.handle()));
   }
 
   return {data_type, collation, nn != 0, pk != 0, ai != 0};

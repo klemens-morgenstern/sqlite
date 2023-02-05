@@ -206,7 +206,7 @@ struct vtab_in
         {
             if (value == nullptr)
                 return ;
-            auto res = sqlite3_vtab_in_first(value, &out_.native_handle());
+            auto res = sqlite3_vtab_in_first(value, &out_.handle());
             if (res != SQLITE_OK)
             {
               system::error_code ec;
@@ -217,7 +217,7 @@ struct vtab_in
 
       iterator & operator++()
         {
-          auto res = sqlite3_vtab_in_next(value_, &out_.native_handle());
+          auto res = sqlite3_vtab_in_next(value_, &out_.handle());
           if (res != SQLITE_OK)
           {
             system::error_code ec;
@@ -247,13 +247,13 @@ struct vtab_in
         bool operator==(const iterator& other) const
         {
             return value_ == other.value_
-                && out_.native_handle() == other.out_.native_handle();
+                && out_.handle() == other.out_.handle();
         }
 
         bool operator!=(const iterator& other) const
         {
             return value_ != other.value_
-                || out_.native_handle()   != other.out_.native_handle();
+                || out_.handle()   != other.out_.handle();
         }
 
 
@@ -937,13 +937,13 @@ auto create_module(connection & conn,
     auto  pp = p.get();
 
     int res = sqlite3_create_module_v2(
-                             conn.native_handle(), name, &mod, p.release(),
+                             conn.handle(), name, &mod, p.release(),
                              +[](void * ptr){delete static_cast<module_type*>(ptr);});
 
     if (res != SQLITE_OK)
     {
        BOOST_SQLITE_ASSIGN_EC(ec, res);
-       ei.set_message(sqlite3_errmsg(conn.native_handle()));
+       ei.set_message(sqlite3_errmsg(conn.handle()));
     }
     return *pp;
 }

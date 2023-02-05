@@ -101,14 +101,14 @@ struct value
         const auto sz = sqlite3_value_bytes(value_);
         return blob_view(ptr, sz);
     }
-    /// Construct value from a native_handle.
+    /// Construct value from a handle.
     explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
 
-    /// The native handle of the value.
-    using native_handle_type = sqlite3_value *;
-    /// Get the native_handle.
-    native_handle_type native_handle() const {return value_;}
-    native_handle_type & native_handle() {return value_;}
+    /// The handle of the value.
+    using handle_type = sqlite3_value *;
+    /// Get the handle.
+    handle_type handle() const {return value_;}
+    handle_type & handle() {return value_;}
 
     /// Get a value that was passed through the pointer interface.
     /// A value can be set as a pointer by binding/returning a unique_ptr.

@@ -29,7 +29,7 @@ void create_collation(
 {
     using func_type = typename std::decay<Func>::type;
     auto res = sqlite3_create_collation_v2(
-        conn.native_handle(),
+        conn.handle(),
         name.c_str(),
         SQLITE_UTF8,
         static_cast<void*>(new func_type(std::forward<Func>(func))),

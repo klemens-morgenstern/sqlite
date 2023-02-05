@@ -447,7 +447,7 @@ auto create_scalar_function(
               ), int>::value>::type
 #endif
 {
-    auto res = detail::create_scalar_function(conn.native_handle(), name, std::forward<Func>(func));
+    auto res = detail::create_scalar_function(conn.handle(), name, std::forward<Func>(func));
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
 }
@@ -564,11 +564,11 @@ void create_aggregate_function(
     system::error_code & ec,
     error_info & ei)
 {
-    auto res = detail::create_aggregate_function(conn.native_handle(), name, std::forward<Func>(func));
+    auto res = detail::create_aggregate_function(conn.handle(), name, std::forward<Func>(func));
     if (res != 0)
     {
         BOOST_SQLITE_ASSIGN_EC(ec, res);
-        ei.set_message(sqlite3_errmsg(conn.native_handle()));
+        ei.set_message(sqlite3_errmsg(conn.handle()));
     }
 }
 
@@ -647,7 +647,7 @@ void create_window_function(
     Func && func,
     system::error_code & ec)
 {
-    auto res = detail::create_window_function(conn.native_handle(), name, std::forward<Func>(func));
+    auto res = detail::create_window_function(conn.handle(), name, std::forward<Func>(func));
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
 }
