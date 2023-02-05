@@ -45,4 +45,8 @@ BOOST_SQLITE_DECL void tag_invoke( const json::value_from_tag &, json::value& va
 
 BOOST_SQLITE_END_NAMESPACE
 
+#if defined(BOOST_SQLITE_HEADER_ONLY)
+#include <boost/sqlite/impl/json.ipp>
+#endif
+
 #endif //BOOST_SQLITE_JSON_HPP

@@ -11,10 +11,7 @@
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 blob_handle open_blob(connection & conn,
                       const char *db,
@@ -35,7 +32,7 @@ blob_handle open_blob(connection & conn,
       ei.set_message(sqlite3_errmsg(conn.handle()));
   }
   else
-      bh.blob_.reset(bb);
+      bh = blob_handle(bb);
 
   return bh;
 }
@@ -55,7 +52,6 @@ blob_handle open_blob(connection & conn,
   return b;
 }
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_BLOB_IPP

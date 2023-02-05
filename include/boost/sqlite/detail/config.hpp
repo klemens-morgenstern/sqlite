@@ -49,13 +49,13 @@ BOOST_SQLITE_END_NAMESPACE
 #define BOOST_SQLITE_RETURN_EC(ev)                                              \
 {                                                                               \
   static constexpr auto loc##__LINE__((BOOST_CURRENT_LOCATION));                \
-  return ::boost::system::error_code(static_cast<error>(ev), &loc##__LINE__);   \
+  return ::boost::system::error_code(ev, boost::sqlite::sqlite_category(), &loc##__LINE__);   \
 }
 
 #define BOOST_SQLITE_ASSIGN_EC(ec, ev)                              \
 {                                                                   \
   static constexpr auto loc##__LINE__((BOOST_CURRENT_LOCATION));    \
-  ec.assign(static_cast<boost::sqlite::error>(ev), &loc##__LINE__); \
+  ec.assign(ev, boost::sqlite::sqlite_category(), &loc##__LINE__); \
 }
 
 #endif // BOOST_SQLITE_DETAIL_HPP

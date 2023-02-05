@@ -9,7 +9,7 @@
 #include <boost/sqlite/row.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
-
+struct connection ;
 /**
   @brief Representation of a result from a database.
   @ingroup reference
@@ -152,5 +152,9 @@ struct resultset
 };
 
 BOOST_SQLITE_END_NAMESPACE
+
+#if defined(BOOST_SQLITE_HEADER_ONLY)
+#include <boost/sqlite/impl/resultset.ipp>
+#endif
 
 #endif //BOOST_SQLITE_RESULTSET_HPP

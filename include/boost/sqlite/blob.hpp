@@ -13,6 +13,8 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
+struct connection ;
+
 /// @brief a view to a binary large object  @ingroup reference
 struct blob_view
 {
@@ -72,6 +74,9 @@ struct blob_handle
 {
     /// Default constructor
     blob_handle() = default;
+
+    /// Construct from a handle. Takes owner ship
+    explicit blob_handle(sqlite3_blob * blob) : blob_(blob) {}
 
     ///@{
     /// Reopen on another row
@@ -139,35 +144,25 @@ struct blob_handle
         }
     };
     std::unique_ptr<sqlite3_blob, deleter_> blob_;
-
-    friend blob_handle open_blob(struct connection & conn,
-                                 const char *db,
-                                 const char * table,
-                                 const char * column,
-                                 sqlite3_int64 row,
-                                 bool read_only,
-                                 error_code & ec,
-                                 error_info & ei);
-
 };
 
 ///@{
 /// Open a blob for incremental access
 BOOST_SQLITE_DECL
-blob_handle open_blob(struct connection & conn,
+blob_handle open_blob(connection & conn,
                       const char *db,
-                      const char * table,
-                      const char * column,
+                      const char *table,
+                      const char *column,
                       sqlite3_int64 row,
                       bool read_only,
-                      error_code & ec,
-                      error_info & ei);
+                      error_code &ec,
+                      error_info &ei);
 
 BOOST_SQLITE_DECL
 blob_handle open_blob(connection & conn,
                       const char *db,
                       const char * table,
-                      const char * column,
+                      const char *column,
                       sqlite3_int64 row,
                       bool read_only = false);
 ///}@
@@ -176,5 +171,8 @@ blob_handle open_blob(connection & conn,
 
 BOOST_SQLITE_END_NAMESPACE
 
+#if defined(BOOST_SQLITE_HEADER_ONLY)
+#include <boost/sqlite/impl/blob.ipp>
+#endif
 
 #endif //BOOST_SQLITE_BLOB_HPP

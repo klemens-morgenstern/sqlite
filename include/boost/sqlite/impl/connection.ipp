@@ -34,6 +34,7 @@ void connection::connect(const char * filename, int flags, system::error_code & 
       impl_.reset(res);
       impl_.get_deleter().owned_ = true;
     }
+    sqlite3_extended_result_codes(impl_.get(), true);
 }
 
 void connection::close()
