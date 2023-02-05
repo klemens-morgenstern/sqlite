@@ -26,4 +26,8 @@
 #include <boost/sqlite/value.hpp>
 #include <boost/sqlite/vtable.hpp>
 
+#if defined(BOOST_SQLITE_COMPILE_EXTENSION)
+#include <boost/sqlite/extension.hpp>
+#endif
+
 #endif //BOOST_SQLITE_HPP

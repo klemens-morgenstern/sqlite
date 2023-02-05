@@ -11,11 +11,12 @@
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
-#include <sqlite3.h>
 
 
-namespace boost {
-namespace sqlite {
+namespace boost
+{
+namespace sqlite
+{
 
 /// The type of error code used by the library \ingroup reference
 using error_code = boost::system::error_code;
@@ -105,7 +106,7 @@ class error_info
 };
 
 
-} // requests
+} // sqlite
 
 namespace system {
 

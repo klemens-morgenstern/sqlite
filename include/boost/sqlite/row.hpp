@@ -7,8 +7,7 @@
 
 #include <boost/sqlite/field.hpp>
 
-namespace boost {
-namespace sqlite {
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 /** @brief Representation of a row in a database.
  @ingroup reference
@@ -171,7 +170,6 @@ struct row
 
 };
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_ROW_HPP

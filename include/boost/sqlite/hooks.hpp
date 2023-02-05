@@ -11,12 +11,9 @@
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/function.hpp>
 #include <boost/system/result.hpp>
-#include <sqlite3.h>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 #if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
 
@@ -325,8 +322,6 @@ bool update_hook(connection & conn, Func && func)
   return detail::update_hook(conn.handle(), std::forward<Func>(func));
 }
 
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_HOOKS_HPP

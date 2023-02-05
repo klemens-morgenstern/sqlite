@@ -10,10 +10,8 @@
 
 #include <boost/sqlite/connection.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 
 void connection::connect(const char * filename, int flags)
@@ -151,8 +149,7 @@ void connection::execute(const char * q)
       throw_exception(system::system_error(ec, ei.message()));
 }
 
+BOOST_SQLITE_END_NAMESPACE
 
-}
-}
 
 #endif //BOOST_SQLITE_IMPL_CONNECTION_IPP

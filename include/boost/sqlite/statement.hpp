@@ -9,8 +9,7 @@
 #include <boost/mp11/algorithm.hpp>
 #include <boost/core/ignore_unused.hpp>
 
-namespace boost {
-namespace sqlite {
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 namespace detail {
@@ -306,7 +305,6 @@ struct statement
     std::unique_ptr<sqlite3_stmt, deleter_> impl_;
 };
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_STATEMENT_HPP

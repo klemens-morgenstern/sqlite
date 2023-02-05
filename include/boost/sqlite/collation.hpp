@@ -10,11 +10,7 @@
 
 #include <boost/sqlite/connection.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
-
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 template<typename Func>
 void create_collation(
@@ -97,8 +93,6 @@ auto create_collation(
         throw_exception(system::system_error(ec));
 }
 
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_COLLATION_HPP

@@ -8,17 +8,14 @@
 #ifndef BOOST_SQLITE_JSON_HPP
 #define BOOST_SQLITE_JSON_HPP
 
-#include <sqlite3.h>
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/field.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/json/fwd.hpp>
 #include <boost/json/storage_ptr.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 struct resultset;
 struct field;
@@ -46,8 +43,6 @@ BOOST_SQLITE_DECL void tag_invoke( const json::value_from_tag &, json::value& va
 BOOST_SQLITE_DECL void tag_invoke( const json::value_from_tag &, json::value& val, const field & f);
 BOOST_SQLITE_DECL void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs);
 
-}
-}
-
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_JSON_HPP

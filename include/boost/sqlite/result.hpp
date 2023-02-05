@@ -14,13 +14,9 @@
 
 #include <boost/variant2/variant.hpp>
 
-#include <sqlite3.h>
 
+BOOST_SQLITE_BEGIN_NAMESPACE
 
-namespace boost
-{
-namespace sqlite
-{
 
 struct set_result_tag {};
 
@@ -113,8 +109,6 @@ inline auto set_result(sqlite3_context * ctx, Value && value)
 }
 
 
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_RESULT_HPP

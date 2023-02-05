@@ -11,10 +11,7 @@
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/error.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 struct connection ;
 
@@ -68,8 +65,8 @@ backup(connection & source,
        const std::string & source_name = "main",
        const std::string & target_name = "main");
 
-}
-}
 ///@}
+
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_BACKUP_HPP

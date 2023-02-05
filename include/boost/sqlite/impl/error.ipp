@@ -12,9 +12,10 @@
 #include <boost/core/detail/string_view.hpp>
 #include <algorithm>
 
-namespace boost {
-namespace sqlite {
-
+namespace boost
+{
+namespace sqlite
+{
 
 struct sqlite_category_t final : system::error_category
 {

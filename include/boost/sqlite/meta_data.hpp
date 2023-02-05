@@ -10,10 +10,8 @@
 
 #include <boost/sqlite/connection.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 struct connection ;
 
@@ -52,8 +50,6 @@ column_meta_data table_column_meta_data(connection  & conn,
 ///@}
 
 ///
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_META_DATA_HPP

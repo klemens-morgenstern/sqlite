@@ -10,8 +10,7 @@
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/value.hpp>
 
-namespace boost {
-namespace sqlite {
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 /** @brief A holder for a sqlite field, i.e. something returned from a query.
     @ingroup reference
@@ -103,7 +102,6 @@ struct field
     int col_ = -1;
 };
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_FIELD_HPP

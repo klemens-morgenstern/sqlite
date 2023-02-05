@@ -10,10 +10,8 @@
 
 #include <boost/sqlite/meta_data.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 
 
@@ -82,8 +80,6 @@ auto table_column_meta_data(connection& conn,
     return res;
 }
 
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_META_DATA_IPP

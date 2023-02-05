@@ -71,15 +71,23 @@ find_package(SQLite3 REQUIRED)
 
 add_library(boost_sqlite src/src.cpp)
 target_include_directories(boost_sqlite PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(boost_sqlite PUBLIC
-        Boost::system Boost::json SQLite::SQLite3)
+target_link_libraries(boost_sqlite PUBLIC Boost::system Boost::json SQLite::SQLite3)
 target_compile_definitions(boost_sqlite PUBLIC BOOST_SQLITE_SEPARATE_COMPILATION=1 BOOST_FILESYSTEM_NO_DEPRECATED=1)
 add_library(Boost::sqlite ALIAS boost_sqlite)
 
+add_library(boost_sqlite_ext src/src_ext.cpp)
+target_include_directories(boost_sqlite_ext PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(boost_sqlite_ext PUBLIC Boost::system Boost::json SQLite::SQLite3)
+target_compile_definitions(boost_sqlite_ext PUBLIC BOOST_SQLITE_SEPARATE_COMPILATION=1 BOOST_FILESYSTEM_NO_DEPRECATED=1 BOOST_SQLITE_COMPILE_EXTENSION=1)
+set_property(TARGET boost_sqlite_ext PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(Boost::sqlite_ext ALIAS boost_sqlite_ext)
+
 if(BUILD_SHARED_LIBS)
-    target_compile_definitions(boost_sqlite PUBLIC BOOST_SQLITE_DYN_LINK=1)
+    target_compile_definitions(boost_sqlite     PUBLIC BOOST_SQLITE_DYN_LINK=1)
+    target_compile_definitions(boost_sqlite_ext PUBLIC BOOST_SQLITE_DYN_LINK=1)
 else()
-    target_compile_definitions(boost_sqlite PUBLIC BOOST_SQLITE_STATIC_LINK=1)
+    target_compile_definitions(boost_sqlite     PUBLIC BOOST_SQLITE_STATIC_LINK=1)
+    target_compile_definitions(boost_sqlite_ext PUBLIC BOOST_SQLITE_STATIC_LINK=1)
 endif()
 
 if(BOOST_SQLITE_INSTALL AND NOT BOOST_SUPERPROJECT_VERSION)
@@ -91,6 +99,7 @@ if(BOOST_SQLITE_INSTALL AND NOT BOOST_SUPERPROJECT_VERSION)
 endif()
 
 if(BOOST_SQLITE_BUILD_TESTS)
+    enable_testing()
     add_subdirectory(test)
 endif()
 

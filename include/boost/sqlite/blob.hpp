@@ -5,13 +5,12 @@
 #ifndef BOOST_SQLITE_BLOB_HPP
 #define BOOST_SQLITE_BLOB_HPP
 
+#include <boost/sqlite/detail/config.hpp>
 #include <type_traits>
 #include <memory>
 #include <cstring>
 
-namespace boost {
-namespace sqlite {
-
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 /// @brief a view to a binary large object  @ingroup reference
 struct blob_view
@@ -65,7 +64,7 @@ struct blob
 
 blob_view::blob_view(const blob & b) : data_(b.data()), size_(b.size()) {}
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
+
 
 #endif //BOOST_SQLITE_BLOB_HPP

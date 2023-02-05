@@ -8,6 +8,7 @@
 #ifndef BOOST_SQLITE_IMPL_JSON_IPP
 #define BOOST_SQLITE_IMPL_JSON_IPP
 
+#include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/json.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/serializer.hpp>
@@ -15,10 +16,8 @@
 #include <boost/json/value_from.hpp>
 
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 void tag_invoke(const struct set_result_tag &, sqlite3_context * ctx, const json::value & value)
 {
@@ -36,7 +35,7 @@ void tag_invoke(const struct set_result_tag &, sqlite3_context * ctx, const json
     len *= 2;
   }
 
-  sqlite3_result_text(ctx, c, v.size(), &sqlite3_free);
+  sqlite3_result_text(ctx, c, v.size(), sqlite3_free);
   sqlite3_result_subtype(ctx, json_subtype);
 }
 
@@ -118,7 +117,6 @@ void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs
   }
 }
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_JSON_IPP

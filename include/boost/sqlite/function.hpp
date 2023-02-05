@@ -18,10 +18,7 @@
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/callable_traits/return_type.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 /** @brief A context that can be passed into scalar functions.
@@ -666,8 +663,6 @@ void create_window_function(
 
 ///@}
 
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_FUNCTION_HPP

@@ -11,10 +11,8 @@
 #include <boost/sqlite/backup.hpp>
 #include <boost/sqlite/connection.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 void
 backup(connection & source,
@@ -61,7 +59,6 @@ backup(connection & source,
     throw_exception(system::system_error(ec, ei.message()));
 }
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_BACKUP_IPP

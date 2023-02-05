@@ -9,13 +9,11 @@
 #include <boost/sqlite/error.hpp>
 #include <boost/sqlite/resultset.hpp>
 #include <boost/sqlite/statement.hpp>
-#include <sqlite3.h>
 #include <memory>
 #include <boost/system/system_error.hpp>
 #include <boost/throw_exception.hpp>
 
-namespace boost {
-namespace sqlite {
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 /** @brief main object for a connection to a database.
   @ingroup reference
@@ -121,7 +119,6 @@ struct connection
     std::unique_ptr<sqlite3, deleter_> impl_{nullptr, deleter_{}};
 };
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_CONNECTION_HPP

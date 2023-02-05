@@ -6,11 +6,9 @@
 #define BOOST_SQLITE_RESULTSET_HPP
 
 #include <memory>
-#include <sqlite3.h>
 #include <boost/sqlite/row.hpp>
 
-namespace boost {
-namespace sqlite {
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 /**
   @brief Representation of a result from a database.
@@ -153,7 +151,6 @@ struct resultset
     bool done_ = false;
 };
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_RESULTSET_HPP

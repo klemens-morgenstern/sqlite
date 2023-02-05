@@ -8,10 +8,8 @@
 #ifndef BOOST_SQLITE_IMPL_RESULTSET_IPP
 #define BOOST_SQLITE_IMPL_RESULTSET_IPP
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 bool resultset::read_one(row& r,
               error_code & ec,
@@ -45,8 +43,6 @@ bool resultset::read_one(row & r)
     return tmp;
 }
 
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_RESULTSET_IPP

@@ -11,15 +11,28 @@
 #include <boost/config.hpp>
 #include <boost/core/detail/string_view.hpp>
 
-namespace boost
-{
-namespace sqlite
-{
+#if defined(BOOST_SQLITE_COMPILE_EXTENSION)
+#include <sqlite3ext.h>
+#define BOOST_SQLITE_COMPILING_EXTENSION 1
+#define BOOST_SQLITE_BEGIN_NAMESPACE namespace boost { namespace sqlite {  inline namespace ext {
+#define BOOST_SQLITE_END_NAMESPACE } } }
+#else
+#include <sqlite3.h>
+#define BOOST_SQLITE_BEGIN_NAMESPACE namespace boost { namespace sqlite {
+#define BOOST_SQLITE_END_NAMESPACE } }
+#endif
+
+BOOST_SQLITE_BEGIN_NAMESPACE
+
+
+#if defined(BOOST_SQLITE_COMPILE_EXTENSION)
+extern const sqlite3_api_routines *sqlite3_api;
+#endif
 
 using string_view = boost::core::string_view;
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
+
 
 #ifndef BOOST_SQLITE_HEADER_ONLY
 # ifndef BOOST_SQLITE_SEPARATE_COMPILATION

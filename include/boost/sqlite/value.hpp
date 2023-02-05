@@ -5,13 +5,12 @@
 #ifndef BOOST_SQLITE_VALUE_HPP
 #define BOOST_SQLITE_VALUE_HPP
 
-#include <sqlite3.h>
+#include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/core/detail/string_view.hpp>
 
 
-namespace boost {
-namespace sqlite {
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 /** @brief The type of a value
   @ingroup reference
@@ -133,7 +132,6 @@ struct value
 
 static_assert(sizeof(value) == sizeof(sqlite3_value*));
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_VALUE_HPP

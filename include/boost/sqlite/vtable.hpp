@@ -9,12 +9,9 @@
 #define BOOST_SQLITE_VTABLE_HPP
 
 #include <boost/intrusive_ptr.hpp>
-#include <sqlite3.h>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
+
 
 /// Helper type to set a function through the xFindFunction callback
 struct vtab_function_setter
@@ -1070,7 +1067,6 @@ struct vtab_module_prototype
 };
 #endif
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_VTABLE_HPP

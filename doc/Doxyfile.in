@@ -2284,7 +2284,9 @@ INCLUDE_FILE_PATTERNS  =
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
 PREDEFINED             = BOOST_SQLITE_DECL=0 \
-                         BOOST_SQLITE_GENERATING_DOCS
+                         BOOST_SQLITE_GENERATING_DOCS \
+                         BOOST_SQLITE_BEGIN_NAMESPACE="namespace boost { namespace sqlite {"
+                         BOOST_SQLITE_END_NAMESPACE="} }""
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

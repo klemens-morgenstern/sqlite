@@ -5,9 +5,8 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <sqlite3.h>
-#include "test.hpp"
 #include <boost/sqlite/connection.hpp>
+#include "test.hpp"
 
 using namespace boost;
 
