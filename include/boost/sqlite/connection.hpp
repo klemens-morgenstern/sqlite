@@ -39,8 +39,8 @@ struct connection
 
     ///Default constructor
     connection() = default;
-    /// Construct the connection from a handle. This will take ownership.
-    explicit connection(handle_type handle) : impl_(handle) {}
+    /// Construct the connection from a handle.
+    explicit connection(handle_type handle, bool take_ownership = true) : impl_(handle, take_ownership) {}
     /// Move constructor.
     connection(connection && ) = default;
     /// Move assign operator.
@@ -124,13 +124,16 @@ struct connection
  private:
     struct deleter_
     {
+        deleter_(bool owned = true) : owned_(owned) {}
+        bool owned_ = true;
         void operator()(sqlite3  *impl)
         {
-            sqlite3_close_v2(impl);
+            if (owned_)
+              sqlite3_close_v2(impl);
         }
     };
 
-    std::unique_ptr<sqlite3, deleter_> impl_;
+    std::unique_ptr<sqlite3, deleter_> impl_{nullptr, deleter_{}};
 };
 
 }

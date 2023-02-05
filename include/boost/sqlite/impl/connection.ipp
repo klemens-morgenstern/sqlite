@@ -32,7 +32,10 @@ void connection::connect(const char * filename, int flags, system::error_code & 
     if (r != SQLITE_OK)
         BOOST_SQLITE_ASSIGN_EC(ec, r)
     else
-        impl_.reset(res);
+    {
+      impl_.reset(res);
+      impl_.get_deleter().owned_ = true;
+    }
 }
 
 void connection::close()
