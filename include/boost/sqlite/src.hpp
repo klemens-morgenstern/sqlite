@@ -18,6 +18,7 @@
 #include <boost/sqlite/impl/backup.ipp>
 #include <boost/sqlite/impl/connection.ipp>
 #include <boost/sqlite/impl/error.ipp>
+#include <boost/sqlite/impl/meta_data.ipp>
 #include <boost/sqlite/impl/resultset.ipp>
 #include <boost/sqlite/impl/json.ipp>
 

@@ -32,3 +32,19 @@ TEST_CASE("connection")
   CHECK(v.get_pointer<double>() == nullptr);
 
 }
+
+
+TEST_CASE("decltype")
+{
+  sqlite::connection conn;
+  conn.connect(":memory:");
+  conn.execute(
+#include "test-db.sql"
+  );
+  auto q = conn.prepare("select* from author;");
+
+  CHECK(q.declared_type(0) == "INTEGER");
+  CHECK(q.declared_type(1) == "TEXT");
+  CHECK(q.declared_type(2) == "TEXT");
+
+}

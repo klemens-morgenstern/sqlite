@@ -17,6 +17,7 @@
 #include <boost/sqlite/error.hpp>
 #include <boost/sqlite/field.hpp>
 #include <boost/sqlite/function.hpp>
+#include <boost/sqlite/meta_data.hpp>
 #include <boost/sqlite/hooks.hpp>
 #include <boost/sqlite/json.hpp>
 #include <boost/sqlite/resultset.hpp>

@@ -230,6 +230,12 @@ struct statement
         return sqlite3_sql(impl_.get());
     }
 
+    /// Get the declared type of the column
+    core::string_view declared_type(int id) const
+    {
+        return sqlite3_column_decltype(impl_.get(), id);
+    }
+
   private:
 
     template<typename T>

@@ -1,8 +1,8 @@
 --query_helper(R"(
 
 create table author (
-    id integer primary key autoincrement,
-    first_name text,
+    id integer primary key autoincrement not null,
+    first_name text unique not null,
     last_name text
 );
 
