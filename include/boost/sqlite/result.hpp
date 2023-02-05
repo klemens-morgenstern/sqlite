@@ -27,6 +27,12 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, blob b)
   sqlite3_result_blob(ctx, std::move(b).release(), sz, &operator delete);
 }
 
+
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, zero_blob zb)
+{
+  sqlite3_result_zeroblob64(ctx, static_cast<sqlite3_uint64>(zb));
+}
+
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
 
 template<typename I,

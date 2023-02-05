@@ -58,6 +58,11 @@ struct binder
         return sqlite3_bind_double(stm_, col, value);
     }
 
+    int operator()(zero_blob zb)
+    {
+      return sqlite3_bind_zeroblob64(stm_, col, static_cast<sqlite3_uint64>(zb));
+    }
+
     template<typename T>
     int operator()(std::unique_ptr<T> ptr)
     {
@@ -228,6 +233,19 @@ struct statement
     {
         return sqlite3_sql(impl_.get());
     }
+
+    /// Get the expanded sql used to construct the prepared statement.
+    core::string_view expanded_sql()
+    {
+      return sqlite3_expanded_sql(impl_.get());
+    }
+    /// Get the expanded sql used to construct the prepared statement.
+#ifdef SQLITE_ENABLE_NORMALIZE
+    core::string_view normalized_sql()
+    {
+      return sqlite3_normalized_sql(impl_.get());
+    }
+#endif
 
     /// Get the declared type of the column
     core::string_view declared_type(int id) const

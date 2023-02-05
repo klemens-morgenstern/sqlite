@@ -16,6 +16,7 @@
 #endif
 
 #include <boost/sqlite/impl/backup.ipp>
+#include <boost/sqlite/impl/blob.ipp>
 #include <boost/sqlite/impl/connection.ipp>
 #include <boost/sqlite/impl/error.ipp>
 #include <boost/sqlite/impl/meta_data.ipp>

@@ -6,6 +6,7 @@
 #define BOOST_SQLITE_BLOB_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/error.hpp>
 #include <type_traits>
 #include <memory>
 #include <cstring>
@@ -36,6 +37,9 @@ struct blob_view
     std::size_t size_{0u};
 };
 
+/// Helper type to pass a blob full of zeroes without allocating extra memory.
+enum class zero_blob : sqlite3_uint64 {};
+
 /// @brief an object that holds a binary large object  @ingroup reference
 struct blob
 {
@@ -61,8 +65,114 @@ struct blob
     std::size_t size_{0u};
 };
 
-
 blob_view::blob_view(const blob & b) : data_(b.data()), size_(b.size()) {}
+
+/// @brief an object that holds a binary large object  @ingroup reference
+struct blob_handle
+{
+    /// Default constructor
+    blob_handle() = default;
+
+    ///@{
+    /// Reopen on another row
+    void reopon(sqlite3_int64 row_id, error_code & ec)
+    {
+        int res = sqlite3_blob_reopen(blob_.get(), row_id);
+        BOOST_SQLITE_ASSIGN_EC(ec, res);
+    }
+    void reopon(sqlite3_int64 row_id)
+    {
+        boost::system::error_code ec;
+        reopon(row_id, ec);
+        if (ec)
+            boost::throw_exception(system_error(ec));
+    }
+    ///@}
+
+    ///@{
+    /// Read data from the blob
+    void read_at(void *data, int len, int offset, error_code &ec)
+    {
+        int res = sqlite3_blob_read(blob_.get(), data, len, offset);
+        BOOST_SQLITE_ASSIGN_EC(ec, res);
+    }
+    void read_at(void *data, int len, int offset)
+    {
+        boost::system::error_code ec;
+        read_at(data, len, offset, ec);
+        if (ec)
+            boost::throw_exception(system_error(ec));
+    }
+    ///@}
+
+    ///@{
+    /// Write data to the blob
+    void write_at(const void *data, int len, int offset, error_code &ec)
+    {
+        int res = sqlite3_blob_write(blob_.get(), data, len, offset);
+        BOOST_SQLITE_ASSIGN_EC(ec, res);
+    }
+    void write_at(const void *data, int len, int offset)
+    {
+        boost::system::error_code ec;
+        write_at(data, len, offset, ec);
+        if (ec)
+            boost::throw_exception(system_error(ec));
+    }
+    ///@}
+
+    /// The size of the blob
+    std::size_t size() const {return static_cast<std::size_t>(sqlite3_blob_bytes(blob_.get()));}
+
+    /// The handle of the blob
+    using handle_type = sqlite3_blob*;
+    /// Get the handle of the blob
+    handle_type handle() { return blob_.get(); }
+    /// Release the owned handle.
+    handle_type release() &&    { return blob_.release(); }
+ private:
+    struct deleter_
+    {
+        void operator()(sqlite3_blob *impl)
+        {
+          sqlite3_blob_close(impl);
+        }
+    };
+    std::unique_ptr<sqlite3_blob, deleter_> blob_;
+
+    friend blob_handle open_blob(struct connection & conn,
+                                 const char *db,
+                                 const char * table,
+                                 const char * column,
+                                 sqlite3_int64 row,
+                                 bool read_only,
+                                 error_code & ec,
+                                 error_info & ei);
+
+};
+
+///@{
+/// Open a blob for incremental access
+BOOST_SQLITE_DECL
+blob_handle open_blob(struct connection & conn,
+                      const char *db,
+                      const char * table,
+                      const char * column,
+                      sqlite3_int64 row,
+                      bool read_only,
+                      error_code & ec,
+                      error_info & ei);
+
+BOOST_SQLITE_DECL
+blob_handle open_blob(connection & conn,
+                      const char *db,
+                      const char * table,
+                      const char * column,
+                      sqlite3_int64 row,
+                      bool read_only = false);
+///}@
+
+
 
 BOOST_SQLITE_END_NAMESPACE
 
