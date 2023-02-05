@@ -16,7 +16,5 @@ TEST_CASE("connection")
 #include "test-db.sql"
   );
 
-  CHECK(conn.changes() > 0u);
-  CHECK(conn.total_changes() > 0u);
   conn.close();
 }

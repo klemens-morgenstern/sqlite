@@ -17,9 +17,6 @@ TEST_CASE("meta-data")
 #include "test-db.sql"
   );
 
-  CHECK(conn.changes() > 0u);
-  CHECK(conn.total_changes() > 0u);
-
 
   auto fn = table_column_meta_data(conn,  "author", "first_name");
   CHECK( fn.data_type == "TEXT");

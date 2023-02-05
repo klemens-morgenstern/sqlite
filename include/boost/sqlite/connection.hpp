@@ -106,21 +106,6 @@ struct connection
     BOOST_SQLITE_DECL statement prepare(core::string_view q);
     ///@}
 
-    /// The changes applied to the database.
-    std::size_t changes() const
-    {
-        return sqlite3_changes(impl_.get());
-    }
-    /// The total changes applied to the database.
-    std::size_t total_changes() const
-    {
-        return sqlite3_total_changes(impl_.get());
-    }
-    /// Get the filename associated with the database.
-    core::string_view filename(const std::string & db_name = "main")
-    {
-       return sqlite3_db_filename(impl_.get(), db_name.c_str());
-    }
  private:
     struct deleter_
     {

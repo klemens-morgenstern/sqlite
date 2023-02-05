@@ -647,7 +647,8 @@ struct vtable_helper
     {
         try
         {
-            set_result(ctx, get_module<cursor_type>(pCursor).column(idx));
+            bool no_change = sqlite3_vtab_nochange(ctx) != 0;
+            set_result(ctx, get_module<cursor_type>(pCursor).column(idx, no_change));
         }
         BOOST_SQLITE_CATCH_RESULT(ctx);
         return SQLITE_OK;
@@ -1019,7 +1020,8 @@ struct vtab_module_prototype
       void eof();
 
       /// @brief Get the result of a value. It will use the set_result functionality to create a an sqlite function.
-      T column(int idx):
+      /// see [vtab_no_change](https://www.sqlite.org/c3ref/vtab_nochange.html)
+      T column(int idx, bool no_change):
 
       /// @brief Get the id of the current row
       sqlite3_int64 row_id();
