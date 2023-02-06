@@ -11,83 +11,134 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-
-namespace detail {
-
-struct binder
+struct param_ref
 {
-    sqlite3_stmt * stm_;
-    int col;
-
-    int operator()(variant2::monostate)
-    {
-      return sqlite3_bind_null(stm_, col);
-    }
-    int operator()(std::nullptr_t)
-    {
-        return sqlite3_bind_null(stm_, col);
-    }
+    param_ref() = default;
+    param_ref(variant2::monostate) : impl_{variant2::in_place_type<variant2::monostate>} {}
+    param_ref(std::nullptr_t)      : impl_{variant2::in_place_type<variant2::monostate>} {}
     template<typename I,
-            typename = std::enable_if_t<std::is_integral<I>::value>>
-    int operator()(I value)
+        typename = std::enable_if_t<std::is_integral<I>::value>>
+    param_ref(I value)
     {
         BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)
-            || (sizeof(I) > sizeof(int)))
-            return sqlite3_bind_int64(stm_, col, static_cast<sqlite3_int64>(value));
-        else
-            return sqlite3_bind_int(stm_, col, static_cast<int>(value));
-    }
-    int operator()(blob_view blob)
-    {
-        if (blob.size() > std::numeric_limits<int>::max())
-            return sqlite3_bind_blob(stm_, col, blob.data(), blob.size(), nullptr);
-        else
-            return sqlite3_bind_blob64(stm_, col, blob.data(), blob.size(), nullptr);
+                          || (sizeof(I) > sizeof(int)))
+        impl_.emplace<sqlite3_int64>(static_cast<sqlite3_int64>(value));
+      else
+        impl_.emplace<int>(static_cast<int>(value));
     }
 
-    int operator()(string_view text)
-    {
-        if (text.size() > std::numeric_limits<int>::max())
-            return sqlite3_bind_text(stm_, col, text.data(), text.size(), nullptr);
-        else
-            return sqlite3_bind_text64(stm_, col, text.data(), text.size(), nullptr, SQLITE_UTF8);
-    }
+    param_ref(blob_view blob) : impl_(blob) { }
+    param_ref(string_view text) : impl_(text) { }
 
-    int operator()(double value)
-    {
-        return sqlite3_bind_double(stm_, col, value);
-    }
+    template<typename StringLike>
+    param_ref(StringLike && text,
+              typename std::enable_if<std::is_constructible<string_view, StringLike>::value>::type * = nullptr)
+            : impl_(variant2::in_place_type<string_view>, text) {}
 
-    int operator()(zero_blob zb)
+    template<typename BlobLike>
+    param_ref(BlobLike && text,
+              typename std::enable_if<
+                  !std::is_constructible<string_view, BlobLike>::value
+                && std::is_constructible<blob_view, BlobLike>::value>::type * = nullptr)
+        : impl_(variant2::in_place_type<blob_view>, text) {}
+
+    param_ref(double value) : impl_(value) { }
+    param_ref(zero_blob zb) : impl_(zb) { }
+
+    template<typename T>
+    param_ref(std::unique_ptr<T> ptr)
+                    : impl_(variant2::in_place_index<7>,
+                            std::unique_ptr<void, void(*)(void*)>(
+                                static_cast<void*>(ptr.release()),
+                                +[](void * ptr){delete static_cast<T*>(ptr);}),
+                                typeid(T).name())
     {
-      return sqlite3_bind_zeroblob64(stm_, col, static_cast<sqlite3_uint64>(zb));
     }
 
     template<typename T>
-    int operator()(std::unique_ptr<T> ptr)
+    param_ref(std::unique_ptr<T, void(*)(T*)> ptr)
+                    : impl_(variant2::in_place_index<7>,
+                            std::unique_ptr<void, void(*)(void*)>(
+                                static_cast<void*>(ptr.release()),
+                                +[](void * ptr){delete static_cast<T*>(ptr);}),
+                             typeid(T).name())
     {
-      return sqlite3_bind_pointer(stm_, col, ptr.release(), typeid(T).name(),
-                                  +[](void * ptr){delete static_cast<T*>(ptr);});
-    }
-
-    template<typename T>
-    int operator()(std::unique_ptr<T, void(*)(T*)> ptr)
-    {
-      return sqlite3_bind_pointer(stm_, col, ptr.release(), typeid(T).name(),
-                                  static_cast<void(*)(void*)>(ptr.get_deleter()));
     }
 
     template<typename T, typename Deleter>
-    auto operator()(std::unique_ptr<T, Deleter> ptr)
-        -> typename std::enable_if<std::is_empty<Deleter>::value &&
-                                   std::is_default_constructible<Deleter>::value, int>::type
+    param_ref(std::unique_ptr<T, Deleter> ptr,
+              typename std::enable_if<std::is_empty<Deleter>::value &&
+                               std::is_default_constructible<Deleter>::value, int>::type * = nullptr)
+                    : impl_(variant2::in_place_index<7>,
+                            std::unique_ptr<void, void(*)(void*)>(
+                                static_cast<void*>(ptr.release()),
+                                +[](void * ptr){delete static_cast<T*>(ptr);}),
+                            typeid(T).name())
     {
-      return sqlite3_bind_pointer(stm_, col, ptr.release(), typeid(T).name(),
-                                  +[](void * ptr){Deleter()(static_cast<T*>(ptr));});
     }
-};
 
-}
+    int apply(sqlite3_stmt * stmt, int c) const
+    {
+      return variant2::visit(visitor{stmt, c}, impl_);
+    }
+
+ private:
+    struct visitor
+    {
+      sqlite3_stmt * stmt;
+      int col;
+
+      int operator()(variant2::monostate )
+      {
+        return sqlite3_bind_null(stmt, col);
+      }
+      int operator()(int i )
+      {
+        return sqlite3_bind_int(stmt, col, i);
+      }
+      int operator()(sqlite3_int64 i64 )
+      {
+        return sqlite3_bind_int64(stmt, col, i64);
+      }
+
+      int operator()(blob_view blob)
+      {
+        if (blob.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+          return sqlite3_bind_blob64(stmt, col, blob.data(), blob.size(), SQLITE_STATIC);
+        else
+          return sqlite3_bind_blob(stmt, col, blob.data(), blob.size(), SQLITE_STATIC);
+      }
+
+      int operator()(string_view text)
+      {
+        if (text.size() > std::numeric_limits<int>::max())
+          return sqlite3_bind_text64(stmt, col, text.data(), text.size(), SQLITE_STATIC, SQLITE_UTF8);
+        else
+          return sqlite3_bind_text(stmt, col, text.data(), text.size(), SQLITE_STATIC);
+      }
+      int operator()(double value)
+      {
+        return sqlite3_bind_double(stmt, col, value);
+      }
+      int operator()(zero_blob zb)
+      {
+        if (static_cast<std::size_t>(zb) > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+          return sqlite3_bind_zeroblob64(stmt, col, static_cast<sqlite3_uint64>(zb));
+        else
+          return sqlite3_bind_zeroblob(stmt, col, static_cast<int>(zb));
+      }
+      int operator()(std::pair<std::unique_ptr<void, void(*)(void*)>, const char*> & p)
+      {
+        auto d =p.first.get_deleter();
+        return sqlite3_bind_pointer(stmt, col, p.first.release(), p.second, d);
+      }
+    };
+
+    mutable // so we can use it with
+    variant2::variant<variant2::monostate, int, sqlite3_int64,
+                      blob_view, string_view, double, zero_blob,
+                      std::pair<std::unique_ptr<void, void(*)(void*)>, const char*>> impl_;
+};
 
 
 /** @brief A statement used for a prepared-statement.
@@ -99,7 +150,7 @@ struct statement
     ///@{
     /** @brief execute the prepared statement once.
 
-      @param params The arguments to be passed to the prepared statement.
+      @param params The arguments to be passed to the prepared statement. This can be a map or a vector of param_ref.
       @param ec     The error_code used to deliver errors for the exception less overload.
       @param info   The error_info used to deliver errors for the exception less overload.
       @return The resultset of the query.
@@ -111,61 +162,38 @@ struct statement
       @endcode
 
      */
-    template <typename ... Args>
+    template <typename ArgRange = std::initializer_list<param_ref>>
     resultset execute(
-            const std::tuple<Args...>& params,
+            ArgRange && params,
             error_code& ec,
             error_info& info) &&
     {
-        bind_impl(params, ec, info, std::make_index_sequence<sizeof...(Args)>{});
+        bind_impl(std::forward<ArgRange>(params), ec, info);
         resultset rs;
         rs.impl_.reset(impl_.release());
         return rs;
     }
 
 
-    template <typename ... Args>
-    resultset execute(const std::tuple<Args...>& params) &&
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    resultset execute(ArgRange && params) &&
     {
         system::error_code ec;
         error_info ei;
-        auto tmp = std::move(*this).execute(params, ec, ei);
+        auto tmp = std::move(*this).execute(std::forward<ArgRange>(params), ec, ei);
         if (ec)
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
     }
 
-    template <typename ... Args>
-    resultset execute(
-            std::tuple<Args...>&& params,
-            error_code& ec,
-            error_info& info) &&
-    {
-        bind_impl(std::move(params), ec, info, std::make_index_sequence<sizeof...(Args)>{});
-        resultset rs;
-        rs.impl_.reset(impl_.release());
-        return rs;
-    }
-
-
-    template <typename ... Args>
-    resultset execute(std::tuple<Args...>&& params) &&
-    {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = std::move(*this).execute(std::move(params), ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-        return tmp;
-    }
     ///@}
 
     ///@{
     /** @brief execute the prepared statement and reset it afterwards.
 
-      @warning The handle is shared between the statement & resultset. The statement need to be keapt alive
+      @warning The handle is shared between the statement & resultset. The statements need to be kept alive.
 
-      @param params The arguments to be passed to the prepared statement.
+      @param params The arguments to be passed to the prepared statement.  This can be a map or a vector of param_ref.
       @param ec     The error_code used to deliver errors for the exception less overload.
       @param info   The error_info used to deliver errors for the exception less overload.
       @return The resultset of the query.
@@ -177,13 +205,13 @@ struct statement
       @endcode
 
      */
-    template <typename ... Args>
+    template <typename ArgRange = std::initializer_list<param_ref>>
     resultset execute(
-            const std::tuple<Args...>& params,
+            ArgRange && params,
             error_code& ec,
             error_info& info) &
     {
-        bind_impl(params, ec, info, std::make_index_sequence<sizeof...(Args)>{});
+        bind_impl(std::forward<ArgRange>(params), ec, info);
         resultset rs;
         rs.impl_.get_deleter().delete_ = false;
         rs.impl_.reset(impl_.get());
@@ -191,36 +219,12 @@ struct statement
     }
 
 
-    template <typename ... Args>
-    resultset execute(const std::tuple<Args...>& params) &
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    resultset execute(ArgRange && params) &
     {
         system::error_code ec;
         error_info ei;
-        auto tmp = execute(params, ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-        return tmp;
-    }
-    template <typename ... Args>
-    resultset execute(
-            std::tuple<Args...>&& params,
-            error_code& ec,
-            error_info& info) &
-    {
-        bind_impl(std::move(params), ec, info, std::make_index_sequence<sizeof...(Args)>{});
-        resultset rs;
-        rs.impl_.get_deleter().delete_ = false;
-        rs.impl_.reset(impl_.get());
-        return rs;
-    }
-
-
-    template <typename ... Args>
-    resultset execute(std::tuple<Args...>&& params) &
-    {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = execute(std::move(params), ec, ei);
+        auto tmp = execute(std::forward<ArgRange>(params), ec, ei);
         if (ec)
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
@@ -255,59 +259,93 @@ struct statement
 
   private:
 
-    template<typename T>
-    bool bind_step(
-            T && value,
-            std::size_t idx,
-            error_code & ec,
-            error_info & ei)
-    {
-        if (!ec)
-        {
-            auto cc = detail::binder{impl_.get(), static_cast<int>(idx)}(std::forward<T>(value));
-            if (cc != SQLITE_OK)
-            {
-                BOOST_SQLITE_ASSIGN_EC(ec, cc);
-                ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
-            }
-        }
-        return !ec;
-    }
-
-    template<typename ... Args, std::size_t ... Idx>
-    void bind_impl(std::tuple<Args...> && tupl,
+    template<typename ... Args>
+    void bind_impl(std::tuple<Args...> && vec,
                    error_code & ec,
-                   error_info & ei,
-                   std::index_sequence<Idx...>)
+                   error_info & ei)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
-        if (sizeof...(Idx) < sz)
+        if (sizeof...(Args) < sz)
         {
-          BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-          ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
-                       + " got " + std::to_string(sizeof...(Idx)));
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
+            ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
+                           + " got " + std::to_string(sizeof...(Args)));
+            return;
         }
 
-        boost::ignore_unused(bind_step(std::move(std::get<Idx>(tupl)), Idx + 1, ec, ei)...);
+        int i = 1;
+        mp11::tuple_for_each(std::move(vec), [&](param_ref pr){ pr.apply(impl_.get(), i++); });
     }
 
 
-    template<typename ... Args, std::size_t ... Idx>
-    void bind_impl(const std::tuple<Args...> & tupl,
+    template<typename ... Args>
+    void bind_impl(const std::tuple<Args...> && vec,
+                   error_code & ec,
+                   error_info & ei)
+    {
+        const auto sz =  sqlite3_bind_parameter_count(impl_.get());
+        if (sizeof...(Args) < sz)
+        {
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
+            ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
+                           + " got " + std::to_string(sizeof...(Args)));
+            return;
+        }
+
+        int i = 1;
+        mp11::tuple_for_each(std::move(vec), [&](param_ref pr){ pr.apply(impl_.get(), i++); });
+    }
+
+    template<typename ParamVector>
+    void bind_impl(ParamVector && vec,
                    error_code & ec,
                    error_info & ei,
-                   std::index_sequence<Idx...>)
+                   typename std::enable_if<std::is_convertible<typename std::decay<ParamVector>::type::value_type, param_ref>::value>::type * = nullptr)
     {
-      const auto sz =  sqlite3_bind_parameter_count(impl_.get());
-      if (sizeof...(Idx) < sz)
-      {
-        BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-        ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
-                       + " got " + std::to_string(sizeof...(Idx)));
-      }
-
-      boost::ignore_unused(bind_step(std::get<Idx>(tupl), Idx + 1, ec, ei)...);
+        const auto sz =  sqlite3_bind_parameter_count(impl_.get());
+        if (vec.size() < sz)
+        {
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
+            ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
+                           + " got " + std::to_string(vec.size()));
+        }
+        int i = 1;
+        for (const param_ref & pr : std::forward<ParamVector>(vec))
+            pr.apply(impl_.get(), i++);
     }
+
+    template<typename ParamMap>
+    void bind_impl(ParamMap && vec,
+                   error_code & ec,
+                   error_info & ei,
+                   typename std::enable_if<
+                       std::is_convertible<typename std::decay<ParamMap>::type::key_type, string_view>::value &&
+                       std::is_convertible<typename std::decay<ParamMap>::type::mapped_type, param_ref>::value
+                         >::type * = nullptr)
+    {
+        for (auto i = 1; i <= sqlite3_bind_parameter_count(impl_.get()); i ++)
+        {
+          auto c = sqlite3_bind_parameter_name(impl_.get(), i);
+          if (c == nullptr)
+          {
+              BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISUSE);
+              ei.set_message("Parameter maps require all parameters to be named.");
+              return ;
+          }
+          auto itr = vec.find(c+1);
+          if (itr == vec.end())
+          {
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISUSE);
+            ei.set_message("Can't find value for key '" + std::string(c+1) + "'");
+            return ;
+          }
+          if (std::is_rvalue_reference<ParamMap&&>::value)
+            param_ref(std::move(itr->second)).apply(impl_.get(), i);
+          else
+            param_ref(itr->second).apply(impl_.get(), i);
+        }
+    }
+
 
 
 
