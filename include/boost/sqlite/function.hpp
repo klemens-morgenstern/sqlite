@@ -94,8 +94,7 @@ struct context
   {
     detail::set_result(ctx_, std::forward<T>(val));
   }
-
-  /// Set the an error through the context, instead of returning it.
+  /// Set the an error through the context, instead of throwing it.
   void set_error(const char * message, int code = SQLITE_ERROR)
   {
     sqlite3_result_error(ctx_, message, code);
@@ -180,11 +179,11 @@ auto create_scalar_function_impl(sqlite3 * db,
                           std::false_type /* void return */,
                           std::true_type /* is pointer */) -> int
 {
-  return sqlite3_create_scalar_function_v2(
+  return sqlite3_create_function_v2(
       db, name.c_str(),
       Extent == boost::dynamic_extent ? -1 : Extent,
       SQLITE_UTF8,
-      func,
+      reinterpret_cast<void*>(func),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
         auto cc = context<Args...>(ctx);
@@ -214,7 +213,7 @@ auto create_scalar_function_impl(sqlite3 * db,
   return sqlite3_create_function_v2(
       db, name.c_str(),
       Extent == boost::dynamic_extent ? -1 : Extent,
-      SQLITE_UTF8, func,
+      SQLITE_UTF8, reinterpret_cast<void*>(func),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
         auto cc = context<Args...>(ctx);

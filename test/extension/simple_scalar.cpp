@@ -8,7 +8,7 @@
 #include <boost/sqlite/extension.hpp>
 #include <boost/sqlite/function.hpp>
 
-BOOST_SQLITE_EXTENSION(boosttestextensionsimplescalar, conn)
+BOOST_SQLITE_EXTENSION(simplescalar, conn)
 {
     create_scalar_function(
         conn, "assert",

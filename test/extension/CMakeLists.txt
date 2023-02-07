@@ -8,9 +8,8 @@ foreach(module ${ALL_CPP_FILES})
     target_link_libraries(boost_test_extension_${stem} PUBLIC Boost::system Boost::sqlite_ext)
     target_include_directories(boost_test_extension_${stem} PUBLIC ../../include)
     set_property(TARGET boost_test_extension_${stem} PROPERTY PREFIX "")
+    set_target_properties(boost_test_extension_${stem} PROPERTIES OUTPUT_NAME ${stem})
 endforeach()
-
-
 
 foreach(script ${ALL_SQLITE_FILES})
     get_filename_component(stem ${script} NAME_WE)

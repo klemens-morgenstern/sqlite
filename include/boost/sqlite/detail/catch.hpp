@@ -15,14 +15,21 @@ catch (boost::system::system_error & se)                                        
 {                                                                                  \
   auto code = SQLITE_ERROR;                                                        \
   if (se.code().category() == boost::sqlite::sqlite_category())                    \
-    code = se.code().value();                                                      \
-  sqlite3_result_error(ctx, se.what(), code);                                      \
+    sqlite3_result_error_code(ctx, se.code().value());                             \
+  sqlite3_result_error(ctx, se.what(), std::strlen(se.what()));                    \
 }                                                                                  \
 catch(std::bad_alloc    &) { sqlite3_result_error_nomem(ctx); }                    \
 catch(std::length_error &) { sqlite3_result_error_toobig(ctx); }                   \
 catch(std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);}        \
-catch(std::logic_error &le) { sqlite3_result_error(ctx, le.what(), SQLITE_MISUSE);}\
-catch(std::exception & ex) { sqlite3_result_error(ctx, ex.what(), SQLITE_ERROR); } \
+catch(std::logic_error &le)                                                        \
+{                                                                                  \
+  sqlite3_result_error_code(ctx, SQLITE_MISUSE);                                   \
+  sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));                    \
+}                                                                                  \
+catch(std::exception & ex)                                                         \
+{                                                                                  \
+  sqlite3_result_error(ctx, ex.what(), std::strlen(ex.what()));                    \
+}                                                                                  \
 catch(...) {sqlite3_result_error_code(ctx, SQLITE_ERROR); }
 
 #define BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(msg)                              \

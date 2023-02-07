@@ -58,6 +58,13 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, string_view str)
         delete[] p;
       });
 }
+template<typename String>
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, String && str)
+  -> typename std::enable_if<std::is_convertible<String, string_view>::value>::type
+{
+  return tag_invoke(set_result_tag{}, ctx, string_view(str));
+}
+
 
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, variant2::monostate) { }
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const value & val)

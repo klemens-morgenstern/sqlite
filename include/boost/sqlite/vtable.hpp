@@ -8,7 +8,9 @@
 #ifndef BOOST_SQLITE_VTABLE_HPP
 #define BOOST_SQLITE_VTABLE_HPP
 
+#include <boost/core/span.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/sqlite/function.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -356,7 +358,7 @@ using cursor_type = boost::callable_traits::return_type_t<decltype(&Table::open)
 template<typename Impl>
 constexpr bool has_best_index_impl(rank<0>) { return false; };
 
-template<typename Impl, typename Func = decltype(&Impl::has_best_index)>
+template<typename Impl, typename Func = decltype(&Impl::best_index)>
 constexpr bool has_best_index_impl(rank<1>) { return true; };
 
 template<typename Impl>
@@ -449,6 +451,7 @@ auto make_module(BasePtr & res, ReturnType && result)
                                typename std::decay<ReturnType>::type>{});
 }
 
+
 template<typename Impl>
 struct vtable_helper
 {
@@ -459,12 +462,10 @@ struct vtable_helper
     using connection_type            = vtab::connect_type<implementation_type>;
     using read_only                  = vtab::read_only<connection_type>;
     using cursor_type                = vtab::cursor_type<connection_type>;
-    using has_best_index             = vtab::has_best_index<implementation_type>;
+    using has_best_index             = vtab::has_best_index<connection_type>;
     using has_transactions           = vtab::has_transactions<connection_type>;
     using has_recursive_transactions = vtab::has_recursive_transactions<connection_type>;
     using had_find_function          = vtab::had_find_function<connection_type>;
-
-
 
     template<typename T>
     void declare_vtab(sqlite3 * db, T * ptr) {sqlite3_declare_vtab(db, ptr->declaration());}
@@ -493,30 +494,15 @@ struct vtable_helper
         try
         {
             sqlite3_declare_vtab(db, make_module(*ppVTab, impl.connect(argc, argv))->declaration());
-            ;
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*errMsg)
     }
-    static int disconnect_impl(sqlite3_vtab * pvTab)
-    {
-        try
-        {
-            delete_module<connection_type>(pvTab);
-            return SQLITE_OK;
-        }
-        BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(pvTab->zErrMsg);
-    }
 
-    static int destroy_impl(sqlite3_vtab * pvTab)
-    {
-        try
-        {
-            delete_module<create_type>(pvTab);
-            return SQLITE_OK;
-        }
-        BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(pvTab->zErrMsg);
-    }
+
+    static int disconnect_impl(sqlite3_vtab * pvTab) { delete_module<connection_type>(pvTab); return SQLITE_OK; }
+    static int destroy_impl(sqlite3_vtab * pvTab)    { delete_module<create_type>(pvTab);     return SQLITE_OK; }
+
     using x_create_type = decltype(&create_impl);
 
     constexpr static
@@ -556,7 +542,7 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(*pvTab).find_index(info);
+            get_module<connection_type>(pvTab).best_index(info);
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(pvTab->zErrMsg);
@@ -617,7 +603,7 @@ struct vtable_helper
     {
         try
         {
-            get_module<cursor_type>(*pCursor)
+            get_module<cursor_type>(pCursor)
                 .filter(idxNum, idxStr,
                         boost::span<value>{reinterpret_cast<value*>(argv),
                                            static_cast<std::size_t>(argc)} );
