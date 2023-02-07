@@ -13,6 +13,9 @@
 #include <boost/unordered_map.hpp>
 #include <boost/intrusive/list.hpp>
 
+#include <string>
+#include <vector>
+
 using namespace boost;
 
 

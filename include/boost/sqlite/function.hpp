@@ -96,7 +96,7 @@ struct context
   }
 
   /// Set the an error through the context, instead of returning it.
-  auto set_error(const char * message, int code = SQLITE_ERROR)
+  void set_error(const char * message, int code = SQLITE_ERROR)
   {
     sqlite3_result_error(ctx_, message, code);
   }
@@ -252,9 +252,7 @@ auto create_scalar_function(sqlite3 * db,
 
 
 template<typename Func>
-auto create_aggregate_function(sqlite3 * db,
-                               const std::string & name,
-                               Func && func)
+int create_aggregate_function(sqlite3 * db, const std::string & name, Func && func)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
   using result_type  = callable_traits::return_type<decltype(&Func::final)>;
@@ -307,9 +305,7 @@ auto create_aggregate_function(sqlite3 * db,
 }
 
 template<typename Func>
-auto create_window_function(sqlite3 * db,
-                            const std::string & name,
-                            Func && func)
+int create_window_function(sqlite3 * db, const std::string & name, Func && func)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
   using result_type  = callable_traits::return_type<decltype(&Func::value)>;

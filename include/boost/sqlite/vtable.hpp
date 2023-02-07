@@ -288,10 +288,10 @@ template<typename Impl, typename Func = decltype(&Impl::create)>
 constexpr bool has_create_impl(rank<1>) { return true; };
 
 template<typename Impl>
-using has_create = std::bool_constant<has_create_impl<Impl>(rank<1>())>;
+using has_create = std::integral_constant<bool, has_create_impl<Impl>(rank<1>())>;
 
 template<typename Impl>
-using eponymous = std::bool_constant<!has_create_impl<Impl>(rank<1>())>;
+using eponymous = std::integral_constant<bool, !has_create_impl<Impl>(rank<1>())>;
 
 template<typename Impl>
 constexpr bool eponymous_only_impl(rank<0>) { return false; };
@@ -300,7 +300,7 @@ template<typename Impl, bool EO = Impl::eponymous_only>
 constexpr bool eponymous_only_impl(rank<1>) { return EO; };
 
 template<typename Impl>
-using eponymous_only = std::bool_constant<eponymous_only_impl<Impl>(rank<1>())>;
+using eponymous_only = std::integral_constant<bool, eponymous_only_impl<Impl>(rank<1>())>;
 
 template<typename Impl>
 constexpr bool has_delete(rank<0>) { return false; };
@@ -309,7 +309,7 @@ template<typename Impl, typename = decltype(&Impl::delete_)>
 constexpr bool has_delete(rank<1>) { return true; };
 
 template<typename Impl>
-using read_only = std::bool_constant<!has_delete<Impl>(rank<1>())>;
+using read_only = std::integral_constant<bool, !has_delete<Impl>(rank<1>())>;
 
 template<typename Impl>
 constexpr bool has_commit(rank<0>) { return false; };
@@ -318,7 +318,7 @@ template<typename Impl, typename = decltype(&Impl::commit)>
 constexpr bool has_commit(rank<1>) { return true; };
 
 template<typename Impl>
-using has_transactions = std::bool_constant<has_commit<Impl>(rank<1>())>;
+using has_transactions = std::integral_constant<bool, has_commit<Impl>(rank<1>())>;
 
 template<typename Impl>
 constexpr bool has_savepoint(rank<0>) { return false; };
@@ -327,7 +327,7 @@ template<typename Impl, typename = decltype(&Impl::savepoint)>
 constexpr bool has_savepoint(rank<1>) { return true; };
 
 template<typename Impl>
-using has_recursive_transactions = std::bool_constant<has_savepoint<Impl>(rank<1>())>;
+using has_recursive_transactions = std::integral_constant<bool, has_savepoint<Impl>(rank<1>())>;
 
 template<typename Impl>
 constexpr bool had_find_function_impl(rank<0>) { return false; };
@@ -336,7 +336,7 @@ template<typename Impl, typename = decltype(&Impl::find_function)>
 constexpr bool had_find_function_impl(rank<1>) { return true; };
 
 template<typename Impl>
-using had_find_function = std::bool_constant<had_find_function_impl<Impl>(rank<1>())>;
+using had_find_function = std::integral_constant<bool, had_find_function_impl<Impl>(rank<1>())>;
 
 template<typename Impl>
 constexpr void create_type_impl(rank<0>);
@@ -360,7 +360,7 @@ template<typename Impl, typename Func = decltype(&Impl::has_best_index)>
 constexpr bool has_best_index_impl(rank<1>) { return true; };
 
 template<typename Impl>
-using has_best_index = std::bool_constant<has_best_index_impl<Impl>(rank<1>())>;
+using has_best_index = std::integral_constant<bool, has_best_index_impl<Impl>(rank<1>())>;
 
 
 template<typename Base, typename Impl>

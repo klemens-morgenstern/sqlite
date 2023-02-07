@@ -7,6 +7,9 @@
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
 
+#include <string>
+#include <vector>
+
 using namespace boost;
 
 TEST_CASE("scalar")

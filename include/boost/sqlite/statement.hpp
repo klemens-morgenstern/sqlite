@@ -14,10 +14,10 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 struct param_ref
 {
     param_ref() = default;
-    param_ref(variant2::monostate) : impl_{variant2::in_place_type<variant2::monostate>} {}
-    param_ref(std::nullptr_t)      : impl_{variant2::in_place_type<variant2::monostate>} {}
+    param_ref(variant2::monostate) : impl_{variant2::in_place_type_t<variant2::monostate>{}} {}
+    param_ref(std::nullptr_t)      : impl_{variant2::in_place_type_t<variant2::monostate>{}} {}
     template<typename I,
-        typename = std::enable_if_t<std::is_integral<I>::value>>
+             typename = typename std::enable_if<std::is_integral<I>::value>::type>
     param_ref(I value)
     {
         BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)
@@ -33,21 +33,21 @@ struct param_ref
     template<typename StringLike>
     param_ref(StringLike && text,
               typename std::enable_if<std::is_constructible<string_view, StringLike>::value>::type * = nullptr)
-            : impl_(variant2::in_place_type<string_view>, text) {}
+            : impl_(variant2::in_place_type_t<string_view>{}, text) {}
 
     template<typename BlobLike>
     param_ref(BlobLike && text,
               typename std::enable_if<
                   !std::is_constructible<string_view, BlobLike>::value
                 && std::is_constructible<blob_view, BlobLike>::value>::type * = nullptr)
-        : impl_(variant2::in_place_type<blob_view>, text) {}
+        : impl_(variant2::in_place_type_t<blob_view>{}, text) {}
 
     param_ref(double value) : impl_(value) { }
     param_ref(zero_blob zb) : impl_(zb) { }
 
     template<typename T>
     param_ref(std::unique_ptr<T> ptr)
-                    : impl_(variant2::in_place_index<7>,
+                    : impl_(variant2::in_place_index_t<7>{},
                             std::unique_ptr<void, void(*)(void*)>(
                                 static_cast<void*>(ptr.release()),
                                 +[](void * ptr){delete static_cast<T*>(ptr);}),
@@ -57,7 +57,7 @@ struct param_ref
 
     template<typename T>
     param_ref(std::unique_ptr<T, void(*)(T*)> ptr)
-                    : impl_(variant2::in_place_index<7>,
+                    : impl_(variant2::in_place_index_t<7>{},
                             std::unique_ptr<void, void(*)(void*)>(
                                 static_cast<void*>(ptr.release()),
                                 +[](void * ptr){delete static_cast<T*>(ptr);}),
@@ -69,7 +69,7 @@ struct param_ref
     param_ref(std::unique_ptr<T, Deleter> ptr,
               typename std::enable_if<std::is_empty<Deleter>::value &&
                                std::is_default_constructible<Deleter>::value, int>::type * = nullptr)
-                    : impl_(variant2::in_place_index<7>,
+                    : impl_(variant2::in_place_index_t<7>{},
                             std::unique_ptr<void, void(*)(void*)>(
                                 static_cast<void*>(ptr.release()),
                                 +[](void * ptr){delete static_cast<T*>(ptr);}),

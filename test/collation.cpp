@@ -6,6 +6,8 @@
 //
 
 #include <boost/sqlite/collation.hpp>
+#include <string>
+#include <vector>
 
 #include "test.hpp"
 

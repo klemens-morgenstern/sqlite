@@ -36,7 +36,7 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, zero_blob zb)
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
 
 template<typename I,
-    typename = std::enable_if_t<std::is_integral<I>::value>>
+         typename = typename std::enable_if<std::is_integral<I>::value>::type>
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, I value)
 {
   BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)  || (sizeof(I) > sizeof(int)))

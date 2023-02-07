@@ -9,6 +9,9 @@
 #include <boost/sqlite/backup.hpp>
 #include <boost/sqlite/connection.hpp>
 
+#include <string>
+#include <vector>
+
 #include "test.hpp"
 
 using namespace boost;
