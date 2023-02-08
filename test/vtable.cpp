@@ -160,9 +160,6 @@ struct modifyable_test_impl
       names.insert_or_assign(new_key.get_int(), values[1].get_text());
       return 0u;
     }
-
-
-
   };
   intrusive::list<table_type, intrusive::constant_time_size<false>> list;
 

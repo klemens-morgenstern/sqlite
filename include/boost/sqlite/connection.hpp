@@ -104,6 +104,26 @@ struct connection
     BOOST_SQLITE_DECL statement prepare(core::string_view q);
     ///@}
 
+    /// Check if the database has the table
+    bool has_table(
+        const char * table,
+        const char * db_name = "main") const
+    {
+      return sqlite3_table_column_metadata(impl_.get(), db_name, table,
+                                           nullptr, nullptr, nullptr, nullptr, nullptr, nullptr)
+             == SQLITE_OK;
+    }
+
+    /// Check if the database has the table
+    bool has_column(
+        const char * table,
+        const char * column,
+        const char * db_name = "main") const
+    {
+      return sqlite3_table_column_metadata(impl_.get(), db_name, table, column,
+                                           nullptr, nullptr, nullptr, nullptr, nullptr)
+             == SQLITE_OK;
+    }
  private:
     struct deleter_
     {

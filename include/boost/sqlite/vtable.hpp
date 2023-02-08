@@ -11,6 +11,7 @@
 #include <boost/core/span.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/sqlite/function.hpp>
+#include <boost/core/demangle.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -458,14 +459,13 @@ struct vtable_helper
     using implementation_type        = Impl;
     using eponymous_only             = vtab::eponymous_only<implementation_type>;
     using eponymous                  = vtab::eponymous<implementation_type>;
-    using create_type                = vtab::create_type<implementation_type>;
-    using connection_type            = vtab::connect_type<implementation_type>;
-    using read_only                  = vtab::read_only<connection_type>;
-    using cursor_type                = vtab::cursor_type<connection_type>;
-    using has_best_index             = vtab::has_best_index<connection_type>;
-    using has_transactions           = vtab::has_transactions<connection_type>;
-    using has_recursive_transactions = vtab::has_recursive_transactions<connection_type>;
-    using had_find_function          = vtab::had_find_function<connection_type>;
+    using table_type                 = vtab::connect_type<implementation_type>;
+    using read_only                  = vtab::read_only<table_type>;
+    using cursor_type                = vtab::cursor_type<table_type>;
+    using has_best_index             = vtab::has_best_index<table_type>;
+    using has_transactions           = vtab::has_transactions<table_type>;
+    using has_recursive_transactions = vtab::has_recursive_transactions<table_type>;
+    using had_find_function          = vtab::had_find_function<table_type>;
 
     template<typename T>
     void declare_vtab(sqlite3 * db, T * ptr) {sqlite3_declare_vtab(db, ptr->declaration());}
@@ -481,8 +481,9 @@ struct vtable_helper
         auto &impl = *static_cast<Impl*>(pAux);
         try
         {
-          sqlite3_declare_vtab(db, make_module(*ppVTab, impl.create(argc, argv))->declaration());
-          return SQLITE_OK;
+            auto mod = make_module(*ppVTab, static_cast<table_type>(impl.create(argc, argv)));
+            sqlite3_declare_vtab(db, mod->declaration());
+            return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*errMsg)
     }
@@ -493,15 +494,25 @@ struct vtable_helper
         auto &impl = *static_cast<Impl*>(pAux);
         try
         {
-            sqlite3_declare_vtab(db, make_module(*ppVTab, impl.connect(argc, argv))->declaration());
+            auto mod = make_module(*ppVTab, impl.connect(argc, argv));
+            sqlite3_declare_vtab(db, mod->declaration());
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*errMsg)
     }
 
 
-    static int disconnect_impl(sqlite3_vtab * pvTab) { delete_module<connection_type>(pvTab); return SQLITE_OK; }
-    static int destroy_impl(sqlite3_vtab * pvTab)    { delete_module<create_type>(pvTab);     return SQLITE_OK; }
+    static int disconnect_impl(sqlite3_vtab * pvTab)
+    {
+      delete_module<table_type>(pvTab);
+      return SQLITE_OK;
+    }
+    static int destroy_impl(sqlite3_vtab * pvTab)
+    {
+      get_module<table_type>(pvTab).destroy();
+      delete_module<table_type>(pvTab);
+      return SQLITE_OK;
+    }
 
     using x_create_type = decltype(&create_impl);
 
@@ -534,7 +545,7 @@ struct vtable_helper
     x_destroy_type destroy(std::false_type /* eponymous */,
                            std::false_type /* eponymous_only */)
     {
-        return &create_impl;
+        return &destroy_impl;
     }
 
     // -------------------------- find_index -------------------------- //
@@ -542,7 +553,7 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(pvTab).best_index(info);
+            get_module<table_type>(pvTab).best_index(info);
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(pvTab->zErrMsg);
@@ -550,18 +561,18 @@ struct vtable_helper
 
     static int best_index_noop(sqlite3_vtab *pVTab, sqlite3_index_info* info) { return SQLITE_OK; }
 
-    static auto best_index(std::true_type ) -> int (*)(sqlite3_vtab*, sqlite3_index_info*)
+    constexpr static auto best_index(std::true_type ) -> int (*)(sqlite3_vtab*, sqlite3_index_info*)
     {
         return &best_index_impl;
     }
-    static auto best_index(std::false_type) -> int (*)(sqlite3_vtab*, sqlite3_index_info*)
+    constexpr static auto best_index(std::false_type) -> int (*)(sqlite3_vtab*, sqlite3_index_info*)
     {
         return &best_index_noop;
     }
 
     static int open_impl(sqlite3_vtab *pVTab, sqlite3_vtab_cursor **ppCursor)
     {
-        auto &impl = get_module<connection_type>(pVTab);
+        auto &impl = get_module<table_type>(pVTab);
         try
         {
             make_module(*ppCursor, impl.open());
@@ -626,12 +637,28 @@ struct vtable_helper
         return &filter_noop;
     }
 
+    static void column_impl_1(sqlite3_vtab_cursor *pCursor, sqlite3_context* ctx, int idx,
+                              context<> * /* first_type */) noexcept(
+                                    noexcept(get_module<cursor_type>(static_cast<sqlite3_vtab_cursor*>(nullptr))
+                                        .column(context<>(nullptr), int(), true)))
+    {
+        bool no_change = sqlite3_vtab_nochange(ctx) != 0;
+        get_module<cursor_type>(pCursor).column(context<>(ctx), idx, no_change);
+    }
+
+    static void column_impl_1(sqlite3_vtab_cursor *pCursor, sqlite3_context* ctx, int idx,
+                              int * /* first_type */)
+    {
+        bool no_change = sqlite3_vtab_nochange(ctx) != 0;
+        set_result(ctx, get_module<cursor_type>(pCursor).column(idx, no_change));
+    }
+
     static int column_impl(sqlite3_vtab_cursor *pCursor, sqlite3_context* ctx, int idx)
     {
+        using first_type = typename std::tuple_element<1u, callable_traits::args_t<decltype(&cursor_type::column)>>::type;
         try
         {
-            bool no_change = sqlite3_vtab_nochange(ctx) != 0;
-            set_result(ctx, get_module<cursor_type>(pCursor).column(idx, no_change));
+            column_impl_1(pCursor, ctx, idx, static_cast<first_type*>(nullptr));
         }
         BOOST_SQLITE_CATCH_RESULT(ctx);
         return SQLITE_OK;
@@ -651,7 +678,7 @@ struct vtable_helper
     {
         try
         {
-            auto & mod = get_module<connection_type>(pVTab);
+            auto & mod = get_module<table_type>(pVTab);
             if (argc == 1 && sqlite3_value_type(argv[0]) != SQLITE_NULL)
                 mod.delete_(sqlite::value(*argv));
             else if (argc > 1 && sqlite3_value_type(argv[0]) == SQLITE_NULL)
@@ -673,11 +700,11 @@ struct vtable_helper
         return SQLITE_OK;
     }
 
-    static auto update(std::false_type /* read_only */) -> decltype(sqlite3_module{}.xUpdate)
+    constexpr static auto update(std::false_type /* read_only */) -> decltype(sqlite3_module{}.xUpdate)
     {
         return &update_impl;
     }
-    static auto update(std::true_type /* read_only */) -> decltype(sqlite3_module{}.xUpdate)
+    constexpr static auto update(std::true_type /* read_only */) -> decltype(sqlite3_module{}.xUpdate)
     {
         return nullptr;
     }
@@ -686,17 +713,17 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(pVTab).begin();
+            get_module<table_type>(pVTab).begin();
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
-   
-    static auto begin(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xBegin)
+
+    constexpr static auto begin(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xBegin)
     {
        return &begin_impl;
     }
-    static auto begin(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xBegin)
+    constexpr static auto begin(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xBegin)
     {
         return nullptr;
     }
@@ -705,17 +732,17 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(pVTab).sync();
+            get_module<table_type>(pVTab).sync();
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
-   
-    static auto sync(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xSync)
+
+    constexpr static auto sync(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xSync)
     {
         return &sync_impl;
     }
-    static auto sync(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xSync)
+    constexpr static auto sync(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xSync)
     {
         return nullptr;
     }
@@ -724,17 +751,17 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(pVTab).commit();
+            get_module<table_type>(pVTab).commit();
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
-   
-    static auto commit(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xCommit)
+
+    constexpr static auto commit(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xCommit)
     {
        return &commit_impl;
     }
-    static auto commit(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xCommit)
+    constexpr static auto commit(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xCommit)
     {
         return nullptr;
     }
@@ -743,17 +770,17 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(pVTab).rollback();
+            get_module<table_type>(pVTab).rollback();
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
-   
-    static auto rollback(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xRollback)
+
+    constexpr static auto rollback(std::true_type /* has_transaction */) -> decltype(sqlite3_module{}.xRollback)
     {
         return &rollback_impl;
     }
-    static auto rollback(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xRollback)
+    constexpr static auto rollback(std::false_type/* has_transaction */) -> decltype(sqlite3_module{}.xRollback)
     {
         return nullptr;
     }
@@ -764,7 +791,7 @@ struct vtable_helper
     {
       try
       {
-         return get_module<connection_type>(*pVtab).find_function(
+         return get_module<table_type>(*pVtab).find_function(
               nArg, zName, vtab_function_setter(pxFunc, ppArg));
       }
       catch(...)
@@ -773,11 +800,11 @@ struct vtable_helper
       }
     }
 
-    static auto find_function(std::true_type  = had_find_function{}) -> decltype(sqlite3_module{}.xFindFunction)
+    constexpr static auto find_function(std::true_type  = had_find_function{}) -> decltype(sqlite3_module{}.xFindFunction)
     {
        return &find_function_impl;
     }
-    static auto find_function(std::false_type = had_find_function{}) -> decltype(sqlite3_module{}.xFindFunction)
+    constexpr static auto find_function(std::false_type = had_find_function{}) -> decltype(sqlite3_module{}.xFindFunction)
     {
        return nullptr;
     }
@@ -786,34 +813,34 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(*pVTab).rename(zNew);
+            get_module<table_type>(*pVTab).rename(zNew);
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
 
-    static auto rename(rank<0> r) -> int(*)(sqlite3_vtab *, const char*) { return nullptr ;}
+    constexpr static auto rename(rank<0> r) -> int(*)(sqlite3_vtab *, const char*) { return nullptr ;}
     template<typename T = Impl, void(* res)(const char*) = &T::rename>
-    static auto rename(rank<1> r) -> int(*)(sqlite3_vtab *, const char*) { return &rename_impl; }
+    constexpr static auto rename(rank<1> r) -> int(*)(sqlite3_vtab *, const char*) { return &rename_impl; }
 
-    static auto shadow_name(rank<0> r) -> int (*)(const char*) { return nullptr ;}
+    constexpr static auto shadow_name(rank<0> r) -> int (*)(const char*) { return nullptr ;}
     template<typename T = Impl, int(* res)(const char*) = &T::shadow_name>
-    static auto shadow_name(rank<1> r) -> int(*)(const char*) { return res ;}
+    constexpr static auto shadow_name(rank<1> r) -> int(*)(const char*) { return res ;}
 
 
     static int savepoint_impl(sqlite3_vtab *pVTab, int idx)
     {
         try
         {
-            get_module<connection_type>(*pVTab).savepoint(idx);
+            get_module<table_type>(*pVTab).savepoint(idx);
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
 
-    static auto savepoint(std::true_type /* has_recursive_transactions */) -> decltype(sqlite3_module{}.xSavepoint)
+    constexpr static auto savepoint(std::true_type /* has_recursive_transactions */) -> decltype(sqlite3_module{}.xSavepoint)
     {
       return &savepoint_impl;
     }
-    static auto savepoint(std::false_type/* has_recursive_transactions */) -> decltype(sqlite3_module{}.xSavepoint)
+    constexpr static auto savepoint(std::false_type/* has_recursive_transactions */) -> decltype(sqlite3_module{}.xSavepoint)
     {
       return nullptr;
     }
@@ -822,16 +849,16 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(*pVTab).release(idx);
+            get_module<table_type>(*pVTab).release(idx);
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
 
-    static auto release(std::true_type /* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRelease)
+    constexpr static auto release(std::true_type /* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRelease)
     {
       return &release_impl;
     }
-    static auto release(std::false_type/* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRelease)
+    constexpr static auto release(std::false_type/* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRelease)
     {
       return nullptr;
     }
@@ -840,16 +867,16 @@ struct vtable_helper
     {
         try
         {
-            get_module<connection_type>(*pVTab).rollback_to(idx);
+            get_module<table_type>(*pVTab).rollback_to(idx);
         }
         BOOST_SQLITE_CATCH_AND_RETURN();
     }
 
-    static auto rollback_to(std::true_type /* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRollbackTo)
+    constexpr static auto rollback_to(std::true_type /* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRollbackTo)
     {
       return &release_impl;
     }
-    static auto rollback_to(std::false_type/* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRollbackTo)
+    constexpr static auto rollback_to(std::false_type/* has_recursive_transactions */) -> decltype(sqlite3_module{}.xRollbackTo)
     {
       return nullptr;
     }
@@ -968,8 +995,7 @@ struct vtab_module_prototype
  /// The instance_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
  /// Optional member - can be skipped for eponymous tables
  /// instance_type must have a member `declaration` that returns a `const char *` for the declaration.
- instance_type create(int argc, const char * const argv);
- const char *create_declaration(); // to be used with  sqlite3_declare_vtab
+ table_type create(int argc, const char * const argv);
 
  /// @brief Create a table
  /// The table_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
@@ -981,6 +1007,9 @@ struct vtab_module_prototype
  {
    /// The Table declaration to be used with  sqlite3_declare_vtab
    const char *declaration();
+
+   /// Destroy the storage = this function needs to be present for non epotymous tables
+   void destroy();
 
    /// Tell sqlite how to communicate with the table.
    /// Optional, this library will fill in a default function that leaves comparisons to sqlite.
