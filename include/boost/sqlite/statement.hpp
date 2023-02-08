@@ -332,7 +332,7 @@ struct statement
 
 
     template<typename ... Args>
-    void bind_impl(const std::tuple<Args...> && vec,
+    void bind_impl(const std::tuple<Args...> & vec,
                    error_code & ec,
                    error_info & ei)
     {
