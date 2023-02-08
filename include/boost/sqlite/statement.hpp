@@ -174,7 +174,6 @@ struct statement
         return rs;
     }
 
-
     template <typename ArgRange = std::initializer_list<param_ref>>
     resultset execute(ArgRange && params) &&
     {
@@ -186,6 +185,26 @@ struct statement
         return tmp;
     }
 
+    resultset execute(
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        error_code& ec,
+        error_info& info) &&
+    {
+      bind_impl(std::move(params), ec, info);
+      resultset rs;
+      rs.impl_.reset(impl_.release());
+      return rs;
+    }
+
+    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&
+    {
+      system::error_code ec;
+      error_info ei;
+      auto tmp = std::move(*this).execute(std::move(params), ec, ei);
+      if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+      return tmp;
+    }
     ///@}
 
     ///@{
@@ -228,6 +247,29 @@ struct statement
         if (ec)
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
+    }
+
+
+    resultset execute(
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        error_code& ec,
+        error_info& info) &
+    {
+      bind_impl(std::move(params), ec, info);
+      resultset rs;
+      rs.impl_.get_deleter().delete_ = false;
+      rs.impl_.reset(impl_.get());
+      return rs;
+    }
+
+    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &
+    {
+      system::error_code ec;
+      error_info ei;
+      auto tmp = execute(std::move(params), ec, ei);
+      if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+      return tmp;
     }
     ///@}
 
@@ -273,8 +315,19 @@ struct statement
             return;
         }
 
-        int i = 1;
-        mp11::tuple_for_each(std::move(vec), [&](param_ref pr){ pr.apply(impl_.get(), i++); });
+        int i = 1, ar = SQLITE_OK;
+        mp11::tuple_for_each(std::move(vec),
+                             [&](param_ref pr)
+                             {
+                                if (ar == SQLITE_OK)
+                                  ar = pr.apply(impl_.get(), i++);
+                             });
+        if (ar != SQLITE_OK)
+        {
+          BOOST_SQLITE_ASSIGN_EC(ec, ar);
+          ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+          return;
+        }
     }
 
 
@@ -292,15 +345,25 @@ struct statement
             return;
         }
 
-        int i = 1;
-        mp11::tuple_for_each(std::move(vec), [&](param_ref pr){ pr.apply(impl_.get(), i++); });
+        int i = 1, ar = SQLITE_OK;
+        mp11::tuple_for_each(std::move(vec),
+                             [&](param_ref pr)
+                             {
+                               if (ar == SQLITE_OK)
+                                 ar = pr.apply(impl_.get(), i++);
+                             });
+        if (ar != SQLITE_OK)
+        {
+          BOOST_SQLITE_ASSIGN_EC(ec, ar);
+          ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+          return;
+        }
     }
 
     template<typename ParamVector>
-    void bind_impl(ParamVector && vec,
-                   error_code & ec,
-                   error_info & ei,
-                   typename std::enable_if<std::is_convertible<typename std::decay<ParamVector>::type::value_type, param_ref>::value>::type * = nullptr)
+    void bind_impl(ParamVector && vec, error_code & ec, error_info & ei,
+                   typename std::enable_if<std::is_convertible<
+                       typename std::decay<ParamVector>::type::value_type, param_ref>::value>::type * = nullptr)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
         if (vec.size() < sz)
@@ -311,13 +374,20 @@ struct statement
         }
         int i = 1;
         for (const param_ref & pr : std::forward<ParamVector>(vec))
-            pr.apply(impl_.get(), i++);
+        {
+          int ar = pr.apply(impl_.get(), i++);
+          if (ar != SQLITE_OK)
+          {
+
+            BOOST_SQLITE_ASSIGN_EC(ec, ar);
+            ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+            return;
+          }
+        }
     }
 
     template<typename ParamMap>
-    void bind_impl(ParamMap && vec,
-                   error_code & ec,
-                   error_info & ei,
+    void bind_impl(ParamMap && vec, error_code & ec, error_info & ei,
                    typename std::enable_if<
                        std::is_convertible<typename std::decay<ParamMap>::type::key_type, string_view>::value &&
                        std::is_convertible<typename std::decay<ParamMap>::type::mapped_type, param_ref>::value
@@ -339,14 +409,56 @@ struct statement
             ei.set_message("Can't find value for key '" + std::string(c+1) + "'");
             return ;
           }
+          int ar = SQLITE_OK;
           if (std::is_rvalue_reference<ParamMap&&>::value)
-            param_ref(std::move(itr->second)).apply(impl_.get(), i);
+            ar = param_ref(std::move(itr->second)).apply(impl_.get(), i);
           else
-            param_ref(itr->second).apply(impl_.get(), i);
+            ar = param_ref(itr->second).apply(impl_.get(), i);
+
+          if (ar != SQLITE_OK)
+          {
+
+            BOOST_SQLITE_ASSIGN_EC(ec, ar);
+            ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+            return;
+          }
         }
     }
 
+    void bind_impl(std::initializer_list<std::pair<string_view, param_ref>> params,
+                   error_code & ec, error_info & ei)
+    {
+        for (auto i = 1; i <= sqlite3_bind_parameter_count(impl_.get()); i ++)
+        {
+          auto c = sqlite3_bind_parameter_name(impl_.get(), i);
+          if (c == nullptr)
+          {
+              BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISUSE);
+              ei.set_message("Parameter maps require all parameters to be named.");
+              return ;
+          }
 
+          auto itr = std::find_if(params.begin(), params.end(),
+                                  [&](const std::pair<string_view, param_ref> & p)
+                                  {
+                                      return p.first == (c+1);
+                                  });
+          if (itr == params.end())
+          {
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISUSE);
+            ei.set_message("Can't find value for key '" + std::string(c+1) + "'");
+            return ;
+          }
+          auto ar = itr->second.apply(impl_.get(), i);
+          if (ar != SQLITE_OK)
+          {
+
+            BOOST_SQLITE_ASSIGN_EC(ec, ar);
+            ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+            return;
+          }
+        }
+    }
 
 
     friend
