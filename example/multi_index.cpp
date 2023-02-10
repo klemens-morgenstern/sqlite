@@ -136,13 +136,31 @@ struct multi_index_map
               break;
             case SQLITE_INDEX_CONSTRAINT_GT:
             case SQLITE_INDEX_CONSTRAINT_GE:
-              lower = (std::max)(lower.value_or(txt), txt);
-              lower_op = idxStr[i];
+              if (lower == txt)
+              {
+                // pick the more restrictive one
+                if (lower_op == SQLITE_INDEX_CONSTRAINT_GE)
+                  lower_op == idxStr[i];
+              }
+              else
+              {
+                lower = (std::max)(lower.value_or(txt), txt);
+                lower_op = idxStr[i];
+              }
+
               break;
             case SQLITE_INDEX_CONSTRAINT_LE:
             case SQLITE_INDEX_CONSTRAINT_LT:
-              upper = (std::min)(upper.value_or(txt), txt);
-              upper_op = idxStr[i];
+              if (upper == txt)
+              {
+                if (upper_op == SQLITE_INDEX_CONSTRAINT_LT)
+                  upper_op == idxStr[i];
+              }
+              else
+              {
+                upper = (std::min)(upper.value_or(txt), txt);
+                upper_op = idxStr[i];
+              }
               break;
           }
         }
@@ -399,6 +417,7 @@ int main (int argc, char * argv[])
 
   print(std::cout, conn.query("select * from my_map where version > '1.32.0' order by version desc;"));
   conn.query("delete from my_map where version == '1.81.0';");
+  print(std::cout, conn.query("select * from my_map where name < 'system' and name <= 'system' ;"));
 
 
   return 0;
