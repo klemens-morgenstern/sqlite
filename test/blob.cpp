@@ -46,4 +46,11 @@ TEST_CASE("blob")
   bh.write_at(blobby.data(), blobby.size(), 0u);
   bh.read_at(buf, 4096, 4096);
   CHECK(std::memcmp(buf, blobby.data() + 4096, 4096) == 0);
+
+  CHECK_THROWS(open_blob(conn, "main", "doesnt-exit", "blobber", 2));
+
+  sqlite::blob_handle bb;
+  CHECK_THROWS(bb.read_at(blobby.data(), blobby.size(), 0));
+  CHECK_THROWS(bb.write_at(blobby.data(), blobby.size(), 0));
+
 }

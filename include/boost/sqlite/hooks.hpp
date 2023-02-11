@@ -259,6 +259,8 @@ bool update_hook(sqlite3 * db,
 
   @note If the function is not a free function pointer, this function will *NOT* take ownership.
 
+  @note If `func` is a `nullptr` the hook gets reset.
+
   @param conn The database connection to install the hook in
   @param func The hook function
   @return True if an hook has been replaced.
@@ -278,6 +280,8 @@ bool commit_hook(connection & conn, Func && func)
   The rollback hook gets called when a rollback gets performed.
 
   @note If the function is not a free function pointer, this function will *NOT* take ownership.
+
+  @note If `func` is a `nullptr` the hook gets reset.
 
   @param conn The database connection to install the hook in
   @param func The hook function
@@ -311,6 +315,8 @@ bool preupdate_hook(connection & conn, Func && func)
 
   The signature of the function is `void(int op, core::string_view db, core::string_view table, sqlite3_int64 id)`.
   `op` is either `SQLITE_INSERT`, `SQLITE_DELETE` and `SQLITE_UPDATE`.
+
+  @note If `func` is a `nullptr` the hook gets reset.
 
   @param conn The database connection to install the hook in
   @param func The hook function

@@ -8,6 +8,8 @@
 #include <memory>
 #include <boost/sqlite/row.hpp>
 
+#include <boost/system/result.hpp>
+
 BOOST_SQLITE_BEGIN_NAMESPACE
 struct connection ;
 /**
@@ -47,6 +49,7 @@ struct resultset
     /// Read one row. Returns false if there's nothing more to read.
     BOOST_SQLITE_DECL bool read_one(row& r, error_code & ec, error_info & ei);
     BOOST_SQLITE_DECL bool read_one(row & r);
+    BOOST_SQLITE_DECL system::result<row> read_one();
     ///@}
 
     ///

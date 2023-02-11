@@ -46,4 +46,6 @@ TEST_CASE("decltype")
   CHECK(q.declared_type(1) == "TEXT");
   CHECK(q.declared_type(2) == "TEXT");
 
+  CHECK_THROWS(conn.prepare("elect * from nothing;"));
+
 }

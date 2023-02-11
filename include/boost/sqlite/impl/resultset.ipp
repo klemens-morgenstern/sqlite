@@ -43,6 +43,18 @@ bool resultset::read_one(row & r)
     return tmp;
 }
 
+system::result<row> resultset::read_one()
+{
+    system::error_code ec;
+    error_info ei;
+    row r;
+    auto tmp = read_one(r, ec, ei);
+    if (ec)
+        return ec;
+    else
+        return r;
+}
+
 BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_RESULTSET_IPP

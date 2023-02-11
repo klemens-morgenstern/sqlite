@@ -16,5 +16,6 @@ TEST_CASE("connection")
 #include "test-db.sql"
   );
 
+  CHECK_THROWS(conn.execute("elect * from nothing;"));
   conn.close();
 }

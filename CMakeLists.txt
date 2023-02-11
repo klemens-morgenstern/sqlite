@@ -68,7 +68,6 @@ add_custom_target(
 
 find_package(SQLite3 REQUIRED)
 
-
 add_library(boost_sqlite src/src.cpp)
 target_include_directories(boost_sqlite PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(boost_sqlite PUBLIC Boost::system Boost::json SQLite::SQLite3)

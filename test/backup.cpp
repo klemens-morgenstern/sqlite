@@ -42,5 +42,5 @@ TEST_CASE("backup")
   CHECK(!names1.empty());
   CHECK(!names2.front().empty());
   CHECK(names1 == names2);
-
+  CHECK_THROWS(sqlite::backup(conn1, conn2, "foo", "bar"));
 }

@@ -234,6 +234,7 @@ struct multi_index_map
           case 0: return begin == end;
           case 1: return begin1 == end1;
           case 2: return begin2 == end2;
+          default: return true;
         }
       }
     };
