@@ -65,4 +65,6 @@ TEST_CASE("map")
   q = conn.prepare("select * from author where first_name = $name;").execute(params);
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute(params));
 
+  CHECK_THROWS(conn.prepare("elect * from nothing;"));
+
 }
