@@ -99,6 +99,12 @@ struct context
   {
     sqlite3_result_error(ctx_, message, code);
   }
+  /// Get the connection of the context.
+  connection get_connection() const
+  {
+    return connection{sqlite3_context_db_handle(ctx_), false};
+  }
+
  private:
   sqlite3_context * ctx_;
 };
