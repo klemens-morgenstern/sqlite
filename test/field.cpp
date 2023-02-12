@@ -45,4 +45,7 @@ create table type_tester(
   std::memcpy(bl.data(), raw_data, 4);
   CHECK(std::memcmp(bl.data(), r[4].get_blob().data(), 4u) == 0u);
 
+  CHECK(conn.query("select null;").read_one()->at(0).get_text() == "");
+  CHECK(conn.query("select null;").read_one()->at(0).get_value().get_text() == "");
+
 }

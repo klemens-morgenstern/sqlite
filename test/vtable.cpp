@@ -133,6 +133,8 @@ struct modifyable_test_impl
             throw_exception(std::out_of_range("column out of range"));
 
         }
+
+        CHECK(sqlite::get_vtable<table_type>(this).name == "test_table");
       }
 
       bool eof() noexcept {return itr == end;}

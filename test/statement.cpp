@@ -30,6 +30,7 @@ TEST_CASE("connection")
   CHECK(v.get_pointer<int>() == ip);
   CHECK(v.get_pointer<double>() == nullptr);
 
+  CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({}));
 }
 
 
@@ -47,5 +48,21 @@ TEST_CASE("decltype")
   CHECK(q.declared_type(2) == "TEXT");
 
   CHECK_THROWS(conn.prepare("elect * from nothing;"));
+}
+
+
+TEST_CASE("map")
+{
+  sqlite::connection conn;
+  conn.connect(":memory:");
+  conn.execute(
+#include "test-db.sql"
+  );
+  auto q = conn.prepare("select * from author where first_name = $name;").execute({{"name", 42}});
+  CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({{"n4ame", 123}}));
+
+  std::unordered_map<std::string, int> params = {{"name", 42}};
+  q = conn.prepare("select * from author where first_name = $name;").execute(params);
+  CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute(params));
 
 }

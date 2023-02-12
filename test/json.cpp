@@ -27,9 +27,10 @@ TEST_CASE("to_value")
   q.read_one(r);
   CHECK(!sqlite::is_json(r[0]));
   CHECK( sqlite::is_json(r[1]));
-
   CHECK(sqlite::as_json(r[1]) == json::array{1, "2", nullptr});
   CHECK(json::value_from(r[1]) == json::array{1, "2", nullptr});
+  CHECK(!q.read_one(r));
+  CHECK(!q.read_one(r));
 
   // language=sqlite
   q = conn.query(R"(select first_name, "name" from library inner join author a on a.id = library.author order by library.name asc)");

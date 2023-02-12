@@ -367,11 +367,11 @@ using has_best_index = std::integral_constant<bool, has_best_index_impl<Impl>(ra
 
 
 template<typename Base, typename Impl>
-struct module_impl_helper : Base
+struct module_impl_helper : Base, Impl
 {
-  Impl impl;
   template<typename ... Args>
-  module_impl_helper(Args && ... args) : impl(std::forward<Args>(args)...) {}
+  module_impl_helper(Args && ... args) : Impl(std::forward<Args>(args)...) {}
+  Impl & get_impl() {return *this;}
 };
 
 template<typename Base, typename Return>
@@ -394,7 +394,7 @@ Impl & get_module_impl(Base * base, std::true_type /* intrusive */) noexcept
 template<typename Impl, typename Base>
 Impl & get_module_impl(Base * impl, std::false_type /* intrusive */) noexcept
 {
-  return static_cast<module_impl_helper<Base, Impl>*>(impl)->impl;
+  return static_cast<module_impl_helper<Base, Impl>*>(impl)->get_impl();
 }
 
 template<typename Impl, typename Base>
@@ -439,7 +439,7 @@ auto make_module(BasePtr &res, ReturnType && result, std::false_type /* intrusiv
     std::unique_ptr<impl_t> ip{new impl_t(std::forward<ReturnType>(result))};
     auto p = ip.get();
     res = ip.release();
-    return &p->impl;
+    return &p->get_impl();
 }
 
 
@@ -914,6 +914,21 @@ struct vtable_helper
     }
 };
 
+template<typename Table>
+Table & get_vtable_impl(detail::vtab::cursor_type<Table> * const cursor,
+                        std::true_type /* sqlite3_vtab_cursor */)
+{
+  return get_module<Table>(cursor->pvTab);
+}
+
+
+template<typename Table>
+Table & get_vtable_impl(detail::vtab::cursor_type<Table> * const cursor,
+                        std::false_type /* sqlite3_vtab_cursor */)
+{
+  using impl_type = module_impl_helper<sqlite3_vtab_cursor, detail::vtab::cursor_type<Table>>;
+  return get_module<Table>(static_cast<impl_type*>(cursor)->pVtab);
+}
 }
 }
 
@@ -972,6 +987,15 @@ auto create_module(connection & conn,
     return ref;
 }
 ///@}
+
+/// Get the table associated with the cursor
+template<typename Table>
+Table & get_vtable(detail::vtab::cursor_type<Table> * const cursor)
+{
+  return detail::vtab::get_vtable_impl<Table>(
+        cursor,
+        std::is_base_of<sqlite3_vtab_cursor, detail::vtab::cursor_type<Table>>{});
+}
 
 #if defined(BOOST_SQLITE_GENERATING_DOCS)
 /** @brief The prototype used by @ref create_module

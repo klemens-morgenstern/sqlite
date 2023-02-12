@@ -18,6 +18,14 @@ TEST_CASE("mutex")
 {
   sqlite::mutex mtx;
   sqlite::recursive_mutex rmtx;
+  CHECK(mtx.try_lock());
+  CHECK(!mtx.try_lock());
+  mtx.unlock();
+
   std::scoped_lock<sqlite::mutex, sqlite::recursive_mutex> lk{mtx, rmtx};
   std::lock_guard<sqlite::recursive_mutex> l{rmtx};
+
+  CHECK(rmtx.try_lock());
+  CHECK(rmtx.try_lock());
+  CHECK(rmtx.try_lock());
 }
