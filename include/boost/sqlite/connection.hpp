@@ -44,7 +44,7 @@ struct connection
     /// Move assign operator.
     connection& operator=(connection && ) = default;
 
-    /// Construct a connection and connect it to `filename`.. `flags` is set by `SQLITE_OPEN_*` flags.
+    /// Construct a connection and connect it to `filename`.. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
     connection(const char * filename,
                int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) { connect(filename, flags); }
 
@@ -90,9 +90,8 @@ struct connection
     {
         execute(q.c_str(), ec, ei);
     }
-    ///@}
-
     void execute(const std::string & q) { execute(q.c_str());}
+    ///@}
 
     ///@{
     /// Perform a query with parameters. Can only execute a single statement.

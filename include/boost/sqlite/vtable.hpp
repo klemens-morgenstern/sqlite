@@ -989,6 +989,7 @@ auto create_module(connection & conn,
 ///@}
 
 /// Get the table associated with the cursor
+/// @ingroup reference
 template<typename Table>
 Table & get_vtable(detail::vtab::cursor_type<Table> * const cursor)
 {

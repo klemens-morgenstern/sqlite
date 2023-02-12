@@ -11,11 +11,18 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
+
+/// @brief A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
+/// @ingroup reference
 struct param_ref
 {
+    /// Default construct a parameter, gives `null`.
     param_ref() = default;
+    /// Bind null
     param_ref(variant2::monostate) : impl_{variant2::in_place_type_t<variant2::monostate>{}} {}
+    /// Bind null
     param_ref(std::nullptr_t)      : impl_{variant2::in_place_type_t<variant2::monostate>{}} {}
+    /// Bind an integer.
     template<typename I,
              typename = typename std::enable_if<std::is_integral<I>::value>::type>
     param_ref(I value)
@@ -26,8 +33,9 @@ struct param_ref
       else
         impl_.emplace<int>(static_cast<int>(value));
     }
-
+    /// Bind a blob.
     param_ref(blob_view blob) : impl_(blob) { }
+    /// Bind a string.
     param_ref(string_view text) : impl_(text) { }
 
     template<typename StringLike>
@@ -42,9 +50,12 @@ struct param_ref
                 && std::is_constructible<blob_view, BlobLike>::value>::type * = nullptr)
         : impl_(variant2::in_place_type_t<blob_view>{}, text) {}
 
+    /// Bind a floating point value.
     param_ref(double value) : impl_(value) { }
+    /// Bind a zero_blob value, i.e. a blob that initialized by zero.
     param_ref(zero_blob zb) : impl_(zb) { }
 
+    /// Bind pointer value to the parameter. @see https://www.sqlite.org/bindptr.html
     template<typename T>
     param_ref(std::unique_ptr<T> ptr)
                     : impl_(variant2::in_place_index_t<7>{},
@@ -55,6 +66,7 @@ struct param_ref
     {
     }
 
+    /// Bind pointer value with a function as deleter to the parameter. @see https://www.sqlite.org/bindptr.html
     template<typename T>
     param_ref(std::unique_ptr<T, void(*)(T*)> ptr)
                     : impl_(variant2::in_place_index_t<7>{},
@@ -65,6 +77,8 @@ struct param_ref
     {
     }
 
+    /// @brief Bind pointer value with a function  custom deleter to the parameter.
+    /// The deleter needs to be default constructible. @see https://www.sqlite.org/bindptr.html
     template<typename T, typename Deleter>
     param_ref(std::unique_ptr<T, Deleter> ptr,
               typename std::enable_if<std::is_empty<Deleter>::value &&
@@ -76,7 +90,7 @@ struct param_ref
                             typeid(T).name())
     {
     }
-
+    /// Apply the param_ref to a statement.
     int apply(sqlite3_stmt * stmt, int c) const
     {
       return variant2::visit(visitor{stmt, c}, impl_);
@@ -210,9 +224,9 @@ struct statement
     ///@{
     /** @brief execute the prepared statement and reset it afterwards.
 
-      @warning The handle is shared between the statement & resultset. The statements need to be kept alive.
+      @warning The handle is shared between the statement & resultset. The statemens need to be kept alive.
 
-      @param params The arguments to be passed to the prepared statement.  This can be a map or a vector of param_ref.
+      @param params The arguments to be passed to the prepared statement.  This can be a map, a vector or a stuple of param_ref.
       @param ec     The error_code used to deliver errors for the exception less overload.
       @param info   The error_info used to deliver errors for the exception less overload.
       @return The resultset of the query.
@@ -222,6 +236,8 @@ struct statement
         statement st = conn.prepare("select id from users where name = $1;");
         resultset q = std::move(st).execute(std::make_tuple("peter"));
       @endcode
+
+
 
      */
     template <typename ArgRange = std::initializer_list<param_ref>>

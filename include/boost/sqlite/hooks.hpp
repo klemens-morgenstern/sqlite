@@ -16,28 +16,38 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 #if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
+/** The context for pre-update events
 
+ @note This is only available if sqlite was compiled with `SQLITE_ENABLE_PREUPDATE_HOOK` enabled.
+
+ */
 struct preupdate_context
 {
-  system::result<value> old(int idx) const
+  /// Get the old value, i.e. the value before the update.
+  system::result<value> old(int column) const
   {
     sqlite3_value * val;
-    int res = sqlite3_preupdate_old(db_, idx, &val);
+    int res = sqlite3_preupdate_old(db_, column, &val);
     if (res != 0)
       BOOST_SQLITE_RETURN_EC(res);
     return value(val);
   }
+  /// The count of colums to be updated
   int count() const { return sqlite3_preupdate_count(db_); }
+  /// The nesting depth of the update.
   int depth() const { return sqlite3_preupdate_depth(db_); }
-  system::result<value> new_(int idx) const
+  /// The new value to be written to column
+  system::result<value> new_(int column) const
   {
     sqlite3_value * val;
-    int res = sqlite3_preupdate_new(db_, idx, &val);
+    int res = sqlite3_preupdate_new(db_, column, &val);
     if (res != 0)
       BOOST_SQLITE_RETURN_EC(res);
     return value(val);
   }
 
+  /// @brief Query the status of blob access, e.g. when using @ref blob_handle
+  /// @see https://www.sqlite.org/c3ref/preupdate_blobwrite.html
   int blob_write() const { return sqlite3_preupdate_blobwrite(db_); }
 
   explicit preupdate_context(sqlite3 * db) noexcept : db_(db) {}
@@ -154,10 +164,11 @@ bool preupdate_hook_impl(sqlite3 * db,
 
 template<typename Func>
 bool preupdate_hook_impl(sqlite3 * db,
-                      Func & func,
-                      std::false_type)
+                         Func & func,
+                         std::false_type)
 {
-  static_assert(noexcept(func(preupdate_context(nullptr), SQLITE_SELECT, "", "", 0, 0)));
+  static_assert(noexcept(func(preupdate_context(nullptr), SQLITE_SELECT, "", "", 0, 0)),
+                "hooks but be noexcept");
   using func_type    = typename std::decay<Func>::type;
 
   return sqlite3_preupdate_hook(
@@ -181,7 +192,7 @@ inline bool preupdate_hook_impl(sqlite3 * db, std::nullptr_t, std::false_type)
 
 template<typename Func>
 bool preupdate_hook(sqlite3 * db,
-                 Func && func)
+                     Func && func)
 {
   using func_type    = typename std::decay<Func>::type;
   return preupdate_hook_impl(db, std::forward<Func>(func), std::is_pointer<func_type>{});
@@ -263,7 +274,7 @@ bool update_hook(sqlite3 * db,
 
   @param conn The database connection to install the hook in
   @param func The hook function
-  @return True if an hook has been replaced.
+  @return true if an hook has been replaced.
  */
 template<typename Func>
 bool commit_hook(connection & conn, Func && func)
@@ -285,7 +296,7 @@ bool commit_hook(connection & conn, Func && func)
 
   @param conn The database connection to install the hook in
   @param func The hook function
-  @return True if an hook has been replaced.
+  @return true if an hook has been replaced.
  */
 template<typename Func>
 bool rollback_hook(connection & conn, Func && func)
@@ -294,7 +305,37 @@ bool rollback_hook(connection & conn, Func && func)
 }
 
 #if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
+/** A hook for pre-update events.
 
+ @note This is only available if sqlite was compiled with `SQLITE_ENABLE_PREUPDATE_HOOK` enabled.
+ @ingroup reference
+
+ @see [related sqlite documentation](https://sqlite.org/c3ref/preupdate_count.html)
+
+ The function will get called
+
+ @note If the function is not a free function pointer, this function will *NOT* take ownership.
+
+ @note If `func` is a `nullptr` the hook gets reset.
+
+ @param conn The database connection to install the hook in
+ @param func The hook function
+ @return true if an hook has been replaced.
+
+ The signature of the handler is as following (it must noexcept):
+
+ @code{.cpp}
+ void preupdate_hook(sqlite::preupdate_context ctx,
+                     int op,
+                     const char * db_name,
+                     const char * table_name,
+                     sqlite3_int64 current_key,
+                     sqlite3_int64 new_key);
+ @endcode
+
+
+
+*/
 template<typename Func>
 bool preupdate_hook(connection & conn, Func && func)
 {
@@ -320,7 +361,7 @@ bool preupdate_hook(connection & conn, Func && func)
 
   @param conn The database connection to install the hook in
   @param func The hook function
-  @return True if an hook has been replaced.
+  @return true if an hook has been replaced.
  */
 template<typename Func>
 bool update_hook(connection & conn, Func && func)

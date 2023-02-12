@@ -7,7 +7,7 @@ endif()
 
 project(boost_sqlite
         VERSION "${BOOST_SQLITE_VERSION}"
-        DESCRIPTION "A sqlite wrapper library"
+        DESCRIPTION "A sqlite C++ library"
         LANGUAGES CXX)
 
 set(BOOST_SQLITE_IS_ROOT OFF)

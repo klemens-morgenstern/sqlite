@@ -36,5 +36,17 @@ TEST_CASE("hooks")
 
   CHECK(called);
 
+#if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
+  auto hk = [](sqlite::preupdate_context ctx,
+               int op,
+               const char * db_name,
+               const char * table_name,
+               sqlite3_int64 current_key,
+               sqlite3_int64 new_key) noexcept
+  {
 
+  };
+
+  preupdate_hook(conn, hk);
+#endif
 }

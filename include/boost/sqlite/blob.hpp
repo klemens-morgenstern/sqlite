@@ -39,10 +39,10 @@ struct blob_view
     std::size_t size_{0u};
 };
 
-/// Helper type to pass a blob full of zeroes without allocating extra memory.
+/// @brief Helper type to pass a blob full of zeroes without allocating extra memory. @ingroup reference
 enum class zero_blob : sqlite3_uint64 {};
 
-/// @brief an object that holds a binary large object  @ingroup reference
+/// @brief An object that owns a binary large object. @ingroup reference
 struct blob
 {
     /// The data in the blob
@@ -69,7 +69,7 @@ struct blob
 
 blob_view::blob_view(const blob & b) : data_(b.data()), size_(b.size()) {}
 
-/// @brief an object that holds a binary large object  @ingroup reference
+/// @brief an object that holds a binary large object. Can be obtained by using @ref blob_handle. @ingroup reference
 struct blob_handle
 {
     /// Default constructor
@@ -79,7 +79,7 @@ struct blob_handle
     explicit blob_handle(sqlite3_blob * blob) : blob_(blob) {}
 
     ///@{
-    /// Reopen on another row
+    /// @brief Reopen on another row
     void reopon(sqlite3_int64 row_id, error_code & ec)
     {
         int res = sqlite3_blob_reopen(blob_.get(), row_id);
@@ -95,7 +95,7 @@ struct blob_handle
     ///@}
 
     ///@{
-    /// Read data from the blob
+    /// @brief Read data from the blob
     void read_at(void *data, int len, int offset, error_code &ec)
     {
         int res = sqlite3_blob_read(blob_.get(), data, len, offset);
@@ -111,7 +111,7 @@ struct blob_handle
     ///@}
 
     ///@{
-    /// Write data to the blob
+    /// @brief Write data to the blob
     void write_at(const void *data, int len, int offset, error_code &ec)
     {
         int res = sqlite3_blob_write(blob_.get(), data, len, offset);

@@ -28,20 +28,20 @@ create table library(
 );
 )");
 
-  conn.prepare("insert into author (last_name, first_name) values (?2, ?1), (?4, ?3), (?6, ?5), (?8, ?7)")
-      .execute(std::make_tuple("vinnie", "falco", "richard", "hodges", "ruben", "perez", "peter", "dimov"));
+  conn.prepare("insert into author (first_name, last_name) values (?1, ?2), (?3, ?4), (?5, ?6), (?7, ?8)")
+      .execute({"vinnie", "falco", "richard", "hodges", "ruben", "perez", "peter", "dimov"});
 
 
   {
     conn.query("begin transaction;");
 
-    auto st = conn.prepare(R"(insert into library ("name", author) values ($1,
-                            (select id from author where first_name = $2 and last_name = $3)))");
+    auto st = conn.prepare(R"(insert into library ("name", author) values ($library,
+                           (select id from author where first_name = $fname and last_name = $lname)))");
 
-    st.execute(std::make_tuple("beast",   "vinnie", "falco"));
-    st.execute(std::make_tuple("mysql",    "ruben", "perez"));
-    st.execute(std::make_tuple("mp11",     "peter", "dimov"));
-    st.execute(std::make_tuple("variant2", "peter", "dimov"));
+    st.execute({{"library", "beast"},    {"fname", "vinnie"}, {"lname", "falco"}});
+    st.execute({{"library", "mysql"},    {"fname", "ruben"},  {"lname", "perez"}});
+    st.execute({{"library", "mp11"},     {"fname", "peter"},  {"lname", "dimov"}});
+    st.execute({{"library", "variant2"}, {"fname", "peter"},  {"lname", "dimov"}});
 
     conn.query("commit;");
   }
