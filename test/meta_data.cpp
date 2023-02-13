@@ -19,23 +19,27 @@ TEST_CASE("meta-data")
 
 
   auto fn = table_column_meta_data(conn,  "author", "first_name");
-  CHECK( fn.data_type == "TEXT");
+  CHECK_MESSAGE(doctest::String(fn.data_type.data(), fn.data_type.size()).compare("TEXT", true) == 0,
+                fn.data_type);
   CHECK(!fn.auto_increment);
-  CHECK( fn.collation == "BINARY");
+  CHECK_MESSAGE(doctest::String(fn.collation.data(), fn.collation.size()).compare("BINARY", true) == 0,
+                fn.collation);
   CHECK(!fn.primary_key);
   CHECK( fn.not_null);
 
   auto ln = table_column_meta_data(conn, "main", "author", "last_name");
-  CHECK( ln.data_type == "TEXT");
+  CHECK_MESSAGE(doctest::String(ln.data_type.data(), ln.data_type.size()).compare("TEXT", true)  == 0,
+                ln.data_type);
   CHECK(!ln.auto_increment);
-  CHECK( ln.collation == "BINARY");
+  CHECK_MESSAGE(doctest::String(ln.collation.data(), fn.collation.size()).compare("BINARY", true)  ==0,
+                ln.collation);
   CHECK(!ln.primary_key);
   CHECK(!ln.not_null);
 
   auto id = table_column_meta_data(conn, "main", "author", "id");
-  CHECK( id.data_type == "INTEGER");
+  CHECK(doctest::String(id.data_type.data(), id.data_type.size()).compare("INTEGER", true) == 0);
   CHECK( id.auto_increment);
-  CHECK( id.collation == "BINARY");
+  CHECK(doctest::String(id.collation.data(), fn.collation.size()).compare("BINARY", true) == 0);
   CHECK( id.primary_key);
   CHECK( id.not_null);
 

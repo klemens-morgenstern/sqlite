@@ -43,9 +43,9 @@ TEST_CASE("decltype")
   );
   auto q = conn.prepare("select* from author;");
 
-  CHECK(q.declared_type(0) == "INTEGER");
-  CHECK(q.declared_type(1) == "TEXT");
-  CHECK(q.declared_type(2) == "TEXT");
+  CHECK(doctest::String(q.declared_type(0).data()).compare("INTEGER", true) == 0);
+  CHECK(doctest::String(q.declared_type(1).data()).compare("TEXT",    true) == 0);
+  CHECK(doctest::String(q.declared_type(2).data()).compare("TEXT",    true) == 0);
 
   CHECK_THROWS(conn.prepare("elect * from nothing;"));
 }

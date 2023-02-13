@@ -8,6 +8,7 @@
 #ifndef BOOST_SQLITE_VTABLE_HPP
 #define BOOST_SQLITE_VTABLE_HPP
 
+#include <boost/sqlite/detail/config.hpp>
 #include <boost/core/span.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/sqlite/function.hpp>
@@ -192,10 +193,11 @@ struct vtab_function_setter
     void **ppArg_;
 };
 
-
+#if SQLITE_VERSION_NUMBER > 3038000
 /** @brief Utility function that can be used in `xFilter` for the `in` operator.
     @see https://www.sqlite.org/capi3ref.html#sqlite3_vtab_in_first
     @ingroup reference
+    @Note requires sqlite version >= 3.38
 */
 struct vtab_in
 {
@@ -271,6 +273,8 @@ struct vtab_in
  private:
     sqlite3_value * out_{nullptr};
 };
+
+#endif
 
 namespace detail
 {
