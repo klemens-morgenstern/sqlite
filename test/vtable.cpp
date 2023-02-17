@@ -72,9 +72,6 @@ struct simple_test_impl
 TEST_CASE("simple reader")
 {
   sqlite::connection conn(":memory:");
-  auto db = conn.handle();
-
-
   auto & m = create_module(conn, "test_table", simple_test_impl{});
 
   auto itr = m.names.begin();
@@ -178,7 +175,6 @@ struct modifyable_test_impl
 TEST_CASE("modifyable reader")
 {
   sqlite::connection conn(":memory:");
-  auto db = conn.handle();
 
   auto & m = create_module(conn, "name_table", modifyable_test_impl{});
   conn.execute("create virtual table test_table USING name_table; ");

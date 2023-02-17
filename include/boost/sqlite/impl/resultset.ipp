@@ -48,7 +48,7 @@ system::result<row> resultset::read_one()
     system::error_code ec;
     error_info ei;
     row r;
-    auto tmp = read_one(r, ec, ei);
+    read_one(r, ec, ei);
     if (ec)
         return ec;
     else

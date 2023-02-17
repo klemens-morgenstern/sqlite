@@ -77,8 +77,6 @@ bool commit_hook_impl(sqlite3 * db,
                       std::false_type)
 {
   static_assert(noexcept(func()));
-  using func_type    = typename std::decay<Func>::type;
-
   return sqlite3_commit_hook(
       db,
       [](void * data) { return (*static_cast<Func *>(data))() ? 1 : 0; },
@@ -118,8 +116,6 @@ bool rollback_hook_impl(sqlite3 * db,
                       std::false_type)
 {
   static_assert(noexcept(func()));
-  using func_type    = typename std::decay<Func>::type;
-
   return sqlite3_rollback_hook(
       db,
       [](void * data) { (*static_cast<Func *>(data))(); },

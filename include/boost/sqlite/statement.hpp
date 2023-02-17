@@ -323,7 +323,7 @@ struct statement
                    error_info & ei)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
-        if (sizeof...(Args) < sz)
+        if (sizeof...(Args) < static_cast<std::size_t>(sz))
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
             ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
@@ -382,7 +382,7 @@ struct statement
                        typename std::decay<ParamVector>::type::value_type, param_ref>::value>::type * = nullptr)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
-        if (vec.size() < sz)
+        if (vec.size() < static_cast<std::size_t>(sz))
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
             ei.set_message("To few parameters provided. Needs " + std::to_string(sz)

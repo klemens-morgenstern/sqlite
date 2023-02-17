@@ -13,7 +13,6 @@
 #define BOOST_SQLITE_CATCH_RESULT(ctx)                                             \
 catch (boost::system::system_error & se)                                           \
 {                                                                                  \
-  auto code = SQLITE_ERROR;                                                        \
   if (se.code().category() == boost::sqlite::sqlite_category())                    \
     sqlite3_result_error_code(ctx, se.code().value());                             \
   sqlite3_result_error(ctx, se.what(), std::strlen(se.what()));                    \

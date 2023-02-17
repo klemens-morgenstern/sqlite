@@ -260,7 +260,6 @@ template<typename Func>
 int create_aggregate_function(sqlite3 * db, const std::string & name, Func && func)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
-  using result_type  = callable_traits::return_type<decltype(&Func::final)>;
   using context_type = typename std::remove_reference<typename std::tuple_element<1u, args_type>::type>::type;
   using span_type    = typename std::tuple_element<2U, args_type>::type;
   using func_type    = typename std::decay<Func>::type;
@@ -313,7 +312,6 @@ template<typename Func>
 int create_window_function(sqlite3 * db, const std::string & name, Func && func)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
-  using result_type  = callable_traits::return_type<decltype(&Func::value)>;
   using context_type = typename std::remove_reference<typename std::tuple_element<1u, args_type>::type>::type;
   using span_type    = typename std::tuple_element<2U, args_type>::type;
   using func_type    = typename std::decay<Func>::type;
