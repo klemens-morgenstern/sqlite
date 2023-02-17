@@ -1,0 +1,22 @@
+
+project boost/sqlite
+    : requirements
+      <define>BOOST_FILESYSTEM_NO_DEPRECATED=1
+      <define>BOOST_SQLITE_SEPARATE_COMPILATION=1
+      <link>shared:<define>BOOST_SQLITE_DYN_LINK=1
+      <link>static:<define>BOOST_SQLITE_STATIC_LINK=1
+      <define>BOOST_SQLITE_SOURCE=1
+      <define>BOOST_FILESYSTEM_NO_DEPRECATED=1
+    : usage-requirements
+      <link>shared:<define>BOOST_SQLITE_DYN_LINK=1
+      <link>static:<define>BOOST_SQLITE_STATIC_LINK=1
+      <define>BOOST_SQLITE_SEPARATE_COMPILATION=1
+    : source-location ../src
+    ;
+
+lib boost_sqlite     : src.cpp ;
+lib boost_sqlite_ext : src_ext.cpp : <define>BOOST_SQLITE_COMPILE_EXTENSION=1 ;
+alias extension : boost_sqlite_ext ;
+
+boost-install boost_sqlite ;
+
