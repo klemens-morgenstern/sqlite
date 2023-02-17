@@ -24,8 +24,7 @@ common_install () {
 
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
       unset -f cd
-      echo "macos - set up homebrew openssl"
-      export OPENSSL_ROOT=/usr/local/opt/openssl
+      echo "macos - set up homebrew sqlite3"
 
       cat > ~/user-config.jam <<EOF
 import os ;
@@ -87,8 +86,8 @@ python tools/boostdep/depinst/depinst.py ../tools/quickbook
 ./bootstrap.sh
 ./b2 headers
 
-cp libs/sqlite/tools/user-config.jam ~/user-config.jam
-echo "using $TOOLSET : : $COMPILER : $CXX_FLAGS ;" >> ~/user-config.jam
+#cp libs/sqlite/tools/user-config.jam ~/user-config.jam
+echo "using $TOOLSET : : $COMPILER : $CXX_FLAGS ;" > ~/user-config.jam
 
 echo '==================================> SCRIPT'
 
