@@ -97,6 +97,24 @@ struct param_ref
     }
 
  private:
+    struct make_visitor
+    {
+      template<typename T>
+      auto operator()(T&& t) const -> typename std::enable_if<std::is_constructible_v<param_ref, T&&>, param_ref>::type
+      {
+        return param_ref(std::forward<T>(t));
+      }
+    };
+
+ public:
+    /// Construct param_ref from a variant
+    template<typename T>
+    param_ref(T && t,
+            decltype(visit(make_visitor(), std::forward<T>(t))) * = nullptr)
+      : param_ref(visit(make_visitor(), std::forward<T>(t)))
+    {}
+ private:
+
     struct visitor
     {
       sqlite3_stmt * stmt;

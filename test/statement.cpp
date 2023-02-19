@@ -7,7 +7,7 @@
 
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
-
+#include <boost/json.hpp>
 using namespace boost;
 
 
@@ -61,7 +61,7 @@ TEST_CASE("map")
   auto q = conn.prepare("select * from author where first_name = $name;").execute({{"name", 42}});
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({{"n4ame", 123}}));
 
-  std::unordered_map<std::string, int> params = {{"name", 42}};
+  std::unordered_map<std::string, variant2::variant<int, std::string>> params = {{"name", 42}};
   q = conn.prepare("select * from author where first_name = $name;").execute(params);
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute(params));
 
