@@ -66,7 +66,7 @@ bool commit_hook_impl(sqlite3 * db,
                       Func * func,
                       std::true_type)
 {
-  static_assert(noexcept(func()));
+  static_assert(noexcept(func()), "hook must be noexcept");
   return sqlite3_commit_hook( db, func, [](void * data) { return (*static_cast<Func *>(data))() ? 1 : 0; }, nullptr) != nullptr;
 }
 
@@ -76,7 +76,7 @@ bool commit_hook_impl(sqlite3 * db,
                       Func && func,
                       std::false_type)
 {
-  static_assert(noexcept(func()));
+  static_assert(noexcept(func()), "hook must be noexcept");
   return sqlite3_commit_hook(
       db,
       [](void * data) { return (*static_cast<Func *>(data))() ? 1 : 0; },
@@ -105,7 +105,7 @@ bool rollback_hook_impl(sqlite3 * db,
                       Func * func,
                       std::true_type)
 {
-  static_assert(noexcept(func()));
+  static_assert(noexcept(func()), "hook must be noexcept");
   return sqlite3_rollback_hook( db, func, [](void * data) { (*static_cast<Func *>(data))(); }, nullptr) != nullptr;
 }
 
@@ -115,7 +115,7 @@ bool rollback_hook_impl(sqlite3 * db,
                       Func && func,
                       std::false_type)
 {
-  static_assert(noexcept(func()));
+  static_assert(noexcept(func()), "hook must be noexcept");
   return sqlite3_rollback_hook(
       db,
       [](void * data) { (*static_cast<Func *>(data))(); },
@@ -142,7 +142,7 @@ bool preupdate_hook_impl(sqlite3 * db,
                       Func * func,
                       std::true_type)
 {
-  static_assert(noexcept(func(preupdate_context(nullptr), SQLITE_SELECT, "", "", 0, 0)));
+  static_assert(noexcept(func(preupdate_context(nullptr), SQLITE_SELECT, "", "", 0, 0)), "hook must be noexcept");
   return sqlite3_preupdate_hook(
       db, func,
       [](void * data,
@@ -201,7 +201,7 @@ bool update_hook_impl(sqlite3 * db,
                       Func * func,
                       std::true_type)
 {
-  static_assert(noexcept(func(SQLITE_SELECT, "", "", 0)));
+  static_assert(noexcept(func(SQLITE_SELECT, "", "", 0)), "hook must be noexcept");
   return sqlite3_update_hook(
       db, func,
       [](void * data,
@@ -221,7 +221,7 @@ bool update_hook_impl(sqlite3 * db,
                       Func & func,
                       std::false_type)
 {
-  static_assert(noexcept(func(SQLITE_SELECT, "", "", 0)));
+  static_assert(noexcept(func(SQLITE_SELECT, "", "", 0)), "hook must be noexcept");
   using func_type    = typename std::decay<Func>::type;
 
   return sqlite3_update_hook(

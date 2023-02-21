@@ -130,7 +130,7 @@ struct value
     sqlite3_value * value_ = nullptr;
 };
 
-static_assert(sizeof(value) == sizeof(sqlite3_value*));
+static_assert(sizeof(value) == sizeof(sqlite3_value*), "value must be same as sqlite3_value* pointer");
 
 BOOST_SQLITE_END_NAMESPACE
 

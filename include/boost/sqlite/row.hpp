@@ -165,7 +165,7 @@ struct row
         return ci;
     }
   private:
-    friend class resultset;
+    friend struct resultset;
     sqlite3_stmt * stm_;
 
 };

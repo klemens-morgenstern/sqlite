@@ -100,7 +100,7 @@ struct param_ref
     struct make_visitor
     {
       template<typename T>
-      auto operator()(T&& t) const -> typename std::enable_if<std::is_constructible_v<param_ref, T&&>, param_ref>::type
+      auto operator()(T&& t) const -> typename std::enable_if<std::is_constructible<param_ref, T&&>::value, param_ref>::type
       {
         return param_ref(std::forward<T>(t));
       }
