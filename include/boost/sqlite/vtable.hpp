@@ -646,14 +646,22 @@ struct vtable_helper
                                     noexcept(get_module<cursor_type>(static_cast<sqlite3_vtab_cursor*>(nullptr))
                                         .column(context<>(nullptr), int(), true)))
     {
+#if SQLITE_VERSION_NUMBER >= 3032000
         bool no_change = sqlite3_vtab_nochange(ctx) != 0;
+#else
+        bool no_change = false;
+#endif
         get_module<cursor_type>(pCursor).column(context<>(ctx), idx, no_change);
     }
 
     static void column_impl_1(sqlite3_vtab_cursor *pCursor, sqlite3_context* ctx, int idx,
                               int * /* first_type */)
     {
+#if SQLITE_VERSION_NUMBER >= 3032000
         bool no_change = sqlite3_vtab_nochange(ctx) != 0;
+#else
+        bool no_change = false;
+#endif
         set_result(ctx, get_module<cursor_type>(pCursor).column(idx, no_change));
     }
 

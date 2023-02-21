@@ -25,6 +25,7 @@ git submodule update --init --depth 20 --jobs 4 \
     tools/boost_install \
     tools/boostdep \
     libs/align \
+    libs/atomic \
     libs/asio \
     libs/assert \
     libs/config \

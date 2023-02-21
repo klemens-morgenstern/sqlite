@@ -104,12 +104,15 @@ struct value
     /// Best numeric datatype of the value
     value_type numeric_type()  const{return static_cast<value_type>(sqlite3_value_numeric_type(value_));}
 
+#if SQLITE_VERSION_NUMBER >= 3032000
     /// True if the column is unchanged in an UPDATE against a virtual table.
     bool nochange() const {return 0 != sqlite3_value_nochange(value_);}
+#endif
 
+#if SQLITE_VERSION_NUMBER >= 3031000
     /// True if value originated from a bound parameter
     bool from_bind() const {return 0 != sqlite3_value_frombind(value_);}
-
+#endif
     /// Construct value from a handle.
     explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
 
