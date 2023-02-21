@@ -12,6 +12,7 @@
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 
+
 /// @brief A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
 /// @ingroup reference
 struct param_ref
@@ -55,6 +56,7 @@ struct param_ref
     /// Bind a zero_blob value, i.e. a blob that initialized by zero.
     param_ref(zero_blob zb) : impl_(zb) { }
 
+#if SQLITE_VERSION_NUMBER >= 3020000
     /// Bind pointer value to the parameter. @see https://www.sqlite.org/bindptr.html
     template<typename T>
     param_ref(std::unique_ptr<T> ptr)
@@ -90,6 +92,8 @@ struct param_ref
                             typeid(T).name())
     {
     }
+#endif
+
     /// Apply the param_ref to a statement.
     int apply(sqlite3_stmt * stmt, int c) const
     {
@@ -159,17 +163,22 @@ struct param_ref
         else
           return sqlite3_bind_zeroblob(stmt, col, static_cast<int>(zb));
       }
+#if SQLITE_VERSION_NUMBER >= 3020000
       int operator()(std::pair<std::unique_ptr<void, void(*)(void*)>, const char*> & p)
       {
         auto d =p.first.get_deleter();
         return sqlite3_bind_pointer(stmt, col, p.first.release(), p.second, d);
       }
+#endif
     };
 
     mutable // so we can use it with
     variant2::variant<variant2::monostate, int, sqlite3_int64,
-                      blob_view, string_view, double, zero_blob,
-                      std::pair<std::unique_ptr<void, void(*)(void*)>, const char*>> impl_;
+                      blob_view, string_view, double, zero_blob
+#if SQLITE_VERSION_NUMBER >= 3020000
+                      , std::pair<std::unique_ptr<void, void(*)(void*)>, const char*>
+#endif
+                      > impl_;
 };
 
 
@@ -314,11 +323,14 @@ struct statement
         return sqlite3_sql(impl_.get());
     }
 
+#if SQLITE_VERSION_NUMBER >= 3014000
     /// Get the expanded sql used to construct the prepared statement.
     core::string_view expanded_sql()
     {
       return sqlite3_expanded_sql(impl_.get());
     }
+#endif
+
     /// Get the expanded sql used to construct the prepared statement.
 #ifdef SQLITE_ENABLE_NORMALIZE
     core::string_view normalized_sql()
