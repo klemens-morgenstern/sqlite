@@ -6,7 +6,7 @@
 #define BOOST_SQLITE_FIELD_HPP
 
 #include <boost/variant2/variant.hpp>
-#include <boost/utility/string_view.hpp>
+#include <boost/core/detail/string_view.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/value.hpp>
 
