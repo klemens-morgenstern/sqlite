@@ -60,7 +60,7 @@ configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
 
 add_custom_target(
         boost_sqlite_doc
-        COMMAND doxygen "${PROJECT_BINARY_DIR}/doc/Doxyfile"
+        COMMAND ${DOXYGEN_EXECUTABLE} "${PROJECT_BINARY_DIR}/doc/Doxyfile"
         COMMENT "Building documentation using Doxygen"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
         VERBATIM
