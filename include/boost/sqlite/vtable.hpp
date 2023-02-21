@@ -9,9 +9,9 @@
 #define BOOST_SQLITE_VTABLE_HPP
 
 #include <boost/sqlite/detail/config.hpp>
-#include <boost/core/span.hpp>
-#include <boost/intrusive_ptr.hpp>
 #include <boost/sqlite/function.hpp>
+
+#include <boost/core/span.hpp>
 #include <boost/core/demangle.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE

@@ -42,7 +42,7 @@ struct simple_test_impl
       void next() {itr++;}
       sqlite3_int64 row_id() {return *reinterpret_cast<sqlite3_int64*>(&itr);}
 
-      string_view column(int i, bool /* no_change */)
+      core::string_view column(int i, bool /* no_change */)
       {
         if (i > 0)
           throw_exception(std::out_of_range("column out of range"));
@@ -120,7 +120,7 @@ struct modifyable_test_impl
       void next() {itr++;}
       sqlite3_int64 row_id() {return itr->first;}
 
-      variant2::variant<int, string_view> column(int i, bool /* no_change */)
+      variant2::variant<int, core::string_view> column(int i, bool /* no_change */)
       {
         switch (i)
         {
