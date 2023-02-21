@@ -19,7 +19,7 @@ lib sqlite3 ;
 run [ glob *.cpp ] sqlite3 /boost//sqlite /boost//json ;
 
 
-lib simple_scalar : extension/simple_scalar.cpp /boost/sqlite//extension /boost//json 
+lib simple_scalar : extension/simple_scalar.cpp /boost/sqlite//extension /boost//json
                   : <link>shared ;
 
 # TODO run simple_scalar as sqlite3 :memory: ".read extension/simple_scalar.sql"

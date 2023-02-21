@@ -114,8 +114,8 @@ struct param_ref
     /// Construct param_ref from a variant
     template<typename T>
     param_ref(T && t,
-            decltype(visit(make_visitor(), std::forward<T>(t))) * = nullptr)
-      : param_ref(visit(make_visitor(), std::forward<T>(t)))
+            decltype(variant2::visit(make_visitor(), std::forward<T>(t))) * = nullptr)
+      : param_ref(variant2::visit(make_visitor(), std::forward<T>(t)))
     {}
  private:
 

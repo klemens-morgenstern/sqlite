@@ -308,6 +308,8 @@ int create_aggregate_function(sqlite3 * db, const std::string & name, Func && fu
   );
 }
 
+#if SQLITE_VERSION_NUMBER >= 3025000
+
 template<typename Func>
 int create_window_function(sqlite3 * db, const std::string & name, Func && func)
 {
@@ -389,6 +391,8 @@ int create_window_function(sqlite3 * db, const std::string & name, Func && func)
       [](void * ptr) /* xDestroy */ { delete static_cast<func_type*>(ptr);}
   );
 }
+
+#endif
 
 }
 
@@ -582,6 +586,7 @@ void create_aggregate_function(
 }
 ///@}
 
+#if SQLITE_VERSION_NUMBER >= 3025000
 
 ///@{
 /** @brief create a aggregate window function
@@ -661,6 +666,8 @@ void create_window_function(
 }
 
 ///@}
+
+#endif
 
 BOOST_SQLITE_END_NAMESPACE
 

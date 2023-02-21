@@ -85,7 +85,7 @@ TEST_CASE("aggregate")
   CHECK(lens[0]  == (5 + 6 + 7 + 5));
 }
 
-
+#if SQLITE_VERSION_NUMBER >= 3025000
 TEST_CASE("window")
 {
   sqlite::connection conn(":memory:");
@@ -133,3 +133,4 @@ select win_counter(first_name) over (
   CHECK(lens[2] == 18);
   CHECK(lens[3] == 12);
 }
+#endif

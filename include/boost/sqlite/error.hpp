@@ -8,6 +8,7 @@
 #ifndef BOOST_SQLITE_ERROR_HPP
 #define BOOST_SQLITE_ERROR_HPP
 
+#include <boost/sqlite/detail/config.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/system/system_error.hpp>
 

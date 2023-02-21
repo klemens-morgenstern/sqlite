@@ -29,6 +29,7 @@ git submodule update --init --depth 20 --jobs 4 \
     libs/asio \
     libs/assert \
     libs/config \
+    libs/container \
     libs/core \
     libs/callable_traits \
     libs/describe \
@@ -38,9 +39,10 @@ git submodule update --init --depth 20 --jobs 4 \
     libs/move \
     libs/mp11 \
     libs/variant2 \
+    libs/throw_exception \
     libs/json
 
 echo Submodule update complete
 
-rm -rf libs/beast
-cp -r $build_dir libs/beast
+rm -rf libs/sqlite
+cp -r $build_dir libs/sqlite

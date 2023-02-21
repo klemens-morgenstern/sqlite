@@ -8,6 +8,9 @@
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
 #include <boost/json.hpp>
+#include <unordered_map>
+
+
 using namespace boost;
 
 
@@ -15,7 +18,7 @@ TEST_CASE("connection")
 {
   sqlite::connection conn;
   conn.connect(":memory:");
-
+#if SQLITE_VERSION_NUMBER >= 3020000
   std::unique_ptr<int> data{new int(42)};
 
   auto ip = data.get();
@@ -29,7 +32,7 @@ TEST_CASE("connection")
   CHECK(v.get_pointer<int>() != nullptr);
   CHECK(v.get_pointer<int>() == ip);
   CHECK(v.get_pointer<double>() == nullptr);
-
+#endif
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({}));
 }
 

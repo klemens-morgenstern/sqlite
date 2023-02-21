@@ -122,13 +122,12 @@ struct value
     handle_type handle() const {return value_;}
     handle_type & handle() {return value_;}
 
+#if SQLITE_VERSION_NUMBER >= 3020000
     /// Get a value that was passed through the pointer interface.
     /// A value can be set as a pointer by binding/returning a unique_ptr.
     template<typename T>
     T * get_pointer() {return static_cast<T*>(sqlite3_value_pointer(value_, typeid(T).name()));}
-
-
-    sqlite3_value ** operator&() {return &value_;}
+#endif
   private:
     sqlite3_value * value_ = nullptr;
 };
