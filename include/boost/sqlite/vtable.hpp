@@ -915,11 +915,15 @@ struct vtable_helper
             commit(has_transactions{}),
             rollback(has_transactions{}),
             find_function(had_find_function{}),
-            rename(rank<1>{}),
-            savepoint(has_recursive_transactions{}),
-            release(has_recursive_transactions{}),
-            rollback_to(has_recursive_transactions{}),
-            shadow_name(rank<1>{})
+            rename(rank<1>{})
+#if SQLITE_VERSION_NUMBER >= 3007007
+          , savepoint(has_recursive_transactions{})
+          , release(has_recursive_transactions{})
+          , rollback_to(has_recursive_transactions{})
+#endif
+#if SQLITE_VERSION_NUMBER >= 3026000
+          , shadow_name(rank<1>{})
+#endif
         };
 
         return res;
