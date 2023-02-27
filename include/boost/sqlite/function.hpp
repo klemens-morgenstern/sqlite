@@ -71,7 +71,7 @@ struct context
     auto p = static_cast<type*>(sqlite3_get_auxdata(ctx_, Idx));
     if (p == nullptr)
       throw_exception(std::invalid_argument("argument not set"));
-    return p;
+    return *p;
   }
 
   /// Get the value in the context at position `Idx`. Returns nullptr .value isn't set.
