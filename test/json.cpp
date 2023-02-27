@@ -23,14 +23,14 @@ TEST_CASE("to_value")
 
   auto q = conn.prepare("select 'foo', json_array($1, '2', null)").execute(std::make_tuple(1));
 
-  sqlite::row r;
-  q.read_one(r);
+  sqlite::row r = q.current();
+
   CHECK(!sqlite::is_json(r[0]));
   CHECK( sqlite::is_json(r[1]));
   CHECK(sqlite::as_json(r[1]) == json::array{1, "2", nullptr});
   CHECK(json::value_from(r[1]) == json::array{1, "2", nullptr});
-  CHECK(!q.read_one(r));
-  CHECK(!q.read_one(r));
+  CHECK(!q.read_next());
+  CHECK(!q.read_next());
 
   // language=sqlite
   q = conn.query(R"(select first_name, "name" from library inner join author a on a.id = library.author order by library.name asc)");
@@ -63,27 +63,27 @@ TEST_CASE("blob")
 {
   sqlite::connection conn(":memory:");
   CHECK_THROWS(json::value_from(conn.prepare("select $1;").execute({sqlite::zero_blob(1024)})));
-  CHECK(nullptr == json::value_from(conn.query("select null;").read_one()->at(0)));
-  CHECK(1234 == json::value_from(conn.query("select 1234;").read_one()->at(0)));
-  CHECK(12.4 == json::value_from(conn.query("select 12.4;").read_one()->at(0)));
+  CHECK(nullptr == json::value_from(conn.query("select null;").current().at(0)));
+  CHECK(1234 == json::value_from(conn.query("select 1234;").   current().at(0)));
+  CHECK(12.4 == json::value_from(conn.query("select 12.4;").   current().at(0)));
 }
 
 TEST_CASE("value")
 {
   sqlite::connection conn(":memory:");
-  CHECK_THROWS(json::value_from(conn.prepare("select $1;").execute({sqlite::zero_blob(1024)}).read_one()->at(0)));
-  CHECK(nullptr == json::value_from(conn.query("select null;").read_one()->at(0).get_value()));
-  CHECK(1234 == json::value_from(conn.query("select 1234;").read_one()->at(0).get_value()));
-  CHECK(12.4 == json::value_from(conn.query("select 12.4;").read_one()->at(0).get_value()));
-  CHECK("txt" == json::value_from(conn.query("select 'txt';").read_one()->at(0).get_value()));
+  CHECK_THROWS(json::value_from(conn.prepare("select $1;").execute({sqlite::zero_blob(1024)}).current().at(0)));
+  CHECK(nullptr == json::value_from(conn.query("select null;").current().at(0).get_value()));
+  CHECK(1234 == json::value_from(conn.query("select 1234;").   current().at(0).get_value()));
+  CHECK(12.4 == json::value_from(conn.query("select 12.4;").   current().at(0).get_value()));
+  CHECK("txt" == json::value_from(conn.query("select 'txt';"). current().at(0).get_value()));
 }
 
 
 TEST_CASE("subtype")
 {
   sqlite::connection conn(":memory:");
-  CHECK(!sqlite::is_json(conn.prepare("select $1;").execute({"foobar"}).read_one()->at(0)));
-  CHECK(sqlite::is_json(conn.prepare("select json_array($1);").execute({"foobar"}).read_one()->at(0)));
+  CHECK(!sqlite::is_json(conn.prepare("select $1;").execute({"foobar"}).current().at(0)));
+  CHECK(sqlite::is_json(conn.prepare("select json_array($1);").execute({"foobar"}).current().at(0)));
 }
 
 
@@ -97,7 +97,7 @@ TEST_CASE("function")
                                  });
 
   CHECK(sqlite::is_json(conn.prepare("select my_json_parse($1);")
-            .execute({R"({"foo" : 42, "bar" : "xyz"})"}).read_one()->at(0)));
+            .execute({R"({"foo" : 42, "bar" : "xyz"})"}).current().at(0)));
 }
 
 

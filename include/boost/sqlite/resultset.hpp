@@ -26,9 +26,12 @@ struct connection ;
 
   sqlite::resultset rs = conn.query("select * from users;");
 
-  sqlite::row r;
-  while (rs.read_one(r)) // read it line by line
+  do
+  {
     handle_row(r.current());
+  }
+  while (rs.read_next()) // read it line by line
+
 
     @endcode
 
@@ -36,7 +39,7 @@ struct connection ;
 struct resultset
 {
     /// Get the current row.
-    row current() const
+    row current() const &
     {
         row r;
         r.stm_ = impl_.get();
@@ -46,10 +49,9 @@ struct resultset
     bool done() const {return done_;}
 
     ///@{
-    /// Read one row. Returns false if there's nothing more to read.
-    BOOST_SQLITE_DECL bool read_one(row& r, error_code & ec, error_info & ei);
-    BOOST_SQLITE_DECL bool read_one(row & r);
-    BOOST_SQLITE_DECL system::result<row> read_one();
+    /// Read the next row. Returns false if there's nothing more to read.
+    BOOST_SQLITE_DECL bool read_next(error_code & ec, error_info & ei);
+    BOOST_SQLITE_DECL bool read_next();
     ///@}
 
     ///
@@ -84,10 +86,7 @@ struct resultset
       iterator() {}
       explicit iterator(sqlite3_stmt * stmt, bool sentinel) : sentinel_(sentinel )
       {
-          row_.stm_ = stmt;
-          if (!sentinel && sqlite3_data_count(row_.stm_) == 0)
-              (*this)++;
-
+        row_.stm_ = stmt;
       }
 
       bool operator!=(iterator rhs)
@@ -139,7 +138,8 @@ struct resultset
         bool delete_ = true;
         void operator()(sqlite3_stmt * sm)
         {
-            while ( sqlite3_step(sm) == SQLITE_ROW);
+            if (sqlite3_data_count(sm) > 0)
+              while ( sqlite3_step(sm) == SQLITE_ROW);
             if (delete_)
                 sqlite3_finalize(sm);
             else

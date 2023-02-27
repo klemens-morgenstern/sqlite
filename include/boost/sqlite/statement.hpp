@@ -212,6 +212,8 @@ struct statement
         bind_impl(std::forward<ArgRange>(params), ec, info);
         resultset rs;
         rs.impl_.reset(impl_.release());
+        if (!ec)
+          rs.read_next(ec, info);
         return rs;
     }
 
@@ -231,10 +233,12 @@ struct statement
         error_code& ec,
         error_info& info) &&
     {
-      bind_impl(std::move(params), ec, info);
-      resultset rs;
-      rs.impl_.reset(impl_.release());
-      return rs;
+        bind_impl(std::move(params), ec, info);
+        resultset rs;
+        rs.impl_.reset(impl_.release());
+        if (!ec)
+          rs.read_next(ec, info);
+        return rs;
     }
 
     resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&
@@ -277,6 +281,8 @@ struct statement
         resultset rs;
         rs.impl_.get_deleter().delete_ = false;
         rs.impl_.reset(impl_.get());
+        if (!ec)
+            rs.read_next(ec, info);
         return rs;
     }
 
@@ -302,6 +308,8 @@ struct statement
       resultset rs;
       rs.impl_.get_deleter().delete_ = false;
       rs.impl_.reset(impl_.get());
+      if (!ec)
+        rs.read_next(ec, info);
       return rs;
     }
 

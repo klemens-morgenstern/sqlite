@@ -80,7 +80,11 @@ resultset connection::query(
         ei.set_message(sqlite3_errmsg(impl_.get()));
     }
     else
-        res.impl_.reset(ss);
+    {
+      res.impl_.reset(ss);
+      if (!ec)
+        res.read_next(ec, ei);
+    }
     return res;
 }
 

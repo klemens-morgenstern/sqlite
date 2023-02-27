@@ -107,8 +107,12 @@ boost::sqlite::row r;
 boost::sqlite::query q = conn.query(
     "select first_name, collect_libs(name) " 
        " from author inner join library l on author.id = l.author group by last_name")
-whilte (q.read_one(r))
-  std::cout << q.at(0u).get_text() << " authored " << q.at(1u).get_text() << std::endl;
+do 
+{
+  auto r = q.current();''
+  std::cout << r.at(0u).get_text() << " authored " << r.at(1u).get_text() << std::endl;
+}
+while (q.read_next());
 
 ```
 

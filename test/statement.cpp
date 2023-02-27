@@ -23,8 +23,7 @@ TEST_CASE("connection")
 
   auto ip = data.get();
   auto q = conn.prepare("select $1;").execute(std::make_tuple(std::move(data)));
-  sqlite::row r;
-  q.read_one(r);
+  sqlite::row r = q.current();
   CHECK(r.size() == 1u);
 
   auto v = r.at(0).get_value();

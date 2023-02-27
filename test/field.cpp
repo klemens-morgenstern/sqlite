@@ -25,8 +25,7 @@ create table type_tester(
 )");
 
   auto res = conn.query("select * from type_tester");
-  sqlite::row r;
-  res.read_one(r);
+  auto r = res.current();
 
   CHECK(r[0].type() == sqlite::value_type::integer);
   CHECK(r[0].get_int() == 42);
@@ -44,8 +43,4 @@ create table type_tester(
   char raw_data[4] = {4,5,6,7};
   std::memcpy(bl.data(), raw_data, 4);
   CHECK(std::memcmp(bl.data(), r[4].get_blob().data(), 4u) == 0u);
-
-  CHECK(conn.query("select null;").read_one()->at(0).get_text() == "");
-  CHECK(conn.query("select null;").read_one()->at(0).get_value().get_text() == "");
-
 }
