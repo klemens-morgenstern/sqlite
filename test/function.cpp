@@ -58,7 +58,6 @@ TEST_CASE("aggregate")
 
   struct aggregate_func
   {
-      std::size_t counter;
       void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
@@ -95,7 +94,6 @@ TEST_CASE("window")
 
   struct window_func
   {
-    std::size_t counter;
     void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
     {
       counter += val[0].get_text().size();
