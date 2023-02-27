@@ -214,7 +214,7 @@ struct ordered_map
 };
 
 
-std::initializer_list<std::tuple<std::string, std::string>> data = {
+std::initializer_list<std::tuple<std::string, std::string>> raw_data = {
     {"atomic",                    "1.53.0"},
     {"chrono",                    "1.47.0"},
     {"container",                 "1.48.0"},
@@ -265,7 +265,7 @@ int main (int argc, char * argv[])
 
   {
     auto p = conn.prepare("insert into my_map (name, data) values (?, ?);");
-    for (const auto & d : data)
+    for (const auto & d : raw_data)
       p.execute(d);
   }
 
