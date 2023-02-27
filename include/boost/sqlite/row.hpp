@@ -14,6 +14,8 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
  Is a random-access range.
 
+ All values that are obtained by view are valid until the next row is read.
+
  */
 struct row
 {
