@@ -208,3 +208,24 @@ will move all the symbols into an inline namespace `ext` inside `boost::sqlite`.
 ## Reference
 
 * [Reference](#reference): Covers the topics discussed in this document.
+
+## Library Comparisons
+
+While there are many sqlite wrappers out there, most haven't been updated in the last five years - while sqlite has.
+
+Here are some actively maintained ones:
+
+ - [SQLiteCpp](https://github.com/SRombauts/SQLiteCpp) 
+
+SQLiteCpp is the closest to this library, a C++11 wrapper only depending on sqlite & the STL.
+It's great and served as an inspiration for this library. 
+boost.sqlite does provide more functionality when it comes to hooks, custom functions & virtual tables. 
+Furthermore, boost.sqlite has a non-throwing interface and supports variants & json, as those are available through boost.
+
+ - [sqlite_modern_cpp](https://github.com/SqliteModernCpp/sqlite_modern_cpp)
+
+This library takes a different approach, by making everything an `iostream` interface. 
+
+ - [sqlite_orm](https://github.com/fnc12/sqlite_orm)
+
+As the name says, it's an ORM. So it does more than give easy access to a database.
