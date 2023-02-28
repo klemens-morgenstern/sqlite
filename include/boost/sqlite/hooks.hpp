@@ -23,7 +23,7 @@ BOOST_SQLITE_BEGIN_NAMESPACE
  */
 struct preupdate_context
 {
-  /// Get the old value, i.e. the value before the update.
+  /// Returns the old value, i.e. the value before the update.
   system::result<value> old(int column) const
   {
     sqlite3_value * val;

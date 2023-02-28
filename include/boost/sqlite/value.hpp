@@ -57,22 +57,22 @@ struct value
     {
         return type() != value_type::null;
     }
-    /// Get the value as regular `int`.
+    /// Returns the value as regular `int`.
     int get_int() const
     {
         return sqlite3_value_int(value_);
     }
-    /// Get the value as an `int64`.
+    /// Returns the value as an `int64`.
     sqlite3_int64 get_int64() const
     {
         return sqlite3_value_int64(value_);
     }
-    /// Get the value as an `double`.
+    /// Returns the value as an `double`.
     double get_double() const
     {
         return sqlite3_value_double(value_);
     }
-    /// Get the value as text, i.e. a string_view. Note that this value may be invalidated`.
+    /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
     core::string_view get_text() const
     {
         const auto ptr = sqlite3_value_text(value_);
@@ -86,7 +86,7 @@ struct value
         const auto sz = sqlite3_value_bytes(value_);
         return core::string_view(reinterpret_cast<const char*>(ptr), sz);
     }
-    /// Get the value as blob, i.e. raw memory. Note that this value may be invalidated`.
+    /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
     blob_view get_blob() const
     {
         const auto ptr = sqlite3_value_blob(value_);
@@ -118,7 +118,7 @@ struct value
 
     /// The handle of the value.
     using handle_type = sqlite3_value *;
-    /// Get the handle.
+    /// Returns the handle.
     handle_type handle() const {return value_;}
     handle_type & handle() {return value_;}
 

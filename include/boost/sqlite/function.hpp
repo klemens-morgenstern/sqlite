@@ -63,7 +63,7 @@ struct context
                         });
   }
 
-  /// Get the value in the context at position `Idx`. Throws if the value isn't set.
+  /// Returns the value in the context at position `Idx`. Throws if the value isn't set.
   template<std::size_t Idx>
   auto get() -> element<Idx>  &
   {
@@ -74,7 +74,7 @@ struct context
     return *p;
   }
 
-  /// Get the value in the context at position `Idx`. Returns nullptr .value isn't set.
+  /// Returns the value in the context at position `Idx`. Returns nullptr .value isn't set.
   template<std::size_t Idx>
   auto get_if() -> element<Idx>  *
   {
@@ -99,7 +99,7 @@ struct context
   {
     sqlite3_result_error(ctx_, message, code);
   }
-  /// Get the connection of the context.
+  /// Returns the connection of the context.
   connection get_connection() const
   {
     return connection{sqlite3_context_db_handle(ctx_), false};

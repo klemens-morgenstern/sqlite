@@ -131,7 +131,7 @@ struct blob_handle
 
     /// The handle of the blob
     using handle_type = sqlite3_blob*;
-    /// Get the handle of the blob
+    /// Returns the handle of the blob
     handle_type handle() { return blob_.get(); }
     /// Release the owned handle.
     handle_type release() &&    { return blob_.release(); }

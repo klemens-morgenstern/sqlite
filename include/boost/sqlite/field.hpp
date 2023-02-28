@@ -32,22 +32,22 @@ struct field
     {
         return type() != value_type::null;
     }
-    /// Get the value as regular `int`.
+    /// Returns the value as regular `int`.
     int get_int() const
     {
         return  sqlite3_column_int(stm_, col_);
     }
-    /// Get the value as an `int64`.
+    /// Returns the value as an `int64`.
     sqlite3_int64 get_int64() const
     {
         return  sqlite3_column_int64(stm_, col_);
     }
-    /// Get the value as an `double`.
+    /// Returns the value as an `double`.
     double get_double() const
     {
         return  sqlite3_column_double(stm_, col_);
     }
-    /// Get the value as text, i.e. a string_view. Note that this value may be invalidated`.
+    /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
     core::string_view get_text() const
     {
         const auto ptr =  sqlite3_column_text(stm_, col_);
@@ -61,7 +61,7 @@ struct field
         const auto sz =  sqlite3_column_bytes(stm_, col_);
         return core::string_view(reinterpret_cast<const char*>(ptr), sz);
     }
-    /// Get the value as blob, i.e. raw memory. Note that this value may be invalidated`.
+    /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
     blob_view get_blob() const
     {
         const auto ptr =  sqlite3_column_blob(stm_, col_);
@@ -75,22 +75,22 @@ struct field
         const auto sz =  sqlite3_column_bytes(stm_, col_);
         return blob_view(ptr, sz);
     }
-    /// Get the field as a value.
+    /// Returns the field as a value.
     value get_value() const
     {
       return value(sqlite3_column_value(stm_, col_));
     }
-    /// Get the name of the column.
+    /// Returns the name of the column.
     core::string_view column_name() const
     {
       return sqlite3_column_name(stm_, col_);
     }
-    /// Get the name of the table.
+    /// Returns the name of the table.
     core::string_view table_name() const
     {
       return sqlite3_column_table_name(stm_, col_);
     }
-    /// Get the name of the original data source.
+    /// Returns the name of the original data source.
     core::string_view column_origin_name() const
     {
       return sqlite3_column_origin_name(stm_, col_);

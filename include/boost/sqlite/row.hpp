@@ -24,11 +24,11 @@ struct row
     {
         return sqlite3_column_count(stm_);
     }
-    /// Get the field at `idx`, @throw std::out_of_range
-    field at(std::size_t idx) const
+    /// Returns the field at `idx`, @throws std::out_of_range
+    field at(std::size_t idx, const source_location & loc = BOOST_CURRENT_LOCATION) const
     {
         if (idx >= size())
-            throw std::out_of_range("column out of range");
+            throw_exception(std::out_of_range("column out of range"), loc);
         else
         {
              field f;
@@ -37,7 +37,7 @@ struct row
             return f;
         }
     }
-    /// Get the field at `idx`.
+    /// Returns the field at `idx`.
     field operator[](std::size_t idx) const
     {
         field f;
@@ -150,7 +150,7 @@ struct row
         friend struct row;
         field f_;
     };
-    /// Get the begin of the column-range.
+    /// Returns the begin of the column-range.
     const_iterator begin() const
     {
         const_iterator ci;
@@ -158,7 +158,7 @@ struct row
         ci.f_.stm_ = stm_;
         return ci;
     }
-    /// Get the end of the column-range.
+    /// Returns the end of the column-range.
     const_iterator end() const
     {
         const_iterator ci;

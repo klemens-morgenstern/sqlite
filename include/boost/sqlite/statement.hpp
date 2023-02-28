@@ -325,21 +325,21 @@ struct statement
     ///@}
 
 
-    /// Get the sql used to construct the prepared statement.
+    /// Returns the sql used to construct the prepared statement.
     core::string_view sql()
     {
         return sqlite3_sql(impl_.get());
     }
 
 #if SQLITE_VERSION_NUMBER >= 3014000
-    /// Get the expanded sql used to construct the prepared statement.
+    /// Returns the expanded sql used to construct the prepared statement.
     core::string_view expanded_sql()
     {
       return sqlite3_expanded_sql(impl_.get());
     }
 #endif
 
-    /// Get the expanded sql used to construct the prepared statement.
+    /// Returns the expanded sql used to construct the prepared statement.
 #ifdef SQLITE_ENABLE_NORMALIZE
     core::string_view normalized_sql()
     {
@@ -347,7 +347,7 @@ struct statement
     }
 #endif
 
-    /// Get the declared type of the column
+    /// Returns the declared type of the column
     core::string_view declared_type(int id) const
     {
         return sqlite3_column_decltype(impl_.get(), id);

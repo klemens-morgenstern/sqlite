@@ -38,7 +38,7 @@ struct connection ;
 */
 struct resultset
 {
-    /// Get the current row.
+    /// Returns the current row.
     row current() const &
     {
         row r;
@@ -59,17 +59,17 @@ struct resultset
     {
       return sqlite3_column_count(impl_.get());
     }
-    /// Get the name of the column idx.
+    /// Returns the name of the column idx.
     core::string_view column_name(std::size_t idx) const
     {
       return sqlite3_column_name(impl_.get(), idx);
     }
-    /// Get the name of the source table for column idx.
+    /// Returns the name of the source table for column idx.
     core::string_view table_name(std::size_t idx) const
     {
       return sqlite3_column_table_name(impl_.get(), idx);
     }
-    /// Get the origin name of the column for column idx.
+    /// Returns the origin name of the column for column idx.
     core::string_view column_origin_name(std::size_t idx) const
     {
       return sqlite3_column_origin_name(impl_.get(), idx);
@@ -78,7 +78,7 @@ struct resultset
     /// The input iterator can be used to read every row in a for-loop
     struct iterator
     {
-      using value_type = row;
+      using value_type = value;
       using difference_type   = int;
       using reference         = field&;
       using iterator_category = std::random_access_iterator_tag;

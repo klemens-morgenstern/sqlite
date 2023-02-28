@@ -264,9 +264,9 @@ struct vtab_in
         value out_{nullptr};
     };
 
-    /// Get a forward iterator to the `in` sequence for an `in` constraint pointing to the begin.
+    /// Returns a forward iterator to the `in` sequence for an `in` constraint pointing to the begin.
     iterator begin() {return iterator(out_);}
-    /// Get a forward iterator to the `in` sequence for an `in` constraint pointing to the end.
+    /// Returns a forward iterator to the `in` sequence for an `in` constraint pointing to the end.
     iterator end() {return iterator();}
 
     explicit vtab_in(sqlite3_value * out) : out_(out) {}
@@ -1004,7 +1004,7 @@ auto create_module(connection & conn,
 }
 ///@}
 
-/// Get the table associated with the cursor
+/// Returns the table associated with the cursor
 /// @ingroup reference
 template<typename Table>
 Table & get_vtable(detail::vtab::cursor_type<Table> * const cursor)
@@ -1066,17 +1066,17 @@ struct vtab_module_prototype
       /// @brief Apply a filter to the cursor. Required when best_index is implemented.
       void filter(int id_num, const char * id_str, boost::span<value> values);
 
-      /// @brief Get the next row.
+      /// @brief Returns the next row.
       void next();
 
       /// @brief Check if the cursor is and the end
       void eof();
 
-      /// @brief Get the result of a value. It will use the set_result functionality to create a an sqlite function.
+      /// @brief Returns the result of a value. It will use the set_result functionality to create a an sqlite function.
       /// see [vtab_no_change](https://www.sqlite.org/c3ref/vtab_nochange.html)
       T column(int idx, bool no_change):
 
-      /// @brief Get the id of the current row
+      /// @brief Returns the id of the current row
       sqlite3_int64 row_id();
    };
 
