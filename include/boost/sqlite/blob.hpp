@@ -80,7 +80,7 @@ struct blob_handle
 
     ///@{
     /// @brief Reopen on another row
-    void reopon(sqlite3_int64 row_id, error_code & ec)
+    void reopon(sqlite3_int64 row_id, system::error_code & ec)
     {
         int res = sqlite3_blob_reopen(blob_.get(), row_id);
         BOOST_SQLITE_ASSIGN_EC(ec, res);
@@ -90,13 +90,13 @@ struct blob_handle
         boost::system::error_code ec;
         reopon(row_id, ec);
         if (ec)
-            boost::throw_exception(system_error(ec));
+            boost::throw_exception(system::system_error(ec));
     }
     ///@}
 
     ///@{
     /// @brief Read data from the blob
-    void read_at(void *data, int len, int offset, error_code &ec)
+    void read_at(void *data, int len, int offset, system::error_code &ec)
     {
         int res = sqlite3_blob_read(blob_.get(), data, len, offset);
         BOOST_SQLITE_ASSIGN_EC(ec, res);
@@ -106,13 +106,13 @@ struct blob_handle
         boost::system::error_code ec;
         read_at(data, len, offset, ec);
         if (ec)
-            boost::throw_exception(system_error(ec));
+            boost::throw_exception(system::system_error(ec));
     }
     ///@}
 
     ///@{
     /// @brief Write data to the blob
-    void write_at(const void *data, int len, int offset, error_code &ec)
+    void write_at(const void *data, int len, int offset, system::error_code &ec)
     {
         int res = sqlite3_blob_write(blob_.get(), data, len, offset);
         BOOST_SQLITE_ASSIGN_EC(ec, res);
@@ -122,7 +122,7 @@ struct blob_handle
         boost::system::error_code ec;
         write_at(data, len, offset, ec);
         if (ec)
-            boost::throw_exception(system_error(ec));
+            boost::throw_exception(system::system_error(ec));
     }
     ///@}
 
@@ -155,7 +155,7 @@ blob_handle open_blob(connection & conn,
                       const char *column,
                       sqlite3_int64 row,
                       bool read_only,
-                      error_code &ec,
+                      system::error_code &ec,
                       error_info &ei);
 
 BOOST_SQLITE_DECL

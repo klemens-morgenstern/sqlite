@@ -956,7 +956,7 @@ Table & get_vtable_impl(detail::vtab::cursor_type<Table> * const cursor,
  @param conn   The connection to install the vtable into
  @param name   The name for the vtable
  @param module The module to install as a vtable. See @ref vtab_module_prototype for the structure required
- @param ec     The error_code used to deliver errors for the exception less overload.
+ @param ec     The system::error_code used to deliver errors for the exception less overload.
  @param info   The error_info used to deliver errors for the exception less overload.
 
  @param The requirements for `module`.

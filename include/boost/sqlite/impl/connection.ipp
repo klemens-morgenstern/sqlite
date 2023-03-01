@@ -46,7 +46,7 @@ void connection::close()
         throw_exception(system::system_error(ec, ei.message()));
 }
 
-void connection::close(error_code & ec,
+void connection::close(system::error_code & ec,
                        error_info & ei)
 {
     if (impl_)
@@ -65,7 +65,7 @@ void connection::close(error_code & ec,
 
 resultset connection::query(
         core::string_view q,
-        error_code & ec,
+        system::error_code & ec,
         error_info & ei)
 {
     resultset res;
@@ -100,7 +100,7 @@ resultset connection::query(core::string_view q)
 
 statement connection::prepare(
         core::string_view q,
-        error_code & ec,
+        system::error_code & ec,
         error_info & ei)
 {
     statement res;
@@ -131,7 +131,7 @@ statement connection::prepare(core::string_view q)
 
 void connection::execute(
     const char * q,
-    error_code & ec,
+    system::error_code & ec,
     error_info & ei)
 {
     char * msg = nullptr;

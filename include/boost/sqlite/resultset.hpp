@@ -50,7 +50,7 @@ struct resultset
 
     ///@{
     /// Read the next row. Returns false if there's nothing more to read.
-    BOOST_SQLITE_DECL bool read_next(error_code & ec, error_info & ei);
+    BOOST_SQLITE_DECL bool read_next(system::error_code & ec, error_info & ei);
     BOOST_SQLITE_DECL bool read_next();
     ///@}
 
@@ -109,7 +109,7 @@ struct resultset
         {
           system::error_code ec;
           BOOST_SQLITE_ASSIGN_EC(ec, cc);
-          throw_exception(system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
+          throw_exception(system::system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
         }
         return *this;
       }

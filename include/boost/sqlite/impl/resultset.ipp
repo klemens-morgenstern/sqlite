@@ -12,7 +12,7 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 bool resultset::read_next(
-              error_code & ec,
+              system::error_code & ec,
               error_info & ei) // could also return row* instead!
 {
     if (done_)

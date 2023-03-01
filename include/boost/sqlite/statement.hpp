@@ -192,7 +192,7 @@ struct statement
     /** @brief execute the prepared statement once.
 
       @param params The arguments to be passed to the prepared statement. This can be a map or a vector of param_ref.
-      @param ec     The error_code used to deliver errors for the exception less overload.
+      @param ec     The system::error_code used to deliver errors for the exception less overload.
       @param info   The error_info used to deliver errors for the exception less overload.
       @return The resultset of the query.
 
@@ -206,7 +206,7 @@ struct statement
     template <typename ArgRange = std::initializer_list<param_ref>>
     resultset execute(
             ArgRange && params,
-            error_code& ec,
+            system::error_code& ec,
             error_info& info) &&
     {
         bind_impl(std::forward<ArgRange>(params), ec, info);
@@ -230,7 +230,7 @@ struct statement
 
     resultset execute(
         std::initializer_list<std::pair<string_view, param_ref>> params,
-        error_code& ec,
+        system::error_code& ec,
         error_info& info) &&
     {
         bind_impl(std::move(params), ec, info);
@@ -258,7 +258,7 @@ struct statement
       @warning The handle is shared between the statement & resultset. The statemens need to be kept alive.
 
       @param params The arguments to be passed to the prepared statement.  This can be a map, a vector or a stuple of param_ref.
-      @param ec     The error_code used to deliver errors for the exception less overload.
+      @param ec     The system::error_code used to deliver errors for the exception less overload.
       @param info   The error_info used to deliver errors for the exception less overload.
       @return The resultset of the query.
 
@@ -274,7 +274,7 @@ struct statement
     template <typename ArgRange = std::initializer_list<param_ref>>
     resultset execute(
             ArgRange && params,
-            error_code& ec,
+            system::error_code& ec,
             error_info& info) &
     {
         bind_impl(std::forward<ArgRange>(params), ec, info);
@@ -301,7 +301,7 @@ struct statement
 
     resultset execute(
         std::initializer_list<std::pair<string_view, param_ref>> params,
-        error_code& ec,
+        system::error_code& ec,
         error_info& info) &
     {
       bind_impl(std::move(params), ec, info);
@@ -357,7 +357,7 @@ struct statement
 
     template<typename ... Args>
     void bind_impl(std::tuple<Args...> && vec,
-                   error_code & ec,
+                   system::error_code & ec,
                    error_info & ei)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
@@ -387,7 +387,7 @@ struct statement
 
     template<typename ... Args>
     void bind_impl(const std::tuple<Args...> & vec,
-                   error_code & ec,
+                   system::error_code & ec,
                    error_info & ei)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
@@ -415,7 +415,7 @@ struct statement
     }
 
     template<typename ParamVector>
-    void bind_impl(ParamVector && vec, error_code & ec, error_info & ei,
+    void bind_impl(ParamVector && vec, system::error_code & ec, error_info & ei,
                    typename std::enable_if<std::is_convertible<
                        typename std::decay<ParamVector>::type::value_type, param_ref>::value>::type * = nullptr)
     {
@@ -441,7 +441,7 @@ struct statement
     }
 
     template<typename ParamMap>
-    void bind_impl(ParamMap && vec, error_code & ec, error_info & ei,
+    void bind_impl(ParamMap && vec, system::error_code & ec, error_info & ei,
                    typename std::enable_if<
                        std::is_convertible<typename std::decay<ParamMap>::type::key_type, string_view>::value &&
                        std::is_convertible<typename std::decay<ParamMap>::type::mapped_type, param_ref>::value
@@ -480,7 +480,7 @@ struct statement
     }
 
     void bind_impl(std::initializer_list<std::pair<string_view, param_ref>> params,
-                   error_code & ec, error_info & ei)
+                   system::error_code & ec, error_info & ei)
     {
         for (auto i = 1; i <= sqlite3_bind_parameter_count(impl_.get()); i ++)
         {

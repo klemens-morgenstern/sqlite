@@ -41,7 +41,7 @@ struct sqlite_category_t final : system::error_category
 };
 
 
-error_category & sqlite_category()
+system::error_category & sqlite_category()
 {
   static sqlite_category_t cat;
   return cat;

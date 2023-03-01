@@ -403,7 +403,7 @@ int create_window_function(sqlite3 * db, const std::string & name, Func && func)
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -459,7 +459,7 @@ auto create_scalar_function(
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -514,7 +514,7 @@ auto create_scalar_function(
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -594,7 +594,7 @@ void create_aggregate_function(
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
