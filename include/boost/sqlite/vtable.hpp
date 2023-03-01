@@ -378,63 +378,21 @@ struct module_impl_helper : Base, Impl
   Impl & get_impl() {return *this;}
 };
 
-template<typename Base, typename Return>
-using vtab_intrusive = std::integral_constant<bool,
-    std::is_pointer<Return>::value &&
-    std::is_base_of<Base, typename std::remove_pointer<Return>::type>::value>;
-
-template<typename Base, typename ReturnType>
-using module_impl =
-    typename std::conditional<
-        vtab_intrusive<Base, ReturnType>::value,
-        ReturnType, module_impl_helper<Base, ReturnType> >::type;
 
 template<typename Impl, typename Base>
-Impl & get_module_impl(Base * base, std::true_type /* intrusive */) noexcept
-{
-  return *static_cast<Impl*>(base);
-}
-
-template<typename Impl, typename Base>
-Impl & get_module_impl(Base * impl, std::false_type /* intrusive */) noexcept
+Impl & get_module(Base * impl) noexcept
 {
   return static_cast<module_impl_helper<Base, Impl>*>(impl)->get_impl();
 }
 
 template<typename Impl, typename Base>
-Impl & get_module(Base * base) noexcept
-{
-  return get_module_impl<Impl>(base, vtab_intrusive<Base, Impl>{});
-}
-
-template<typename Impl, typename Base>
-void delete_module_impl(Base * base, std::true_type /* intrusive */) noexcept
-{
-  delete static_cast<Impl*>(base);
-}
-
-template<typename Impl, typename Base>
-void delete_module_impl(Base * impl, std::false_type /* intrusive */) noexcept
+void delete_module(Base * impl) noexcept
 {
   delete static_cast<module_impl_helper<Base, Impl>*>(impl);
 }
 
-template<typename Impl, typename Base>
-void delete_module(Base * base) noexcept
-{
-  delete_module_impl<Impl>(base, vtab_intrusive<Base, Impl>{});
-}
-
-
 template<typename BasePtr, typename ReturnType>
-auto make_module(BasePtr &res, ReturnType * result, std::true_type /* intrusive */) -> ReturnType *
-{
-  res = result;
-  return result;
-}
-
-template<typename BasePtr, typename ReturnType>
-auto make_module(BasePtr &res, ReturnType && result, std::false_type /* intrusive */)
+auto make_module(BasePtr &res, ReturnType && result)
     -> typename std::decay<ReturnType>::type *
 {
     using impl_t = module_impl_helper<
@@ -444,16 +402,6 @@ auto make_module(BasePtr &res, ReturnType && result, std::false_type /* intrusiv
     auto p = ip.get();
     res = ip.release();
     return &p->get_impl();
-}
-
-
-template<typename BasePtr, typename ReturnType>
-auto make_module(BasePtr & res, ReturnType && result)
-    -> typename std::decay<ReturnType>::type *
-{
-    return make_module(res, std::forward<ReturnType>(result),
-                vtab_intrusive<typename std::remove_pointer<BasePtr>::type,
-                               typename std::decay<ReturnType>::type>{});
 }
 
 
@@ -471,14 +419,7 @@ struct vtable_helper
     using has_recursive_transactions = vtab::has_recursive_transactions<table_type>;
     using had_find_function          = vtab::had_find_function<table_type>;
 
-    template<typename T>
-    void declare_vtab(sqlite3 * db, T * ptr) {sqlite3_declare_vtab(db, ptr->declaration());}
-
-    template<typename T>
-    void declare_vtab(sqlite3 * db, T & ptr) {sqlite3_declare_vtab(db, ptr.declaration());}
-
-
-  // -------------------------- create/destroy -------------------------- //
+    // -------------------------- create/destroy -------------------------- //
     static int create_impl(sqlite3 * db, void * pAux, int argc, const char * const * argv,
                            sqlite3_vtab **ppVTab, char** errMsg)
     {
@@ -696,11 +637,11 @@ struct vtable_helper
             else if (argc > 1 && sqlite3_value_type(argv[0]) == SQLITE_NULL)
                 *pRowid = mod.insert(value{argv[1]},
                                      boost::span<value>{reinterpret_cast<value*>(argv + 2),
-                                                        static_cast<std::size_t>(argc - 2)} );
+                                                        static_cast<std::size_t>(argc - 2)});
             else if (argc > 1 && sqlite3_value_type(argv[0]) != SQLITE_NULL)
               *pRowid = mod.update(sqlite::value(*argv), value{argv[1]}, // ID
                                    boost::span<value>{reinterpret_cast<value*>(argv + 2),
-                                                      static_cast<std::size_t>(argc - 2)} );
+                                                      static_cast<std::size_t>(argc - 2)});
             else
             {
               pVTab->zErrMsg = sqlite3_mprintf("Misuse of update api");
