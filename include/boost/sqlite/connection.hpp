@@ -58,7 +58,7 @@ struct connection
     ///@{
     /// Close the database connection.
     BOOST_SQLITE_DECL void close();
-    BOOST_SQLITE_DECL void close(error_code & ec, error_info & ei);
+    BOOST_SQLITE_DECL void close(system::error_code & ec, error_info & ei);
     ///@}
 
     /// Check if the database holds a valid handle.
@@ -69,7 +69,7 @@ struct connection
     /// Perform a query without parameters. Can only execute a single statement.
     BOOST_SQLITE_DECL resultset query(
             core::string_view q,
-            error_code & ec,
+            system::error_code & ec,
             error_info & ei);
 
     BOOST_SQLITE_DECL resultset query(core::string_view q);
@@ -79,13 +79,13 @@ struct connection
     /// Perform a query without parametert, It execute a multiple statement.
     BOOST_SQLITE_DECL void execute(
       const char * q,
-        error_code & ec,
+        system::error_code & ec,
         error_info & ei);
 
     BOOST_SQLITE_DECL void execute(const char * q);
     BOOST_SQLITE_DECL void execute(
         const std::string & q,
-        error_code & ec,
+        system::error_code & ec,
         error_info & ei)
     {
         execute(q.c_str(), ec, ei);
@@ -97,7 +97,7 @@ struct connection
     /// Perform a query with parameters. Can only execute a single statement.
     BOOST_SQLITE_DECL statement prepare(
             core::string_view q,
-            error_code & ec,
+            system::error_code & ec,
             error_info & ei);
 
     BOOST_SQLITE_DECL statement prepare(core::string_view q);

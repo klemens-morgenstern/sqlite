@@ -19,7 +19,7 @@ blob_handle open_blob(connection & conn,
                       const char * column,
                       sqlite3_int64 row,
                       bool read_only,
-                      error_code & ec,
+                      system::error_code & ec,
                       error_info & ei)
 {
   sqlite3_blob * bb = nullptr;
@@ -48,7 +48,7 @@ blob_handle open_blob(connection & conn,
   error_info ei;
   auto b = open_blob(conn, db, table, column, row, read_only, ec, ei);
   if (ec)
-    boost::throw_exception(system_error(ec, ei.message()));
+    boost::throw_exception(system::system_error(ec, ei.message()));
   return b;
 }
 
