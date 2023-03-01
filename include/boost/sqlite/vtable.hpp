@@ -16,7 +16,6 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-
 /// Helper type to set a function through the xFindFunction callback
 struct vtab_function_setter
 {
@@ -310,6 +309,34 @@ template<typename Impl>
 using eponymous_only = std::integral_constant<bool, eponymous_only_impl<Impl>(rank<1>())>;
 
 template<typename Impl>
+constexpr bool constraint_support_impl(rank<0>) { return false; };
+
+template<typename Impl, bool EO = Impl::constraint_support>
+constexpr bool constraint_support_impl(rank<1>) { return EO; };
+
+template<typename Impl>
+using constraint_support = std::integral_constant<bool, constraint_support_impl<Impl>(rank<1>())>;
+
+template<typename Impl>
+constexpr bool innocuous_impl(rank<0>) { return false; };
+
+template<typename Impl, bool EO = Impl::innocuous>
+constexpr bool innocuous_impl(rank<1>) { return EO; };
+
+template<typename Impl>
+using innocuous = std::integral_constant<bool, innocuous_impl<Impl>(rank<1>())>;
+
+template<typename Impl>
+constexpr bool directonly_impl(rank<0>) { return false; };
+
+template<typename Impl, bool EO = Impl::directonly>
+constexpr bool directonly_impl(rank<1>) { return EO; };
+
+template<typename Impl>
+using directonly = std::integral_constant<bool, directonly_impl<Impl>(rank<1>())>;
+
+
+template<typename Impl>
 constexpr bool has_delete(rank<0>) { return false; };
 
 template<typename Impl, typename = decltype(&Impl::delete_)>
@@ -369,6 +396,10 @@ constexpr bool has_best_index_impl(rank<1>) { return true; };
 template<typename Impl>
 using has_best_index = std::integral_constant<bool, has_best_index_impl<Impl>(rank<1>())>;
 
+struct vtab_base : sqlite3_vtab
+{
+  sqlite3 * db;
+};
 
 template<typename Base, typename Impl>
 struct module_impl_helper : Base, Impl
@@ -385,11 +416,25 @@ Impl & get_module(Base * impl) noexcept
   return static_cast<module_impl_helper<Base, Impl>*>(impl)->get_impl();
 }
 
+template<typename Impl>
+Impl & get_module(sqlite3_vtab * impl) noexcept
+{
+  return static_cast<module_impl_helper<vtab_base, Impl>*>(impl)->get_impl();
+}
+
+
 template<typename Impl, typename Base>
 void delete_module(Base * impl) noexcept
 {
   delete static_cast<module_impl_helper<Base, Impl>*>(impl);
 }
+
+template<typename Impl>
+void delete_module(sqlite3_vtab * impl) noexcept
+{
+  delete static_cast<module_impl_helper<vtab_base, Impl>*>(impl);
+}
+
 
 template<typename BasePtr, typename ReturnType>
 auto make_module(BasePtr &res, ReturnType && result)
@@ -410,6 +455,9 @@ struct vtable_helper
 {
     using implementation_type        = Impl;
     using eponymous_only             = vtab::eponymous_only<implementation_type>;
+    using constraint_support         = vtab::constraint_support<implementation_type>;
+    using innocuous                  = vtab::innocuous<implementation_type>;
+    using directonly                 = vtab::directonly<implementation_type>;
     using eponymous                  = vtab::eponymous<implementation_type>;
     using table_type                 = vtab::connect_type<implementation_type>;
     using read_only                  = vtab::read_only<table_type>;
@@ -426,8 +474,16 @@ struct vtable_helper
         auto &impl = *static_cast<Impl*>(pAux);
         try
         {
-            auto mod = make_module(*ppVTab, static_cast<table_type>(impl.create(argc, argv)));
+            vtab_base *ext;
+            auto mod = make_module(ext, static_cast<table_type>(impl.create(argc, argv)));
+            ext->db = db;
+            *ppVTab = ext;
             sqlite3_declare_vtab(db, mod->declaration());
+            sqlite3_vtab_config(db, SQLITE_VTAB_CONSTRAINT_SUPPORT, constraint_support::value ? 1 : 0);
+            if (innocuous::value)
+                sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
+            if (directonly::value)
+               sqlite3_vtab_config(db, SQLITE_VTAB_DIRECTONLY);
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*errMsg)
@@ -439,8 +495,16 @@ struct vtable_helper
         auto &impl = *static_cast<Impl*>(pAux);
         try
         {
-            auto mod = make_module(*ppVTab, impl.connect(argc, argv));
+            vtab_base *ext;
+            auto mod = make_module(ext, impl.connect(argc, argv));
+            ext->db = db;
+            *ppVTab = ext;
             sqlite3_declare_vtab(db, mod->declaration());
+            sqlite3_vtab_config(db, SQLITE_VTAB_CONSTRAINT_SUPPORT, constraint_support::value ? 1 : 0);
+            if (innocuous::value)
+                sqlite3_vtab_config(db, SQLITE_VTAB_INNOCUOUS);
+            if (directonly::value)
+                sqlite3_vtab_config(db, SQLITE_VTAB_DIRECTONLY);
             return SQLITE_OK;
         }
         BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*errMsg)
@@ -632,16 +696,18 @@ struct vtable_helper
         try
         {
             auto & mod = get_module<table_type>(pVTab);
+            auto db = static_cast<vtab_base*>(pVTab)->db;
             if (argc == 1 && sqlite3_value_type(argv[0]) != SQLITE_NULL)
                 mod.delete_(sqlite::value(*argv));
             else if (argc > 1 && sqlite3_value_type(argv[0]) == SQLITE_NULL)
                 *pRowid = mod.insert(value{argv[1]},
                                      boost::span<value>{reinterpret_cast<value*>(argv + 2),
-                                                        static_cast<std::size_t>(argc - 2)});
+                                                        static_cast<std::size_t>(argc - 2)}, sqlite3_vtab_on_conflict(db));
             else if (argc > 1 && sqlite3_value_type(argv[0]) != SQLITE_NULL)
               *pRowid = mod.update(sqlite::value(*argv), value{argv[1]}, // ID
                                    boost::span<value>{reinterpret_cast<value*>(argv + 2),
-                                                      static_cast<std::size_t>(argc - 2)});
+                                                      static_cast<std::size_t>(argc - 2)},
+                                   sqlite3_vtab_on_conflict(db));
             else
             {
               pVTab->zErrMsg = sqlite3_mprintf("Misuse of update api");
@@ -955,6 +1021,18 @@ Table & get_vtable(detail::vtab::cursor_type<Table> * const cursor)
         std::is_base_of<sqlite3_vtab_cursor, detail::vtab::cursor_type<Table>>{});
 }
 
+/// Returns the database associated with the virtual table
+/// @ingroup reference
+/// @warning This is only valid if the table was create by a vtable module from within the vtable callbacks!
+template<typename Table>
+connection get_database_from_vtable(Table * const table)
+{
+  sqlite3 * db;
+  auto tmp = static_cast<detail::vtab::module_impl_helper<detail::vtab::vtab_base, Table>>(table);
+  detail::vtab::vtab_base * base = tmp;
+  return connection{base->db, false};
+}
+
 #if defined(BOOST_SQLITE_GENERATING_DOCS)
 /** @brief The prototype used by @ref create_module
  @ingroup reference
@@ -970,8 +1048,17 @@ The destruction functions are automatically filled with destructors.
 */
 struct vtab_module_prototype
 {
- /// @brief Can be used to make the table
+ /// @brief Can be used to make the table eponymous_only
  constexpr static bool eponymous_only = false;
+
+ /// @brief Can be used to set SQLITE_VTAB_CONSTRAINT_SUPPORT
+ constexpr static bool constraint_support = false;
+
+ /// @brief Can be used to set SQLITE_VTAB_INNOCUOUS
+ constexpr static bool innocuous = false;
+
+ /// @brief Can be used to set SQLITE_VTAB_DIRECTONLY
+ constexpr static bool directonly = false;
 
  /// @brief Creates the instance
  /// The instance_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
@@ -1027,9 +1114,11 @@ struct vtab_module_prototype
    /// @brief Delete row
    void delete_(sqlite::value key);
    /// @brief Inert a new row
-   sqlite_int64 insert(sqlite::value key, span<sqlite::value> values);
+   sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
+                       on_conflict_t on_conflict);
    /// @brief Update the row
-   sqlite_int64 update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values);
+   sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
+                       span<sqlite::value> values, on_conflict_t on_conflict);
    ///@}
 
    ///@{

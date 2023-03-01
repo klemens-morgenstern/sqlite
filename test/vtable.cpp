@@ -146,13 +146,16 @@ struct modifyable_test_impl
     {
       CHECK(names.erase(key.get_int()) == 1);
     }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values)
+    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
+                        int on_conflict)
     {
       int id = values[0].is_null() ? last_index++ : values[0].get_int();
       auto itr = names.emplace(id, values[1].get_text()).first;
       return itr->first;
     }
-    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values)
+    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
+                        span<sqlite::value> values,
+                        int on_conflict)
     {
       if (new_key.get_int() != old_key.get_int())
         names.erase(old_key.get_int());
