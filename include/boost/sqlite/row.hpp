@@ -14,6 +14,8 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
  Is a random-access range.
 
+ All values that are obtained by view are valid until the next row is read.
+
  */
 struct row
 {
@@ -22,20 +24,10 @@ struct row
     {
         return sqlite3_column_count(stm_);
     }
-    /// Get the field at `idx`, @throw std::out_of_range
-    field at(std::size_t idx) const
-    {
-        if (idx >= size())
-            throw std::out_of_range("column out of range");
-        else
-        {
-             field f;
-             f.stm_ = stm_;
-             f.col_ = static_cast<int>(idx);
-            return f;
-        }
-    }
-    /// Get the field at `idx`.
+    /// Returns the field at `idx`, @throws std::out_of_range
+    BOOST_SQLITE_DECL
+    field at(std::size_t idx) const;
+    /// Returns the field at `idx`.
     field operator[](std::size_t idx) const
     {
         field f;
@@ -148,7 +140,7 @@ struct row
         friend struct row;
         field f_;
     };
-    /// Get the begin of the column-range.
+    /// Returns the begin of the column-range.
     const_iterator begin() const
     {
         const_iterator ci;
@@ -156,7 +148,7 @@ struct row
         ci.f_.stm_ = stm_;
         return ci;
     }
-    /// Get the end of the column-range.
+    /// Returns the end of the column-range.
     const_iterator end() const
     {
         const_iterator ci;
@@ -165,7 +157,7 @@ struct row
         return ci;
     }
   private:
-    friend class resultset;
+    friend struct resultset;
     sqlite3_stmt * stm_;
 
 };

@@ -57,80 +57,60 @@ struct value
     {
         return type() != value_type::null;
     }
-    /// Get the value as regular `int`.
+    /// Returns the value as regular `int`.
     int get_int() const
     {
         return sqlite3_value_int(value_);
     }
-    /// Get the value as an `int64`.
+    /// Returns the value as an `int64`.
     sqlite3_int64 get_int64() const
     {
         return sqlite3_value_int64(value_);
     }
-    /// Get the value as an `double`.
+    /// Returns the value as an `double`.
     double get_double() const
     {
         return sqlite3_value_double(value_);
     }
-    /// Get the value as text, i.e. a string_view. Note that this value may be invalidated`.
-    core::string_view get_text() const
-    {
-        const auto ptr = sqlite3_value_text(value_);
-        if (ptr == nullptr)
-        {
-            if (is_null())
-                return "";
-            else
-                throw_exception(std::bad_alloc());
-        }
-        const auto sz = sqlite3_value_bytes(value_);
-        return core::string_view(reinterpret_cast<const char*>(ptr), sz);
-    }
-    /// Get the value as blob, i.e. raw memory. Note that this value may be invalidated`.
-    blob_view get_blob() const
-    {
-        const auto ptr = sqlite3_value_blob(value_);
-        if (ptr == nullptr)
-        {
-            if (is_null())
-                return {nullptr, 0u};
-            else
-                throw_exception(std::bad_alloc());
-        }
-        const auto sz = sqlite3_value_bytes(value_);
-        return blob_view(ptr, sz);
-    }
+    /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
+    BOOST_SQLITE_DECL
+    core::string_view get_text() const;
+    /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
+    BOOST_SQLITE_DECL
+    blob_view get_blob() const;
 
     /// Best numeric datatype of the value
     value_type numeric_type()  const{return static_cast<value_type>(sqlite3_value_numeric_type(value_));}
 
+#if SQLITE_VERSION_NUMBER >= 3032000
     /// True if the column is unchanged in an UPDATE against a virtual table.
     bool nochange() const {return 0 != sqlite3_value_nochange(value_);}
+#endif
 
+#if SQLITE_VERSION_NUMBER >= 3031000
     /// True if value originated from a bound parameter
     bool from_bind() const {return 0 != sqlite3_value_frombind(value_);}
-
+#endif
     /// Construct value from a handle.
     explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
 
     /// The handle of the value.
     using handle_type = sqlite3_value *;
-    /// Get the handle.
+    /// Returns the handle.
     handle_type handle() const {return value_;}
     handle_type & handle() {return value_;}
 
+#if SQLITE_VERSION_NUMBER >= 3020000
     /// Get a value that was passed through the pointer interface.
     /// A value can be set as a pointer by binding/returning a unique_ptr.
     template<typename T>
     T * get_pointer() {return static_cast<T*>(sqlite3_value_pointer(value_, typeid(T).name()));}
-
-
-    sqlite3_value ** operator&() {return &value_;}
+#endif
   private:
     sqlite3_value * value_ = nullptr;
 };
 
-static_assert(sizeof(value) == sizeof(sqlite3_value*));
+static_assert(sizeof(value) == sizeof(sqlite3_value*), "value must be same as sqlite3_value* pointer");
 
 BOOST_SQLITE_END_NAMESPACE
 

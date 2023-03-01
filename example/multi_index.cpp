@@ -248,13 +248,15 @@ struct multi_index_map
     {
       data.erase(key.get_text());
     }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values)
+    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
+                        int on_conflict)
     {
       data.insert({values[0].get_text(), values[1].get_text()});
       return 0;
     }
 
-    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values)
+    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
+                        span<sqlite::value> values, int on_conflict)
     {
       if (new_key.get_int() != old_key.get_int())
       {

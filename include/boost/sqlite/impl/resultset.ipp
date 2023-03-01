@@ -11,8 +11,8 @@
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 
-bool resultset::read_one(row& r,
-              error_code & ec,
+bool resultset::read_next(
+              system::error_code & ec,
               error_info & ei) // could also return row* instead!
 {
     if (done_)
@@ -23,9 +23,7 @@ bool resultset::read_one(row& r,
         done_ = true;
         return false;
     }
-    else if (cc == SQLITE_ROW)
-        r.stm_ = impl_.get();
-    else
+    else if (cc != SQLITE_ROW)
     {
         BOOST_SQLITE_ASSIGN_EC(ec, cc);
         ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
@@ -33,26 +31,31 @@ bool resultset::read_one(row& r,
     return !done_;
 }
 
-bool resultset::read_one(row & r)
+bool resultset::read_next()
 {
     system::error_code ec;
     error_info ei;
-    auto tmp = read_one(r, ec, ei);
+    auto tmp = read_next(ec, ei);
     if (ec)
         throw_exception(system::system_error(ec, ei.message()));
     return tmp;
 }
 
-system::result<row> resultset::read_one()
+resultset::iterator resultset::iterator::operator++()
 {
+  if (sentinel_)
+    return *this;
+
+  auto cc = sqlite3_step(row_.stm_);
+  if (cc == SQLITE_DONE)
+    sentinel_ = true;
+  else if (cc != SQLITE_ROW)
+  {
     system::error_code ec;
-    error_info ei;
-    row r;
-    read_one(r, ec, ei);
-    if (ec)
-        return ec;
-    else
-        return r;
+    BOOST_SQLITE_ASSIGN_EC(ec, cc);
+    throw_exception(system::system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
+  }
+  return *this;
 }
 
 BOOST_SQLITE_END_NAMESPACE

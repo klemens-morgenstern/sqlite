@@ -58,7 +58,6 @@ TEST_CASE("aggregate")
 
   struct aggregate_func
   {
-      std::size_t counter;
       void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
@@ -85,7 +84,7 @@ TEST_CASE("aggregate")
   CHECK(lens[0]  == (5 + 6 + 7 + 5));
 }
 
-
+#if SQLITE_VERSION_NUMBER >= 3025000
 TEST_CASE("window")
 {
   sqlite::connection conn(":memory:");
@@ -95,7 +94,6 @@ TEST_CASE("window")
 
   struct window_func
   {
-    std::size_t counter;
     void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
     {
       counter += val[0].get_text().size();
@@ -133,3 +131,4 @@ select win_counter(first_name) over (
   CHECK(lens[2] == 18);
   CHECK(lens[3] == 12);
 }
+#endif

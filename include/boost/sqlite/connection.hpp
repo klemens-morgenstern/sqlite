@@ -11,7 +11,6 @@
 #include <boost/sqlite/statement.hpp>
 #include <memory>
 #include <boost/system/system_error.hpp>
-#include <boost/throw_exception.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -30,7 +29,7 @@ struct connection
 {
     /// The handle of the connection
     using handle_type = sqlite3*;
-    /// Get the handle
+    /// Returns the handle
     handle_type handle() { return impl_.get(); }
     /// Release the owned handle.
     handle_type release() &&    { return impl_.release(); }
@@ -58,7 +57,7 @@ struct connection
     ///@{
     /// Close the database connection.
     BOOST_SQLITE_DECL void close();
-    BOOST_SQLITE_DECL void close(error_code & ec, error_info & ei);
+    BOOST_SQLITE_DECL void close(system::error_code & ec, error_info & ei);
     ///@}
 
     /// Check if the database holds a valid handle.
@@ -69,7 +68,7 @@ struct connection
     /// Perform a query without parameters. Can only execute a single statement.
     BOOST_SQLITE_DECL resultset query(
             core::string_view q,
-            error_code & ec,
+            system::error_code & ec,
             error_info & ei);
 
     BOOST_SQLITE_DECL resultset query(core::string_view q);
@@ -79,13 +78,13 @@ struct connection
     /// Perform a query without parametert, It execute a multiple statement.
     BOOST_SQLITE_DECL void execute(
       const char * q,
-        error_code & ec,
+        system::error_code & ec,
         error_info & ei);
 
     BOOST_SQLITE_DECL void execute(const char * q);
     BOOST_SQLITE_DECL void execute(
         const std::string & q,
-        error_code & ec,
+        system::error_code & ec,
         error_info & ei)
     {
         execute(q.c_str(), ec, ei);
@@ -97,7 +96,7 @@ struct connection
     /// Perform a query with parameters. Can only execute a single statement.
     BOOST_SQLITE_DECL statement prepare(
             core::string_view q,
-            error_code & ec,
+            system::error_code & ec,
             error_info & ei);
 
     BOOST_SQLITE_DECL statement prepare(core::string_view q);

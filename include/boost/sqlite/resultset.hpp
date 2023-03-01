@@ -26,17 +26,20 @@ struct connection ;
 
   sqlite::resultset rs = conn.query("select * from users;");
 
-  sqlite::row r;
-  while (rs.read_one(r)) // read it line by line
+  do
+  {
     handle_row(r.current());
+  }
+  while (rs.read_next()) // read it line by line
+
 
     @endcode
 
 */
 struct resultset
 {
-    /// Get the current row.
-    row current() const
+    /// Returns the current row.
+    row current() const &
     {
         row r;
         r.stm_ = impl_.get();
@@ -46,10 +49,9 @@ struct resultset
     bool done() const {return done_;}
 
     ///@{
-    /// Read one row. Returns false if there's nothing more to read.
-    BOOST_SQLITE_DECL bool read_one(row& r, error_code & ec, error_info & ei);
-    BOOST_SQLITE_DECL bool read_one(row & r);
-    BOOST_SQLITE_DECL system::result<row> read_one();
+    /// Read the next row. Returns false if there's nothing more to read.
+    BOOST_SQLITE_DECL bool read_next(system::error_code & ec, error_info & ei);
+    BOOST_SQLITE_DECL bool read_next();
     ///@}
 
     ///
@@ -57,17 +59,17 @@ struct resultset
     {
       return sqlite3_column_count(impl_.get());
     }
-    /// Get the name of the column idx.
+    /// Returns the name of the column idx.
     core::string_view column_name(std::size_t idx) const
     {
       return sqlite3_column_name(impl_.get(), idx);
     }
-    /// Get the name of the source table for column idx.
+    /// Returns the name of the source table for column idx.
     core::string_view table_name(std::size_t idx) const
     {
       return sqlite3_column_table_name(impl_.get(), idx);
     }
-    /// Get the origin name of the column for column idx.
+    /// Returns the origin name of the column for column idx.
     core::string_view column_origin_name(std::size_t idx) const
     {
       return sqlite3_column_origin_name(impl_.get(), idx);
@@ -76,7 +78,7 @@ struct resultset
     /// The input iterator can be used to read every row in a for-loop
     struct iterator
     {
-      using value_type = row;
+      using value_type = value;
       using difference_type   = int;
       using reference         = field&;
       using iterator_category = std::random_access_iterator_tag;
@@ -84,10 +86,7 @@ struct resultset
       iterator() {}
       explicit iterator(sqlite3_stmt * stmt, bool sentinel) : sentinel_(sentinel )
       {
-          row_.stm_ = stmt;
-          if (!sentinel && sqlite3_data_count(row_.stm_) == 0)
-              (*this)++;
-
+        row_.stm_ = stmt;
       }
 
       bool operator!=(iterator rhs)
@@ -98,22 +97,8 @@ struct resultset
       row &operator*()  { return row_; }
       row *operator->() { return &row_; }
 
-      iterator operator++()
-      {
-        if (sentinel_)
-          return *this;
-
-        auto cc = sqlite3_step(row_.stm_);
-        if (cc == SQLITE_DONE)
-          sentinel_ = true;
-        else if (cc != SQLITE_ROW)
-        {
-          system::error_code ec;
-          BOOST_SQLITE_ASSIGN_EC(ec, cc);
-          throw_exception(system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
-        }
-        return *this;
-      }
+      BOOST_SQLITE_DECL
+      iterator operator++();
 
       void operator++(int)
       {
@@ -139,7 +124,8 @@ struct resultset
         bool delete_ = true;
         void operator()(sqlite3_stmt * sm)
         {
-            while ( sqlite3_step(sm) == SQLITE_ROW);
+            if (sqlite3_data_count(sm) > 0)
+              while ( sqlite3_step(sm) == SQLITE_ROW);
             if (delete_)
                 sqlite3_finalize(sm);
             else

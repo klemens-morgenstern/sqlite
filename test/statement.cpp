@@ -7,6 +7,9 @@
 
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
+#include <boost/json.hpp>
+#include <unordered_map>
+
 
 using namespace boost;
 
@@ -15,13 +18,12 @@ TEST_CASE("connection")
 {
   sqlite::connection conn;
   conn.connect(":memory:");
-
+#if SQLITE_VERSION_NUMBER >= 3020000
   std::unique_ptr<int> data{new int(42)};
 
   auto ip = data.get();
   auto q = conn.prepare("select $1;").execute(std::make_tuple(std::move(data)));
-  sqlite::row r;
-  q.read_one(r);
+  sqlite::row r = q.current();
   CHECK(r.size() == 1u);
 
   auto v = r.at(0).get_value();
@@ -29,7 +31,7 @@ TEST_CASE("connection")
   CHECK(v.get_pointer<int>() != nullptr);
   CHECK(v.get_pointer<int>() == ip);
   CHECK(v.get_pointer<double>() == nullptr);
-
+#endif
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({}));
 }
 
@@ -61,8 +63,10 @@ TEST_CASE("map")
   auto q = conn.prepare("select * from author where first_name = $name;").execute({{"name", 42}});
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({{"n4ame", 123}}));
 
-  std::unordered_map<std::string, int> params = {{"name", 42}};
+  std::unordered_map<std::string, variant2::variant<int, std::string>> params = {{"name", 42}};
   q = conn.prepare("select * from author where first_name = $name;").execute(params);
   CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute(params));
+
+  CHECK_THROWS(conn.prepare("elect * from nothing;"));
 
 }

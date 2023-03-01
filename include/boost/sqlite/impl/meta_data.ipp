@@ -17,7 +17,7 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 auto table_column_meta_data(connection& conn,
                             const char * db_name, const char * table_name, const char * column_name,
-                            error_code & ec, error_info &ei) -> column_meta_data
+                            system::error_code & ec, error_info &ei) -> column_meta_data
 {
     const char * data_type= "", *collation = "";
     int nn, pk, ai;
@@ -38,7 +38,7 @@ auto table_column_meta_data(connection& conn,
 
 auto table_column_meta_data(connection& conn,
                             const char * table_name, const char * column_name,
-                            error_code & ec, error_info &ei) -> column_meta_data
+                            system::error_code & ec, error_info &ei) -> column_meta_data
 {
   const char * data_type= "", *collation = "";
   int nn, pk, ai;

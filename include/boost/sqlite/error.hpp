@@ -8,24 +8,15 @@
 #ifndef BOOST_SQLITE_ERROR_HPP
 #define BOOST_SQLITE_ERROR_HPP
 
+#include <boost/sqlite/detail/config.hpp>
 #include <boost/system/error_code.hpp>
-#include <boost/system/system_error.hpp>
+#include <boost/system/error_category.hpp>
 
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-
-/// The type of error code used by the library \ingroup reference
-using error_code = boost::system::error_code;
-
-/// The type of system error thrown by the library \ingroup reference
-using system_error = boost::system::system_error;
-
-/// The type of error category used by the library \ingroup reference
-using error_category = boost::system::error_category;
-
 BOOST_SQLITE_DECL
-error_category & sqlite_category();
+system::error_category & sqlite_category();
 
 
 // copy-pastaed from anarthal/mysql --> alias ?

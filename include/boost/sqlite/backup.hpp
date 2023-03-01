@@ -34,7 +34,7 @@ struct connection ;
 
  or you need to pass
 
- @param ec The error_code to capture any possibly errors
+ @param ec The system::error_code to capture any possibly errors
  @param ei Additional error_info when error occurs.
 
  @par Example

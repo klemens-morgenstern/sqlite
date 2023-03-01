@@ -8,12 +8,14 @@
 #ifndef BOOST_SQLITE_FUNCTION_HPP
 #define BOOST_SQLITE_FUNCTION_HPP
 
-#include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/detail/catch.hpp>
 #include <boost/sqlite/result.hpp>
 #include <boost/sqlite/value.hpp>
+#include <boost/sqlite/detail/exception.hpp>
+
+#include <boost/core/span.hpp>
 #include <boost/callable_traits/args.hpp>
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/callable_traits/return_type.hpp>
@@ -63,18 +65,19 @@ struct context
                         });
   }
 
-  /// Get the value in the context at position `Idx`. Throws if the value isn't set.
+  /// Returns the value in the context at position `Idx`. Throws if the value isn't set.
   template<std::size_t Idx>
   auto get() -> element<Idx>  &
   {
     using type = element<Idx> ;
     auto p = static_cast<type*>(sqlite3_get_auxdata(ctx_, Idx));
     if (p == nullptr)
-      throw_exception(std::invalid_argument("argument not set"));
-    return p;
+      detail::throw_invalid_argument("argument not set",
+                                     BOOST_CURRENT_LOCATION);
+    return *p;
   }
 
-  /// Get the value in the context at position `Idx`. Returns nullptr .value isn't set.
+  /// Returns the value in the context at position `Idx`. Returns nullptr .value isn't set.
   template<std::size_t Idx>
   auto get_if() -> element<Idx>  *
   {
@@ -99,7 +102,7 @@ struct context
   {
     sqlite3_result_error(ctx_, message, code);
   }
-  /// Get the connection of the context.
+  /// Returns the connection of the context.
   connection get_connection() const
   {
     return connection{sqlite3_context_db_handle(ctx_), false};
@@ -308,6 +311,8 @@ int create_aggregate_function(sqlite3 * db, const std::string & name, Func && fu
   );
 }
 
+#if SQLITE_VERSION_NUMBER >= 3025000
+
 template<typename Func>
 int create_window_function(sqlite3 * db, const std::string & name, Func && func)
 {
@@ -390,6 +395,8 @@ int create_window_function(sqlite3 * db, const std::string & name, Func && func)
   );
 }
 
+#endif
+
 }
 
 ///@{
@@ -399,7 +406,7 @@ int create_window_function(sqlite3 * db, const std::string & name, Func && func)
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -455,7 +462,7 @@ auto create_scalar_function(
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -498,7 +505,8 @@ auto create_scalar_function(
     system::error_code ec;
     create_scalar_function(conn, name, std::forward<Func>(func), ec);
     if (ec)
-        throw_exception(system::system_error(ec));
+        detail::throw_error_code(ec,
+                        BOOST_CURRENT_LOCATION);
 }
 ///@}
 
@@ -510,7 +518,7 @@ auto create_scalar_function(
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -533,8 +541,7 @@ auto create_scalar_function(
 
   struct aggregate_func
   {
-      std::size_t counter;
-      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+F      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
       }
@@ -578,10 +585,11 @@ void create_aggregate_function(
     error_info ei;
     create_aggregate_function(conn, name, std::forward<Func>(func), ec, ei);
     if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
+        detail::throw_error_code(ec, ei);
 }
 ///@}
 
+#if SQLITE_VERSION_NUMBER >= 3025000
 
 ///@{
 /** @brief create a aggregate window function
@@ -590,7 +598,7 @@ void create_aggregate_function(
  @param conn The connection to add the function to.
  @param name The name of the function
  @param func The function to be added
- @param ec The error_code
+ @param ec The system::error_code
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -614,7 +622,6 @@ void create_aggregate_function(
 
   struct window_func
   {
-      std::size_t counter;
       void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
@@ -657,10 +664,12 @@ void create_window_function(
     system::error_code ec;
     create_window_function(conn, name, std::forward<Func>(func), ec);
     if (ec)
-        throw_exception(system::system_error(ec));
+        detail::throw_error_code(ec);
 }
 
 ///@}
+
+#endif
 
 BOOST_SQLITE_END_NAMESPACE
 

@@ -35,11 +35,11 @@ struct column_meta_data
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
                                         const char * db_name, const char * table_name, const char * column_name,
-                                        error_code & ec, error_info &ei);
+                                        system::error_code & ec, error_info &ei);
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
                                         const char * table_name, const char * column_name,
-                                        error_code & ec, error_info &ei);
+                                        system::error_code & ec, error_info &ei);
 
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
