@@ -11,7 +11,6 @@
 #include <boost/sqlite/statement.hpp>
 #include <memory>
 #include <boost/system/system_error.hpp>
-#include <boost/throw_exception.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 

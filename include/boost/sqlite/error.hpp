@@ -10,7 +10,7 @@
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/system/error_code.hpp>
-#include <boost/system/system_error.hpp>
+#include <boost/system/error_category.hpp>
 
 
 BOOST_SQLITE_BEGIN_NAMESPACE

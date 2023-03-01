@@ -9,6 +9,7 @@
 #define BOOST_SQLITE_COLLATION_HPP
 
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/detail/exception.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -90,7 +91,7 @@ auto create_collation(
     system::error_code ec;
     create_collation(conn, name, std::forward<Func>(func), ec);
     if (ec)
-        throw_exception(system::system_error(ec));
+        detail::throw_error_code(ec, BOOST_CURRENT_LOCATION);
 }
 
 BOOST_SQLITE_END_NAMESPACE

@@ -73,33 +73,11 @@ struct value
         return sqlite3_value_double(value_);
     }
     /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
-    core::string_view get_text() const
-    {
-        const auto ptr = sqlite3_value_text(value_);
-        if (ptr == nullptr)
-        {
-            if (is_null())
-                return "";
-            else
-                throw_exception(std::bad_alloc());
-        }
-        const auto sz = sqlite3_value_bytes(value_);
-        return core::string_view(reinterpret_cast<const char*>(ptr), sz);
-    }
+    BOOST_SQLITE_DECL
+    core::string_view get_text() const;
     /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
-    blob_view get_blob() const
-    {
-        const auto ptr = sqlite3_value_blob(value_);
-        if (ptr == nullptr)
-        {
-            if (is_null())
-                return {nullptr, 0u};
-            else
-                throw_exception(std::bad_alloc());
-        }
-        const auto sz = sqlite3_value_bytes(value_);
-        return blob_view(ptr, sz);
-    }
+    BOOST_SQLITE_DECL
+    blob_view get_blob() const;
 
     /// Best numeric datatype of the value
     value_type numeric_type()  const{return static_cast<value_type>(sqlite3_value_numeric_type(value_));}

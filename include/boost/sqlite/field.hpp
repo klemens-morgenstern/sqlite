@@ -48,33 +48,11 @@ struct field
         return  sqlite3_column_double(stm_, col_);
     }
     /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
-    core::string_view get_text() const
-    {
-        const auto ptr =  sqlite3_column_text(stm_, col_);
-        if (ptr == nullptr)
-        {
-            if (sqlite3_errcode(sqlite3_db_handle(stm_)) != SQLITE_NOMEM)
-                return "";
-            else
-                throw_exception(std::bad_alloc());
-        }
-        const auto sz =  sqlite3_column_bytes(stm_, col_);
-        return core::string_view(reinterpret_cast<const char*>(ptr), sz);
-    }
+    BOOST_SQLITE_DECL
+    core::string_view get_text() const;
     /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
-    blob_view get_blob() const
-    {
-        const auto ptr =  sqlite3_column_blob(stm_, col_);
-        if (ptr == nullptr)
-        {
-            if (sqlite3_errcode(sqlite3_db_handle(stm_)) != SQLITE_NOMEM)
-                return {nullptr, 0u};
-            else
-                throw_exception(std::bad_alloc());
-        }
-        const auto sz =  sqlite3_column_bytes(stm_, col_);
-        return blob_view(ptr, sz);
-    }
+    BOOST_SQLITE_DECL
+    blob_view get_blob() const;
     /// Returns the field as a value.
     value get_value() const
     {

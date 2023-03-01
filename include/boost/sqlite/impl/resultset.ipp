@@ -40,6 +40,24 @@ bool resultset::read_next()
         throw_exception(system::system_error(ec, ei.message()));
     return tmp;
 }
+
+resultset::iterator resultset::iterator::operator++()
+{
+  if (sentinel_)
+    return *this;
+
+  auto cc = sqlite3_step(row_.stm_);
+  if (cc == SQLITE_DONE)
+    sentinel_ = true;
+  else if (cc != SQLITE_ROW)
+  {
+    system::error_code ec;
+    BOOST_SQLITE_ASSIGN_EC(ec, cc);
+    throw_exception(system::system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
+  }
+  return *this;
+}
+
 BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_IMPL_RESULTSET_IPP
