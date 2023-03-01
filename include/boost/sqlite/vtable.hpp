@@ -213,7 +213,7 @@ struct vtab_in
             {
               system::error_code ec;
               BOOST_SQLITE_ASSIGN_EC(ec, res);
-              throw_exception(system::system_error(ec));
+              detail::throw_error_code(ec, ec.location());
             }
         }
 
@@ -224,7 +224,7 @@ struct vtab_in
           {
             system::error_code ec;
             BOOST_SQLITE_ASSIGN_EC(ec, res);
-            throw_exception(system::system_error(ec));
+            detail::throw_error_code(ec, ec.location());
           }
         }
 
@@ -999,7 +999,7 @@ auto create_module(connection & conn,
     error_info ei;
     T & ref = create_module(conn, name, std::forward<T>(module), ec, ei);
     if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
+        detail::throw_error_code(ec, ei);
     return ref;
 }
 ///@}

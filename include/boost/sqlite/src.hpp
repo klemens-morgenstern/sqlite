@@ -15,12 +15,16 @@
 #define BOOST_SQLITE_SOURCE
 #endif
 
+#include <boost/sqlite/detail/impl/exception.ipp>
 #include <boost/sqlite/impl/backup.ipp>
 #include <boost/sqlite/impl/blob.ipp>
 #include <boost/sqlite/impl/connection.ipp>
 #include <boost/sqlite/impl/error.ipp>
+#include <boost/sqlite/impl/row.ipp>
+#include <boost/sqlite/impl/field.ipp>
 #include <boost/sqlite/impl/meta_data.ipp>
 #include <boost/sqlite/impl/resultset.ipp>
 #include <boost/sqlite/impl/json.ipp>
+#include <boost/sqlite/impl/value.ipp>
 
 #endif //BOOST_SQLITE_SRC_IPP

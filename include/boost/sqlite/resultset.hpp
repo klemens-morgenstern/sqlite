@@ -97,22 +97,8 @@ struct resultset
       row &operator*()  { return row_; }
       row *operator->() { return &row_; }
 
-      iterator operator++()
-      {
-        if (sentinel_)
-          return *this;
-
-        auto cc = sqlite3_step(row_.stm_);
-        if (cc == SQLITE_DONE)
-          sentinel_ = true;
-        else if (cc != SQLITE_ROW)
-        {
-          system::error_code ec;
-          BOOST_SQLITE_ASSIGN_EC(ec, cc);
-          throw_exception(system::system_error(ec, sqlite3_errmsg(sqlite3_db_handle(row_.stm_))));
-        }
-        return *this;
-      }
+      BOOST_SQLITE_DECL
+      iterator operator++();
 
       void operator++(int)
       {

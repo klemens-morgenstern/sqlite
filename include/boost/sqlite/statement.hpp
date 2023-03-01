@@ -5,6 +5,10 @@
 #ifndef BOOST_SQLITE_STATEMENT_HPP
 #define BOOST_SQLITE_STATEMENT_HPP
 
+#include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/detail/exception.hpp>
+
+
 #include <tuple>
 #include <boost/mp11/algorithm.hpp>
 #include <boost/core/ignore_unused.hpp>
@@ -224,7 +228,7 @@ struct statement
         error_info ei;
         auto tmp = std::move(*this).execute(std::forward<ArgRange>(params), ec, ei);
         if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
+            detail::throw_error_code(ec, ei);
         return tmp;
     }
 
@@ -247,7 +251,7 @@ struct statement
       error_info ei;
       auto tmp = std::move(*this).execute(std::move(params), ec, ei);
       if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
+        detail::throw_error_code(ec, ei);
       return tmp;
     }
     ///@}
@@ -294,7 +298,7 @@ struct statement
         error_info ei;
         auto tmp = execute(std::forward<ArgRange>(params), ec, ei);
         if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
+            detail::throw_error_code(ec, ei);
         return tmp;
     }
 
@@ -319,7 +323,7 @@ struct statement
       error_info ei;
       auto tmp = execute(std::move(params), ec, ei);
       if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
+        detail::throw_error_code(ec, ei);
       return tmp;
     }
     ///@}

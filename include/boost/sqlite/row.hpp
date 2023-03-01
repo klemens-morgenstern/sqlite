@@ -25,18 +25,8 @@ struct row
         return sqlite3_column_count(stm_);
     }
     /// Returns the field at `idx`, @throws std::out_of_range
-    field at(std::size_t idx, const source_location & loc = BOOST_CURRENT_LOCATION) const
-    {
-        if (idx >= size())
-            throw_exception(std::out_of_range("column out of range"), loc);
-        else
-        {
-             field f;
-             f.stm_ = stm_;
-             f.col_ = static_cast<int>(idx);
-            return f;
-        }
-    }
+    BOOST_SQLITE_DECL
+    field at(std::size_t idx) const;
     /// Returns the field at `idx`.
     field operator[](std::size_t idx) const
     {

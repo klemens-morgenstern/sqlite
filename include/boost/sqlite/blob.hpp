@@ -80,50 +80,26 @@ struct blob_handle
 
     ///@{
     /// @brief Reopen on another row
-    void reopon(sqlite3_int64 row_id, system::error_code & ec)
-    {
-        int res = sqlite3_blob_reopen(blob_.get(), row_id);
-        BOOST_SQLITE_ASSIGN_EC(ec, res);
-    }
-    void reopon(sqlite3_int64 row_id)
-    {
-        boost::system::error_code ec;
-        reopon(row_id, ec);
-        if (ec)
-            boost::throw_exception(system::system_error(ec));
-    }
+    BOOST_SQLITE_DECL
+    void reopen(sqlite3_int64 row_id, system::error_code & ec);
+    BOOST_SQLITE_DECL
+    void reopen(sqlite3_int64 row_id);
     ///@}
 
     ///@{
     /// @brief Read data from the blob
-    void read_at(void *data, int len, int offset, system::error_code &ec)
-    {
-        int res = sqlite3_blob_read(blob_.get(), data, len, offset);
-        BOOST_SQLITE_ASSIGN_EC(ec, res);
-    }
-    void read_at(void *data, int len, int offset)
-    {
-        boost::system::error_code ec;
-        read_at(data, len, offset, ec);
-        if (ec)
-            boost::throw_exception(system::system_error(ec));
-    }
+    BOOST_SQLITE_DECL
+    void read_at(void *data, int len, int offset, system::error_code &ec);
+    BOOST_SQLITE_DECL
+    void read_at(void *data, int len, int offset);
     ///@}
 
     ///@{
     /// @brief Write data to the blob
-    void write_at(const void *data, int len, int offset, system::error_code &ec)
-    {
-        int res = sqlite3_blob_write(blob_.get(), data, len, offset);
-        BOOST_SQLITE_ASSIGN_EC(ec, res);
-    }
-    void write_at(const void *data, int len, int offset)
-    {
-        boost::system::error_code ec;
-        write_at(data, len, offset, ec);
-        if (ec)
-            boost::throw_exception(system::system_error(ec));
-    }
+    BOOST_SQLITE_DECL
+    void write_at(const void *data, int len, int offset, system::error_code &ec);
+    BOOST_SQLITE_DECL
+    void write_at(const void *data, int len, int offset);
     ///@}
 
     /// The size of the blob

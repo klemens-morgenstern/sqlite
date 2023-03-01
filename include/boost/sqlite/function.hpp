@@ -8,12 +8,14 @@
 #ifndef BOOST_SQLITE_FUNCTION_HPP
 #define BOOST_SQLITE_FUNCTION_HPP
 
-#include <boost/core/span.hpp>
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/detail/catch.hpp>
 #include <boost/sqlite/result.hpp>
 #include <boost/sqlite/value.hpp>
+#include <boost/sqlite/detail/exception.hpp>
+
+#include <boost/core/span.hpp>
 #include <boost/callable_traits/args.hpp>
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/callable_traits/return_type.hpp>
@@ -70,7 +72,8 @@ struct context
     using type = element<Idx> ;
     auto p = static_cast<type*>(sqlite3_get_auxdata(ctx_, Idx));
     if (p == nullptr)
-      throw_exception(std::invalid_argument("argument not set"));
+      detail::throw_invalid_argument("argument not set",
+                                     BOOST_CURRENT_LOCATION);
     return *p;
   }
 
@@ -502,7 +505,8 @@ auto create_scalar_function(
     system::error_code ec;
     create_scalar_function(conn, name, std::forward<Func>(func), ec);
     if (ec)
-        throw_exception(system::system_error(ec));
+        detail::throw_error_code(ec,
+                        BOOST_CURRENT_LOCATION);
 }
 ///@}
 
@@ -581,7 +585,7 @@ void create_aggregate_function(
     error_info ei;
     create_aggregate_function(conn, name, std::forward<Func>(func), ec, ei);
     if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
+        detail::throw_error_code(ec, ei);
 }
 ///@}
 
@@ -660,7 +664,7 @@ void create_window_function(
     system::error_code ec;
     create_window_function(conn, name, std::forward<Func>(func), ec);
     if (ec)
-        throw_exception(system::system_error(ec));
+        detail::throw_error_code(ec);
 }
 
 ///@}
