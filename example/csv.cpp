@@ -139,7 +139,8 @@ struct csv_impl
       data.rows.erase(key.get_int64());
 
     }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values)
+    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
+                        int on_conflict)
     {
       sqlite3_int64 id = 0;
       if (!data.rows.empty())
@@ -151,7 +152,8 @@ struct csv_impl
 
       return id;
     }
-    sqlite_int64 update(sqlite::value update, sqlite::value new_key, span<sqlite::value> values)
+    sqlite_int64 update(sqlite::value update, sqlite::value new_key,
+                        span<sqlite::value> values, int on_conflict)
     {
       if (!new_key.is_null())
         throw std::logic_error("we can't manually set keys");

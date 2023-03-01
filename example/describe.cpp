@@ -79,7 +79,8 @@ struct describe_table
     {
       data.erase(key.get_int64());
     }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values)
+    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
+                        int on_conflict)
     {
       T res;
       sqlite_int64 id = key.is_null() ? last_index++ : key.get_int();
@@ -95,7 +96,8 @@ struct describe_table
       return itr->first;
 
     }
-    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values)
+    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
+                        span<sqlite::value> values, int on_conflict)
     {
       if (new_key.get_int() != old_key.get_int())
         data.erase(old_key.get_int64());

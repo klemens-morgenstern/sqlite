@@ -369,6 +369,10 @@ constexpr bool has_best_index_impl(rank<1>) { return true; };
 template<typename Impl>
 using has_best_index = std::integral_constant<bool, has_best_index_impl<Impl>(rank<1>())>;
 
+struct vtab_base : sqlite3_vtab
+{
+  sqlite3 * db;
+};
 
 template<typename Base, typename Impl>
 struct module_impl_helper : Base, Impl
@@ -385,11 +389,25 @@ Impl & get_module(Base * impl) noexcept
   return static_cast<module_impl_helper<Base, Impl>*>(impl)->get_impl();
 }
 
+template<typename Impl>
+Impl & get_module(sqlite3_vtab * impl) noexcept
+{
+  return static_cast<module_impl_helper<vtab_base, Impl>*>(impl)->get_impl();
+}
+
+
 template<typename Impl, typename Base>
 void delete_module(Base * impl) noexcept
 {
   delete static_cast<module_impl_helper<Base, Impl>*>(impl);
 }
+
+template<typename Impl>
+void delete_module(sqlite3_vtab * impl) noexcept
+{
+  delete static_cast<module_impl_helper<vtab_base, Impl>*>(impl);
+}
+
 
 template<typename BasePtr, typename ReturnType>
 auto make_module(BasePtr &res, ReturnType && result)
@@ -426,7 +444,10 @@ struct vtable_helper
         auto &impl = *static_cast<Impl*>(pAux);
         try
         {
-            auto mod = make_module(*ppVTab, static_cast<table_type>(impl.create(argc, argv)));
+            vtab_base *ext;
+            auto mod = make_module(ext, static_cast<table_type>(impl.create(argc, argv)));
+            ext->db = db;
+            *ppVTab = ext;
             sqlite3_declare_vtab(db, mod->declaration());
             return SQLITE_OK;
         }
@@ -439,7 +460,10 @@ struct vtable_helper
         auto &impl = *static_cast<Impl*>(pAux);
         try
         {
-            auto mod = make_module(*ppVTab, impl.connect(argc, argv));
+            vtab_base *ext;
+            auto mod = make_module(ext, impl.connect(argc, argv));
+            ext->db = db;
+            *ppVTab = ext;
             sqlite3_declare_vtab(db, mod->declaration());
             return SQLITE_OK;
         }
@@ -632,16 +656,19 @@ struct vtable_helper
         try
         {
             auto & mod = get_module<table_type>(pVTab);
+            auto db = static_cast<vtab_base*>(pVTab)->db;
             if (argc == 1 && sqlite3_value_type(argv[0]) != SQLITE_NULL)
                 mod.delete_(sqlite::value(*argv));
             else if (argc > 1 && sqlite3_value_type(argv[0]) == SQLITE_NULL)
                 *pRowid = mod.insert(value{argv[1]},
                                      boost::span<value>{reinterpret_cast<value*>(argv + 2),
-                                                        static_cast<std::size_t>(argc - 2)});
+                                                        static_cast<std::size_t>(argc - 2)},
+                                     sqlite3_vtab_on_conflict(db));
             else if (argc > 1 && sqlite3_value_type(argv[0]) != SQLITE_NULL)
               *pRowid = mod.update(sqlite::value(*argv), value{argv[1]}, // ID
                                    boost::span<value>{reinterpret_cast<value*>(argv + 2),
-                                                      static_cast<std::size_t>(argc - 2)});
+                                                      static_cast<std::size_t>(argc - 2)},
+                                   sqlite3_vtab_on_conflict(db));
             else
             {
               pVTab->zErrMsg = sqlite3_mprintf("Misuse of update api");
@@ -955,6 +982,18 @@ Table & get_vtable(detail::vtab::cursor_type<Table> * const cursor)
         std::is_base_of<sqlite3_vtab_cursor, detail::vtab::cursor_type<Table>>{});
 }
 
+/// Returns the database associated with the virtual table
+/// @ingroup reference
+/// @warning This is only valid if the table was create by a vtable module from within the vtable callbacks!
+template<typename Table>
+connection get_database_from_vtable(Table * const table)
+{
+  sqlite3 * db;
+  auto tmp = static_cast<detail::vtab::module_impl_helper<detail::vtab::vtab_base, Table>>(table);
+  detail::vtab::vtab_base * base = tmp;
+  return connection{base->db, false};
+}
+
 #if defined(BOOST_SQLITE_GENERATING_DOCS)
 /** @brief The prototype used by @ref create_module
  @ingroup reference
@@ -1027,9 +1066,9 @@ struct vtab_module_prototype
    /// @brief Delete row
    void delete_(sqlite::value key);
    /// @brief Inert a new row
-   sqlite_int64 insert(sqlite::value key, span<sqlite::value> values);
+   sqlite_int64 insert(sqlite::value key, span<sqlite::value> values, int on_conflict);
    /// @brief Update the row
-   sqlite_int64 update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values);
+   sqlite_int64 update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values, int on_conflict);
    ///@}
 
    ///@{
