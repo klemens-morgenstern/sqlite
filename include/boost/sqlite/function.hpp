@@ -8,9 +8,11 @@
 #ifndef BOOST_SQLITE_FUNCTION_HPP
 #define BOOST_SQLITE_FUNCTION_HPP
 
-#include <boost/sqlite/blob.hpp>
+#include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/detail/aggregate_function.hpp>
+#include <boost/sqlite/detail/scalar_function.hpp>
+#include <boost/sqlite/detail/window_function.hpp>
 #include <boost/sqlite/connection.hpp>
-#include <boost/sqlite/detail/catch.hpp>
 #include <boost/sqlite/result.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/sqlite/detail/exception.hpp>
@@ -113,292 +115,6 @@ struct context
   sqlite3_context * ctx_;
 };
 
-namespace detail
-{
-
-
-template<typename Func, typename ... Args, std::size_t Extent>
-auto create_scalar_function_impl(sqlite3 * db,
-                          cstring_ref name,
-                          Func && func,
-                          std::tuple<context<Args...>, boost::span<value, Extent>> * ,
-                          std::false_type /* void return */,
-                          std::false_type /* is pointer */) -> int
-{
-  using func_type = typename std::decay<Func>::type;
-  return sqlite3_create_function_v2(
-      db, name.c_str(),
-      Extent == boost::dynamic_extent ? -1 : static_cast<int>(Extent),
-      SQLITE_UTF8,
-      new (memory_tag{}) func_type(std::forward<Func>(func)),
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args)
-      {
-        auto cc = context<Args...>(ctx);
-        auto aa =  reinterpret_cast<value*>(args);
-        auto &f = *reinterpret_cast<func_type*>(sqlite3_user_data(ctx));
-
-        BOOST_SQLITE_TRY
-        {
-          set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-
-      }, nullptr, nullptr,
-      +[](void * ptr) noexcept {delete_(static_cast<func_type*>(ptr));}
-      );
-}
-
-template<typename Func, typename ... Args, std::size_t Extent>
-auto create_scalar_function_impl(sqlite3 * db,
-                          cstring_ref name,
-                          Func && func,
-                          std::tuple<context<Args...>, boost::span<value, Extent>> * ,
-                          std::true_type /* void return */,
-                          std::false_type /* is pointer */) -> int
-{
-  using func_type = typename std::decay<Func>::type;
-  return sqlite3_create_function_v2(
-      db,
-      name.c_str(),
-      (Extent == boost::dynamic_extent) ? -1 : static_cast<int>(Extent),
-      SQLITE_UTF8,
-      new (memory_tag{}) func_type(std::forward<Func>(func)),
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args)
-      {
-        auto cc = context<Args...>(ctx);
-        auto aa =  reinterpret_cast<value*>(args);
-        auto &f = *reinterpret_cast<func_type*>(sqlite3_user_data(ctx));
-
-        BOOST_SQLITE_TRY
-        {
-          f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-
-      }, nullptr, nullptr,
-      +[](void * ptr){delete_(static_cast<func_type*>(ptr));}
-      );
-}
-
-
-template<typename Func, typename ... Args, std::size_t Extent>
-auto create_scalar_function_impl(sqlite3 * db,
-                          cstring_ref name,
-                          Func && func,
-                          std::tuple<context<Args...>, boost::span<value, Extent>> * ,
-                          std::false_type /* void return */,
-                          std::true_type /* is pointer */) -> int
-{
-  return sqlite3_create_function_v2(
-      db, name.c_str(),
-      Extent == boost::dynamic_extent ? -1 : Extent,
-      SQLITE_UTF8,
-      reinterpret_cast<void*>(func),
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args)
-      {
-        auto cc = context<Args...>(ctx);
-        auto aa =  reinterpret_cast<value*>(args);
-        auto  f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-
-        BOOST_SQLITE_TRY
-        {
-          set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-
-
-      }, nullptr, nullptr,
-      nullptr
-      );
-}
-
-template<typename Func, typename ... Args, std::size_t Extent>
-auto create_scalar_function_impl(sqlite3 * db,
-                                 cstring_ref name,
-                                 Func && func,
-                                 std::tuple<context<Args...>, boost::span<value, Extent>> * ,
-                                 std::true_type /* void return */,
-                                 std::true_type /* is pointer */) -> int
-{
-  return sqlite3_create_function_v2(
-      db, name.c_str(),
-      Extent == boost::dynamic_extent ? -1 : Extent,
-      SQLITE_UTF8, reinterpret_cast<void*>(func),
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args)
-      {
-        auto cc = context<Args...>(ctx);
-        auto aa =  reinterpret_cast<value*>(args);
-        auto  f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-
-        BOOST_SQLITE_TRY
-        {
-          f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-
-
-      }, nullptr, nullptr,
-      nullptr
-      );
-}
-
-template<typename Func>
-auto create_scalar_function(sqlite3 * db,
-                     cstring_ref name,
-                     Func && func)
-                     -> decltype(create_scalar_function_impl(
-                         db, name, std::forward<Func>(func),
-                         static_cast<callable_traits::args_t<Func>*>(nullptr),
-                         callable_traits::has_void_return<Func>{},
-                         std::is_pointer<typename std::decay<Func>::type>{}
-                         ))
-{
-  return create_scalar_function_impl(db, name, std::forward<Func>(func),
-                                     static_cast<callable_traits::args_t<Func>*>(nullptr),
-                                     callable_traits::has_void_return<Func>{},
-                                     std::is_pointer<typename std::decay<Func>::type>{});
-}
-
-
-template<typename Func>
-int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func)
-{
-  using args_type    = callable_traits::args_t<decltype(&Func::step)>;
-  using context_type = typename std::remove_reference<typename std::tuple_element<1u, args_type>::type>::type;
-  using span_type    = typename std::tuple_element<2U, args_type>::type;
-  using func_type    = typename std::decay<Func>::type;
-
-  return sqlite3_create_function_v2(
-      db, name.c_str(),
-      span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
-      SQLITE_UTF8,
-      new (memory_tag{}) func_type(std::forward<Func>(func)),
-      nullptr,
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args)
-      {
-        auto aa =  reinterpret_cast<value*>(args);
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
-
-        BOOST_SQLITE_TRY
-        {
-          if (c == nullptr)
-          {
-            auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
-            c = new (p) context_type();
-          }
-          f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-      },
-      [](sqlite3_context* ctx)
-      {
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
-
-        BOOST_SQLITE_TRY
-        {
-          if (c == nullptr)
-          {
-            auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
-            c = new (p) context_type();
-          }
-          set_result(ctx, f->final(*c));
-          c->~context_type();
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-      },
-      [](void * ptr) noexcept { delete_(static_cast<func_type*>(ptr));}
-  );
-}
-
-#if SQLITE_VERSION_NUMBER >= 3025000
-
-template<typename Func>
-int create_window_function(sqlite3 * db, cstring_ref name, Func && func)
-{
-  using args_type    = callable_traits::args_t<decltype(&Func::step)>;
-  using context_type = typename std::remove_reference<typename std::tuple_element<1u, args_type>::type>::type;
-  using span_type    = typename std::tuple_element<2U, args_type>::type;
-  using func_type    = typename std::decay<Func>::type;
-
-  return sqlite3_create_window_function(
-      db, name.c_str(),
-      span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
-      SQLITE_UTF8,
-      new (memory_tag{}) func_type(std::forward<Func>(func)),
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args) noexcept //xStep
-      {
-        auto aa =  reinterpret_cast<value*>(args);
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
-        BOOST_SQLITE_TRY
-        {
-          if (c == nullptr)
-          {
-            auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
-            c = new (p) context_type();
-          }
-          f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-      },
-      [](sqlite3_context* ctx) // xFinal
-      {
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
-        BOOST_SQLITE_TRY
-        {
-          if (c == nullptr)
-          {
-            auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
-            c = new (p) context_type();
-          }
-          set_result(ctx, f->value(*c));
-          c->~context_type();
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-      },
-      [](sqlite3_context* ctx) //xValue
-      {
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
-        BOOST_SQLITE_TRY
-        {
-          if (c == nullptr)
-          {
-            auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
-            c = new (p) context_type();
-          }
-          set_result(ctx, f->value(*c));
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-      },
-      +[](sqlite3_context* ctx, int len, sqlite3_value** args) // xInverse
-      {
-        auto aa =  reinterpret_cast<value*>(args);
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
-        BOOST_SQLITE_TRY
-        {
-          if (c == nullptr)
-          {
-            auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
-            c = new (p) context_type();
-          }
-          f->inverse(*c, span_type{aa, static_cast<std::size_t>(len)});
-        }
-        BOOST_SQLITE_CATCH_RESULT(ctx)
-
-      },
-      [](void * ptr) /* xDestroy */ { delete_(static_cast<func_type*>(ptr));}
-  );
-}
-
-#endif
-
-}
 
 ///@{
 /** @brief create a scalar function
@@ -568,7 +284,11 @@ void create_aggregate_function(
     system::error_code & ec,
     error_info & ei)
 {
-    auto res = detail::create_aggregate_function(conn.handle(), name, std::forward<Func>(func));
+    using func_type = typename std::decay<Func>::type;
+    auto res = detail::create_aggregate_function(
+        conn.handle(), name, std::forward<Func>(func),
+        callable_traits::has_void_return<decltype(&func_type::step)>{}
+        );
     if (res != 0)
     {
         BOOST_SQLITE_ASSIGN_EC(ec, res);
@@ -651,7 +371,10 @@ void create_window_function(
     Func && func,
     system::error_code & ec)
 {
-    auto res = detail::create_window_function(conn.handle(), name, std::forward<Func>(func));
+    using func_type = typename std::decay<Func>::type;
+    auto res = detail::create_window_function(
+            conn.handle(), name, std::forward<Func>(func),
+            callable_traits::has_void_return<decltype(&func_type::step)>{});
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
 }

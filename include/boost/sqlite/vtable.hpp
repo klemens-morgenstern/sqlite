@@ -9,6 +9,7 @@
 #define BOOST_SQLITE_VTABLE_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/detail/catch.hpp>
 #include <boost/sqlite/function.hpp>
 
 #include <boost/core/span.hpp>

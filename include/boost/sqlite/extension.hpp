@@ -44,24 +44,25 @@
  @endcode{.cpp}
 
  */
-#define BOOST_SQLITE_EXTENSION(Name, Conn)                        \
-void sqlite_##Name##_impl (boost::sqlite::connection Conn);       \
-extern "C" BOOST_SYMBOL_EXPORT                                    \
-int sqlite3_##Name##_init(                                        \
-    sqlite3 *db,                                                  \
-    char **pzErrMsg,                                              \
-    const sqlite3_api_routines *pApi)                             \
-{                                                                 \
-  using boost::sqlite::sqlite3_api;                               \
-  BOOST_SQLITE_TRY                                                \
-  {                                                               \
-      using boost::sqlite::sqlite3_api;                           \
-      SQLITE_EXTENSION_INIT2(pApi);                               \
-      sqlite_##Name##_impl(boost::sqlite::connection{db, false}); \
-  }                                                               \
-  BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*pzErrMsg)             \
-  return SQLITE_OK;                                               \
-}                                                                 \
+#define BOOST_SQLITE_EXTENSION(Name, Conn)                                \
+void sqlite_##Name##_impl (boost::sqlite::connection Conn);               \
+extern "C" BOOST_SYMBOL_EXPORT                                            \
+int sqlite3_##Name##_init(                                                \
+    sqlite3 *db,                                                          \
+    char **pzErrMsg,                                                      \
+    const sqlite3_api_routines *pApi)                                     \
+{                                                                         \
+  using boost::sqlite::sqlite3_api;                                       \
+  SQLITE_EXTENSION_INIT2(pApi);                                           \
+                                                                          \
+  return boost::sqlite::detail::execute_function_return(                  \
+          *pzErrMsg,                                                      \
+          [&]() -> boost::leaf::result<int>                               \
+          {                                                               \
+              sqlite_##Name##_impl(boost::sqlite::connection{db, false}); \
+              return SQLITE_OK;                                           \
+          });                                                             \
+}                                                                         \
 void sqlite_##Name##_impl(boost::sqlite::connection Conn)
 
 #endif //BOOST_SQLITE_EXTENSION_HPP
