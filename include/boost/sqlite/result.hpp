@@ -48,15 +48,7 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, I value)
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::nullptr_t) { sqlite3_result_null(ctx); }
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, string_view str)
 {
-  auto ptr = new char[str.size()];
-  std::memcpy(ptr, str.data(), str.size());
-  sqlite3_result_text(
-      ctx, ptr, str.size(),
-      +[](void * ptr) noexcept
-      {
-        auto p = static_cast<char*>(ptr);
-        delete[] p;
-      });
+  sqlite3_result_text(ctx, str.data(), str.size(), SQLITE_TRANSIENT);
 }
 template<typename String>
 inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, String && str)

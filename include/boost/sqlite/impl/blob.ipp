@@ -14,9 +14,9 @@
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 blob_handle open_blob(connection & conn,
-                      const char *db,
-                      const char * table,
-                      const char * column,
+                      cstring_ref db,
+                      cstring_ref table,
+                      cstring_ref column,
                       sqlite3_int64 row,
                       bool read_only,
                       system::error_code & ec,
@@ -25,7 +25,8 @@ blob_handle open_blob(connection & conn,
   sqlite3_blob * bb = nullptr;
   blob_handle bh;
 
-  int res = sqlite3_blob_open(conn.handle(), db, table, column, row, read_only ? 0 : 1, &bb);
+  int res = sqlite3_blob_open(conn.handle(), db.c_str(), table.c_str(), column.c_str(),
+                              row, read_only ? 0 : 1, &bb);
   if (res != 0)
   {
       BOOST_SQLITE_ASSIGN_EC(ec, sqlite3_errcode(conn.handle()))
@@ -38,9 +39,9 @@ blob_handle open_blob(connection & conn,
 }
 
 blob_handle open_blob(connection & conn,
-                      const char *db,
-                      const char * table,
-                      const char * column,
+                      cstring_ref db,
+                      cstring_ref table,
+                      cstring_ref column,
                       sqlite3_int64 row,
                       bool read_only)
 {

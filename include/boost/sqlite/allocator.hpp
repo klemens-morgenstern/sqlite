@@ -8,14 +8,12 @@
 #ifndef BOOST_SQLITE_ALLOCATOR_HPP
 #define BOOST_SQLITE_ALLOCATOR_HPP
 
-#include <sqlite3.h>
+#include <boost/sqlite/detail/config.hpp>
+
 #include <cstddef>
 #include <cstdint>
 
-namespace boost
-{
-namespace sqlite
-{
+BOOST_SQLITE_BEGIN_NAMESPACE
 
 template<typename T>
 struct allocator
@@ -42,7 +40,6 @@ struct allocator
   }
 };
 
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_ALLOCATOR_HPP

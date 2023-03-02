@@ -33,13 +33,6 @@ using string_view = boost::core::string_view;
 
 BOOST_SQLITE_END_NAMESPACE
 
-
-#ifndef BOOST_SQLITE_HEADER_ONLY
-# ifndef BOOST_SQLITE_SEPARATE_COMPILATION
-#   define BOOST_SQLITE_HEADER_ONLY 1
-# endif
-#endif
-
 #if defined(BOOST_SQLITE_HEADER_ONLY)
 # define BOOST_SQLITE_DECL inline
 #else

@@ -17,8 +17,8 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 void
 backup(connection & source,
        connection & target,
-       const std::string & source_name,
-       const std::string & target_name,
+       cstring_ref source_name,
+       cstring_ref target_name,
        system::error_code & ec,
        error_info & ei)
 {
@@ -49,8 +49,8 @@ backup(connection & source,
 void
 backup(connection & source,
        connection & target,
-       const std::string & source_name,
-       const std::string & target_name)
+       cstring_ref source_name,
+       cstring_ref target_name)
 {
   system::error_code ec;
   error_info ei;

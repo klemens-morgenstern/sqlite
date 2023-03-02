@@ -87,9 +87,9 @@ struct multi_index_map
         typename my_container::const_iterator::node_type * node;
         switch (index)
         {
-          case 0: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end ) : &*begin); break;
-          case 1: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end1) : &*begin1); break;
-          case 2: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end2) : &*begin2); break;
+          case 0: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end ) : &*begin);
+          case 1: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end1) : &*begin1);
+          case 2: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end2) : &*begin2);
         }
 
         return sqlite3_int64();
@@ -117,7 +117,7 @@ struct multi_index_map
         inverse = (idx == 0b1000) & idx;
         index = idx & 0b11;
 
-        boost::optional<core::string_view> lower, upper, equal;
+        boost::optional<sqlite::cstring_ref> lower, upper, equal;
         int lower_op = 0, upper_op = 0;
 
         bool surely_empty = false;

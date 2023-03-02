@@ -44,14 +44,14 @@ struct connection
     connection& operator=(connection && ) = default;
 
     /// Construct a connection and connect it to `filename`.. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
-    connection(const char * filename,
+    connection(cstring_ref filename,
                int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) { connect(filename, flags); }
 
 
     ///@{
     /// Connect the database to `filename`.  `flags` is set by `SQLITE_OPEN_*` flags.
-    BOOST_SQLITE_DECL void connect(const char * filename, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
-    BOOST_SQLITE_DECL void connect(const char * filename, int flags, system::error_code & ec);
+    BOOST_SQLITE_DECL void connect(cstring_ref filename, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
+    BOOST_SQLITE_DECL void connect(cstring_ref filename, int flags, system::error_code & ec);
     ///@}
 
     ///@{
@@ -77,19 +77,24 @@ struct connection
     ///@{
     /// Perform a query without parametert, It execute a multiple statement.
     BOOST_SQLITE_DECL void execute(
-      const char * q,
+      cstring_ref q,
         system::error_code & ec,
         error_info & ei);
 
-    BOOST_SQLITE_DECL void execute(const char * q);
-    BOOST_SQLITE_DECL void execute(
-        const std::string & q,
+    BOOST_SQLITE_DECL void execute(cstring_ref q);
+
+    template<typename StringLike,
+             typename = decltype(std::declval<const StringLike&>().c_str())>
+    void execute(
+        const StringLike& q,
         system::error_code & ec,
         error_info & ei)
     {
         execute(q.c_str(), ec, ei);
     }
-    void execute(const std::string & q) { execute(q.c_str());}
+    template<typename StringLike,
+             typename = decltype(std::declval<const StringLike&>().c_str())>
+    void execute(const StringLike & q) { execute(q.c_str());}
     ///@}
 
     ///@{
@@ -104,21 +109,21 @@ struct connection
 
     /// Check if the database has the table
     bool has_table(
-        const char * table,
-        const char * db_name = "main") const
+        cstring_ref table,
+        cstring_ref db_name = "main") const
     {
-      return sqlite3_table_column_metadata(impl_.get(), db_name, table,
+      return sqlite3_table_column_metadata(impl_.get(), db_name.c_str(), table.c_str(),
                                            nullptr, nullptr, nullptr, nullptr, nullptr, nullptr)
              == SQLITE_OK;
     }
 
     /// Check if the database has the table
     bool has_column(
-        const char * table,
-        const char * column,
-        const char * db_name = "main") const
+        cstring_ref table,
+        cstring_ref column,
+        cstring_ref db_name = "main") const
     {
-      return sqlite3_table_column_metadata(impl_.get(), db_name, table, column,
+      return sqlite3_table_column_metadata(impl_.get(), db_name.c_str(), table.c_str(), column.c_str(),
                                            nullptr, nullptr, nullptr, nullptr, nullptr)
              == SQLITE_OK;
     }
@@ -142,4 +147,5 @@ BOOST_SQLITE_END_NAMESPACE
 #if defined(BOOST_SQLITE_HEADER_ONLY)
 #include <boost/sqlite/impl/connection.ipp>
 #endif
+
 #endif //BOOST_SQLITE_CONNECTION_HPP

@@ -8,14 +8,10 @@
 #ifndef BOOST_SQLITE_MUTEX_HPP
 #define BOOST_SQLITE_MUTEX_HPP
 
-#include <sqlite3.h>
+#include <boost/sqlite/detail/config.hpp>
 #include <memory>
 
-namespace boost
-{
-namespace sqlite
-{
-
+BOOST_SQLITE_BEGIN_NAMESPACE
 /// A mutex class that maybe a noop depending on the mode sqlite3 was compiled as.
 struct mutex
 {
@@ -54,10 +50,6 @@ struct recursive_mutex
   std::unique_ptr<sqlite3_mutex, deleter_> impl_;
 };
 
-
-
-
-}
-}
+BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_MUTEX_HPP

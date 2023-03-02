@@ -8,7 +8,9 @@
 #ifndef BOOST_SQLITE_META_DATA_HPP
 #define BOOST_SQLITE_META_DATA_HPP
 
+#include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/cstring_ref.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -19,9 +21,9 @@ struct connection ;
 struct column_meta_data
 {
     /// Data type fo the column
-    string_view data_type;
+    cstring_ref data_type;
     /// Name of default collation sequence
-    string_view collation;
+    cstring_ref collation;
     /// true if column has a NOT NULL constraint
     bool not_null;
     /// true if column is part of the PRIMARY KEY
@@ -34,19 +36,19 @@ struct column_meta_data
 /// get the meta-data of one colum
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
-                                        const char * db_name, const char * table_name, const char * column_name,
+                                        cstring_ref db_name, cstring_ref table_name, cstring_ref column_name,
                                         system::error_code & ec, error_info &ei);
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
-                                        const char * table_name, const char * column_name,
+                                        cstring_ref table_name, cstring_ref column_name,
                                         system::error_code & ec, error_info &ei);
 
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
-                                        const char * db_name, const char * table_name, const char * column_name);
+                                        cstring_ref db_name, cstring_ref table_name, cstring_ref column_name);
 BOOST_SQLITE_DECL
 column_meta_data table_column_meta_data(connection  & conn,
-                                        const char * table_name, const char * column_name);
+                                        cstring_ref table_name, cstring_ref column_name);
 ///@}
 
 ///

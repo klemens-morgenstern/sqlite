@@ -5,10 +5,14 @@
 #ifndef BOOST_SQLITE_FIELD_HPP
 #define BOOST_SQLITE_FIELD_HPP
 
+#include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/blob.hpp>
+#include <boost/sqlite/cstring_ref.hpp>
+#include <boost/sqlite/value.hpp>
+
 #include <boost/variant2/variant.hpp>
 #include <boost/core/detail/string_view.hpp>
-#include <boost/sqlite/blob.hpp>
-#include <boost/sqlite/value.hpp>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -49,7 +53,7 @@ struct field
     }
     /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
     BOOST_SQLITE_DECL
-    core::string_view get_text() const;
+    cstring_ref get_text() const;
     /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
     BOOST_SQLITE_DECL
     blob_view get_blob() const;
@@ -59,17 +63,17 @@ struct field
       return value(sqlite3_column_value(stm_, col_));
     }
     /// Returns the name of the column.
-    core::string_view column_name() const
+    cstring_ref column_name() const
     {
       return sqlite3_column_name(stm_, col_);
     }
     /// Returns the name of the table.
-    core::string_view table_name() const
+    cstring_ref table_name() const
     {
       return sqlite3_column_table_name(stm_, col_);
     }
     /// Returns the name of the original data source.
-    core::string_view column_origin_name() const
+    cstring_ref column_origin_name() const
     {
       return sqlite3_column_origin_name(stm_, col_);
     }

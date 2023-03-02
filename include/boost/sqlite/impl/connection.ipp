@@ -9,12 +9,13 @@
 #define BOOST_SQLITE_IMPL_CONNECTION_IPP
 
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/statement.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 
-void connection::connect(const char * filename, int flags)
+void connection::connect(cstring_ref filename, int flags)
 {
     system::error_code ec;
     connect(filename, flags, ec);
@@ -22,10 +23,10 @@ void connection::connect(const char * filename, int flags)
         throw_exception(system::system_error(ec, "connect"));
 }
 
-void connection::connect(const char * filename, int flags, system::error_code & ec)
+void connection::connect(cstring_ref filename, int flags, system::error_code & ec)
 {
     sqlite3 * res;
-    auto r = sqlite3_open_v2(filename, &res, flags,
+    auto r = sqlite3_open_v2(filename.c_str(), &res, flags,
                              nullptr);
     if (r != SQLITE_OK)
         BOOST_SQLITE_ASSIGN_EC(ec, r)
@@ -130,13 +131,13 @@ statement connection::prepare(core::string_view q)
 }
 
 void connection::execute(
-    const char * q,
+    cstring_ref q,
     system::error_code & ec,
     error_info & ei)
 {
     char * msg = nullptr;
 
-    auto res = sqlite3_exec(impl_.get(), q, nullptr, nullptr, &msg);
+    auto res = sqlite3_exec(impl_.get(), q.c_str(), nullptr, nullptr, &msg);
     if (res != SQLITE_OK)
     {
         BOOST_SQLITE_ASSIGN_EC(ec, res);
@@ -145,7 +146,7 @@ void connection::execute(
     }
 }
 
-void connection::execute(const char * q)
+void connection::execute(cstring_ref q)
 {
     system::error_code ec;
     error_info ei;

@@ -16,13 +16,14 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 auto table_column_meta_data(connection& conn,
-                            const char * db_name, const char * table_name, const char * column_name,
+                            cstring_ref db_name, cstring_ref table_name, cstring_ref column_name,
                             system::error_code & ec, error_info &ei) -> column_meta_data
 {
     const char * data_type= "", *collation = "";
     int nn, pk, ai;
 
-    int res = sqlite3_table_column_metadata(conn.handle(), db_name, table_name, column_name,
+    int res = sqlite3_table_column_metadata(conn.handle(), db_name.c_str(), table_name.c_str(),
+                                            column_name.c_str(),
                                             &data_type, &collation, &nn, &pk, &ai);
 
     if (res != SQLITE_OK)
@@ -37,13 +38,13 @@ auto table_column_meta_data(connection& conn,
 
 
 auto table_column_meta_data(connection& conn,
-                            const char * table_name, const char * column_name,
+                            cstring_ref table_name, cstring_ref column_name,
                             system::error_code & ec, error_info &ei) -> column_meta_data
 {
   const char * data_type= "", *collation = "";
   int nn, pk, ai;
 
-  int res = sqlite3_table_column_metadata(conn.handle(), nullptr, table_name, column_name,
+  int res = sqlite3_table_column_metadata(conn.handle(), nullptr, table_name.c_str(), column_name.c_str(),
                                           &data_type, &collation, &nn, &pk, &ai);
 
   if (res != SQLITE_OK)
@@ -59,7 +60,7 @@ auto table_column_meta_data(connection& conn,
 
 
 auto table_column_meta_data(connection& conn,
-                            const char * db_name, const char * table_name, const char * column_name) -> column_meta_data
+                            cstring_ref db_name, cstring_ref table_name, cstring_ref column_name) -> column_meta_data
 {
     system::error_code ec;
     error_info ei;
@@ -70,7 +71,7 @@ auto table_column_meta_data(connection& conn,
 }
 
 auto table_column_meta_data(connection& conn,
-                            const char * table_name, const char * column_name) -> column_meta_data
+                            cstring_ref table_name, cstring_ref column_name) -> column_meta_data
 {
     system::error_code ec;
     error_info ei;

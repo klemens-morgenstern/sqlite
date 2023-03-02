@@ -53,7 +53,7 @@ int sqlite3_##Name##_init(                                        \
     const sqlite3_api_routines *pApi)                             \
 {                                                                 \
   using boost::sqlite::sqlite3_api;                               \
-  try                                                             \
+  BOOST_SQLITE_TRY                                                \
   {                                                               \
       using boost::sqlite::sqlite3_api;                           \
       SQLITE_EXTENSION_INIT2(pApi);                               \

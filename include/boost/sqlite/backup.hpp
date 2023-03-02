@@ -9,6 +9,7 @@
 #define BOOST_SQLITE_BACKUP_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/cstring_ref.hpp>
 #include <boost/sqlite/error.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
@@ -53,8 +54,8 @@ BOOST_SQLITE_DECL
 void
 backup(connection & source,
        connection & target,
-       const std::string & source_name,
-       const std::string & target_name,
+       cstring_ref source_name,
+       cstring_ref target_name,
        system::error_code & ec,
        error_info & ei);
 
@@ -62,8 +63,8 @@ BOOST_SQLITE_DECL
 void
 backup(connection & source,
        connection & target,
-       const std::string & source_name = "main",
-       const std::string & target_name = "main");
+       cstring_ref source_name = "main",
+       cstring_ref target_name = "main");
 
 ///@}
 

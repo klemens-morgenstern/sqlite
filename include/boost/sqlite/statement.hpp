@@ -7,14 +7,18 @@
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/detail/exception.hpp>
+#include <boost/sqlite/blob.hpp>
+#include <boost/sqlite/resultset.hpp>
+
+#include <boost/mp11/algorithm.hpp>
+#include <boost/core/ignore_unused.hpp>
+#include <boost/variant2/variant.hpp>
 
 
 #include <tuple>
-#include <boost/mp11/algorithm.hpp>
-#include <boost/core/ignore_unused.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
-
+struct connection;
 
 
 /// @brief A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
@@ -368,8 +372,8 @@ struct statement
         if (sizeof...(Args) < static_cast<std::size_t>(sz))
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-            ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
-                           + " got " + std::to_string(sizeof...(Args)));
+            ei.format("To few parameters provided. Needed %ld got %ld",
+                      sz, sizeof...(Args));
             return;
         }
 
@@ -398,8 +402,8 @@ struct statement
         if (sizeof...(Args) < sz)
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-            ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
-                           + " got " + std::to_string(sizeof...(Args)));
+            ei.format("To few parameters provided. Needed %ld got %ld",
+                      sz, sizeof...(Args));
             return;
         }
 
@@ -427,8 +431,8 @@ struct statement
         if (vec.size() < static_cast<std::size_t>(sz))
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-            ei.set_message("To few parameters provided. Needs " + std::to_string(sz)
-                           + " got " + std::to_string(vec.size()));
+            ei.format("To few parameters provided. Needed %ld got %ld",
+                      sz, vec.size());
         }
         int i = 1;
         for (const param_ref & pr : std::forward<ParamVector>(vec))
@@ -464,7 +468,7 @@ struct statement
           if (itr == vec.end())
           {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISUSE);
-            ei.set_message("Can't find value for key '" + std::string(c+1) + "'");
+            ei.format("Can't find value for key '%s'", c+1);
             return ;
           }
           int ar = SQLITE_OK;
@@ -504,7 +508,7 @@ struct statement
           if (itr == params.end())
           {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISUSE);
-            ei.set_message("Can't find value for key '" + std::string(c+1) + "'");
+            ei.format("Can't find value for key '%s'", c+1);
             return ;
           }
           auto ar = itr->second.apply(impl_.get(), i);

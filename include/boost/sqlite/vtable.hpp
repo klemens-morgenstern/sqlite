@@ -47,7 +47,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<void(*)(context<Args...>, span<value, Extent>)>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
             }
@@ -66,7 +66,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<T(*)(context<Args...>, span<value, Extent>)>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
             }
@@ -83,8 +83,7 @@ struct vtab_function_setter
           {
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<void(*)(span<value, Extent>)>(sqlite3_user_data(ctx));
-
-            try
+            BOOST_SQLITE_TRY
             {
                 f(boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
             }
@@ -102,7 +101,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<T(*)(span<value, Extent>)>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 set_result(ctx, f(boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
             }
@@ -125,7 +124,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
             }
@@ -144,7 +143,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 set_result(ctx, f(cc, boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
             }
@@ -162,7 +161,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<Func *>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 f(boost::span<value, Extent>{aa, static_cast<std::size_t>(len)});
             }
@@ -180,7 +179,7 @@ struct vtab_function_setter
             auto aa =  reinterpret_cast<value*>(args);
             auto &f = *reinterpret_cast<Func *>(sqlite3_user_data(ctx));
 
-            try
+            BOOST_SQLITE_TRY
             {
                 set_result(ctx, f(boost::span<value, Extent>{aa, static_cast<std::size_t>(len)}));
             }
@@ -472,7 +471,7 @@ struct vtable_helper
                            sqlite3_vtab **ppVTab, char** errMsg)
     {
         auto &impl = *static_cast<Impl*>(pAux);
-        try
+        BOOST_SQLITE_TRY
         {
             vtab_base *ext;
             auto mod = make_module(ext, static_cast<table_type>(impl.create(argc, argv)));
@@ -493,7 +492,7 @@ struct vtable_helper
                             sqlite3_vtab **ppVTab, char** errMsg)
     {
         auto &impl = *static_cast<Impl*>(pAux);
-        try
+        BOOST_SQLITE_TRY
         {
             vtab_base *ext;
             auto mod = make_module(ext, impl.connect(argc, argv));
@@ -560,7 +559,7 @@ struct vtable_helper
     // -------------------------- find_index -------------------------- //
     static int best_index_impl(sqlite3_vtab *pvTab, sqlite3_index_info* info)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(pvTab).best_index(info);
             return SQLITE_OK;
@@ -582,7 +581,7 @@ struct vtable_helper
     static int open_impl(sqlite3_vtab *pVTab, sqlite3_vtab_cursor **ppCursor)
     {
         auto &impl = get_module<table_type>(pVTab);
-        try
+        BOOST_SQLITE_TRY
         {
             make_module(*ppCursor, impl.open());
             return SQLITE_OK;
@@ -592,7 +591,7 @@ struct vtable_helper
 
     static int close_impl(sqlite3_vtab_cursor *ppCursor)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             delete_module<cursor_type>(ppCursor);
             return SQLITE_OK;
@@ -602,7 +601,7 @@ struct vtable_helper
 
     static int next_impl(sqlite3_vtab_cursor *ppCursor)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<cursor_type>(ppCursor).next();
             return SQLITE_OK;
@@ -621,7 +620,7 @@ struct vtable_helper
                            int idxNum, const char *idxStr,
                            int argc, sqlite3_value **argv)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<cursor_type>(pCursor)
                 .filter(idxNum, idxStr,
@@ -673,7 +672,7 @@ struct vtable_helper
     static int column_impl(sqlite3_vtab_cursor *pCursor, sqlite3_context* ctx, int idx)
     {
         using first_type = typename std::tuple_element<1u, callable_traits::args_t<decltype(&cursor_type::column)>>::type;
-        try
+        BOOST_SQLITE_TRY
         {
             column_impl_1(pCursor, ctx, idx, static_cast<first_type*>(nullptr));
         }
@@ -683,7 +682,7 @@ struct vtable_helper
 
     static int row_id_impl(sqlite3_vtab_cursor *pCursor, sqlite3_int64 *pRowid)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             *pRowid = get_module<cursor_type>(pCursor).row_id();
         }
@@ -693,7 +692,7 @@ struct vtable_helper
 
     static int update_impl(sqlite3_vtab * pVTab, int argc, sqlite3_value ** argv, sqlite3_int64 * pRowid)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             auto & mod = get_module<table_type>(pVTab);
             auto db = static_cast<vtab_base*>(pVTab)->db;
@@ -730,7 +729,7 @@ struct vtable_helper
   
     static int begin_impl(sqlite3_vtab *pVTab)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(pVTab).begin();
             return SQLITE_OK;
@@ -749,7 +748,7 @@ struct vtable_helper
     
     static int sync_impl(sqlite3_vtab *pVTab)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(pVTab).sync();
             return SQLITE_OK;
@@ -768,7 +767,7 @@ struct vtable_helper
     
     static int commit_impl(sqlite3_vtab *pVTab)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(pVTab).commit();
             return SQLITE_OK;
@@ -787,7 +786,7 @@ struct vtable_helper
 
     static int rollback_impl(sqlite3_vtab *pVTab)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(pVTab).rollback();
             return SQLITE_OK;
@@ -808,7 +807,7 @@ struct vtable_helper
                                   void (**pxFunc)(sqlite3_context*,int,sqlite3_value**),
                                   void **ppArg)
     {
-      try
+      BOOST_SQLITE_TRY
       {
          return get_module<table_type>(*pVtab).find_function(
               nArg, zName, vtab_function_setter(pxFunc, ppArg));
@@ -830,7 +829,7 @@ struct vtable_helper
 
     static int rename_impl(sqlite3_vtab *pVTab, const char *zNew)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(*pVTab).rename(zNew);
         }
@@ -848,7 +847,7 @@ struct vtable_helper
 
     static int savepoint_impl(sqlite3_vtab *pVTab, int idx)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(*pVTab).savepoint(idx);
         }
@@ -866,7 +865,7 @@ struct vtable_helper
 
     static int release_impl(sqlite3_vtab *pVTab, int idx)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(*pVTab).release(idx);
         }
@@ -884,7 +883,7 @@ struct vtable_helper
 
     static int rollback_to_impl(sqlite3_vtab *pVTab, int idx)
     {
-        try
+        BOOST_SQLITE_TRY
         {
             get_module<table_type>(*pVTab).rollback_to(idx);
         }
@@ -974,7 +973,7 @@ Table & get_vtable_impl(detail::vtab::cursor_type<Table> * const cursor,
 */
 template<typename T>
 auto create_module(connection & conn,
-                   const char * name,
+                   cstring_ref name,
                    T && module,
                    system::error_code & ec,
                    error_info & ei) -> typename std::decay<T>::type &
@@ -986,7 +985,7 @@ auto create_module(connection & conn,
     auto  pp = p.get();
 
     int res = sqlite3_create_module_v2(
-                             conn.handle(), name, &mod, p.release(),
+                             conn.handle(), name.c_str(), &mod, p.release(),
                              +[](void * ptr){delete static_cast<module_type*>(ptr);});
 
     if (res != SQLITE_OK)

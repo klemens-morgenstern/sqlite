@@ -7,7 +7,7 @@
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/blob.hpp>
-#include <boost/core/detail/string_view.hpp>
+#include <boost/sqlite/cstring_ref.hpp>
 
 
 BOOST_SQLITE_BEGIN_NAMESPACE
@@ -74,7 +74,7 @@ struct value
     }
     /// Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
     BOOST_SQLITE_DECL
-    core::string_view get_text() const;
+    cstring_ref get_text() const;
     /// Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
     BOOST_SQLITE_DECL
     blob_view get_blob() const;

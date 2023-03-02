@@ -6,6 +6,7 @@
 #define BOOST_SQLITE_BLOB_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/memory.hpp>
 #include <boost/sqlite/error.hpp>
 #include <type_traits>
 #include <memory>
@@ -53,17 +54,16 @@ struct blob
     /// Create a blob from a blob_view
     explicit blob(blob_view bv)
     {
-        impl_.reset(operator new(bv.size()));
+        impl_.reset(sqlite3_malloc(bv.size()));
         size_ = bv.size();
         std::memcpy(impl_.get(), bv.data(), size_);
     }
     /// Create an empty blob with size `n`.
-    explicit blob(std::size_t n) : impl_(operator new(n)), size_(n) {}
+    explicit blob(std::size_t n) : impl_(sqlite3_malloc(n)), size_(n) {}
     /// Release & take ownership of the blob.
     void * release() && {return std::move(impl_).release(); }
    private:
-    struct deleter_ {void operator()(void *p) {operator delete(p);}};
-    std::unique_ptr<void, deleter_> impl_;
+    unique_ptr<void> impl_;
     std::size_t size_{0u};
 };
 
@@ -126,9 +126,9 @@ struct blob_handle
 /// Open a blob for incremental access
 BOOST_SQLITE_DECL
 blob_handle open_blob(connection & conn,
-                      const char *db,
-                      const char *table,
-                      const char *column,
+                      cstring_ref db,
+                      cstring_ref table,
+                      cstring_ref column,
                       sqlite3_int64 row,
                       bool read_only,
                       system::error_code &ec,
@@ -136,9 +136,9 @@ blob_handle open_blob(connection & conn,
 
 BOOST_SQLITE_DECL
 blob_handle open_blob(connection & conn,
-                      const char *db,
-                      const char * table,
-                      const char *column,
+                      cstring_ref db,
+                      cstring_ref table,
+                      cstring_ref column,
                       sqlite3_int64 row,
                       bool read_only = false);
 ///}@

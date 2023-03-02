@@ -10,6 +10,18 @@
 
 #include <stdexcept>
 
+#if defined(BOOST_NO_EXCEPTIONS)
+
+#define BOOST_SQLITE_TRY
+
+#define BOOST_SQLITE_CATCH_RESULT(ctx)
+#define BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(msg)
+#define BOOST_SQLITE_CATCH_AND_RETURN()
+
+#else
+
+#define BOOST_SQLITE_TRY try
+
 #define BOOST_SQLITE_CATCH_RESULT(ctx)                                             \
 catch (boost::system::system_error & se)                                           \
 {                                                                                  \
@@ -69,6 +81,6 @@ catch(std::out_of_range &) { return SQLITE_RANGE;}                              
 catch(std::logic_error  &) { return SQLITE_MISUSE;}                                \
 catch(...) { return SQLITE_ERROR; }
 
-
+#endif
 
 #endif //BOOST_SQLITE_DETAIL_CATCH_HPP

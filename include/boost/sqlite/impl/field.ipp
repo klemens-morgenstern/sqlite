@@ -9,7 +9,7 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-core::string_view field::get_text() const
+cstring_ref field::get_text() const
 {
   const auto ptr =  sqlite3_column_text(stm_, col_);
   if (ptr == nullptr)
@@ -19,8 +19,7 @@ core::string_view field::get_text() const
     else
       throw_exception(std::bad_alloc(), BOOST_CURRENT_LOCATION);
   }
-  const auto sz =  sqlite3_column_bytes(stm_, col_);
-  return core::string_view(reinterpret_cast<const char*>(ptr), sz);
+  return reinterpret_cast<const char*>(ptr);
 }
 
 

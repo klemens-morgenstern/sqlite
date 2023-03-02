@@ -13,39 +13,8 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-template<typename Func>
-void create_collation(
-    connection & conn,
-    const std::string & name,
-    Func && func,
-    typename std::enable_if<
-        std::is_convertible<
-            decltype(func(string_view(), string_view())),
-            int>::value,
-        system::error_code>::type & ec)
-{
-    using func_type = typename std::decay<Func>::type;
-    auto res = sqlite3_create_collation_v2(
-        conn.handle(),
-        name.c_str(),
-        SQLITE_UTF8,
-        static_cast<void*>(new func_type(std::forward<Func>(func))),
-        +[](void * data, int len_l, const void * str_l, int len_r, const void * str_r) -> int
-        {
-          string_view l(static_cast<const char*>(str_l), len_l);
-          string_view r(static_cast<const char*>(str_r), len_r);
-          auto & impl = (*static_cast<func_type*>(data));
-          static_assert(noexcept(impl(l, r)),
-                        "Collation function must be noexcept");
-          return impl(l, r);
-        },
-        +[](void * p) { delete static_cast<func_type*>(p); }
-      );
-    if (res != SQLITE_OK)
-      BOOST_SQLITE_ASSIGN_EC(ec, res);
-}
-
-/** @brief Define a custom collation function
+///@{
+/** Define a custom collation function
  @ingroup reference
 
  @param conn A connection to the database in which to install the collation.
@@ -77,9 +46,48 @@ void create_collation(
  */
 
 template<typename Func>
+void create_collation(
+    connection & conn,
+    cstring_ref name,
+    Func && func,
+    typename std::enable_if<
+        std::is_convertible<
+            decltype(func(string_view(), string_view())),
+            int>::value,
+        system::error_code>::type & ec)
+{
+    using func_type = typename std::decay<Func>::type;
+    auto f = new (memory_tag{}) func_type(std::forward<Func>(func));
+    if (f == nullptr)
+    {
+      BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_NOMEM);
+      return;
+    }
+    auto res = sqlite3_create_collation_v2(
+        conn.handle(),
+        name.c_str(),
+        SQLITE_UTF8,
+        f,
+        +[](void * data, int len_l, const void * str_l, int len_r, const void * str_r) -> int
+        {
+          string_view l(static_cast<const char*>(str_l), len_l);
+          string_view r(static_cast<const char*>(str_r), len_r);
+          auto & impl = (*static_cast<func_type*>(data));
+          static_assert(noexcept(impl(l, r)),
+                        "Collation function must be noexcept");
+          return impl(l, r);
+        },
+        +[](void * p) { delete_(static_cast<func_type*>(p)); }
+      );
+    if (res != SQLITE_OK)
+      BOOST_SQLITE_ASSIGN_EC(ec, res);
+}
+
+
+template<typename Func>
 auto create_collation(
     connection & conn,
-    const std::string & name,
+    cstring_ref name,
     Func && func)
 #if !defined(BOOST_SQLITE_GENERATING_DOCS)
     -> typename std::enable_if<
@@ -93,6 +101,7 @@ auto create_collation(
     if (ec)
         detail::throw_error_code(ec, BOOST_CURRENT_LOCATION);
 }
+/// @}
 
 BOOST_SQLITE_END_NAMESPACE
 
