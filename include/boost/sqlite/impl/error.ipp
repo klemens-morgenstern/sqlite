@@ -47,6 +47,15 @@ system::error_category & sqlite_category()
   return cat;
 }
 
+void throw_exception_from_error( error const & e, boost::source_location const & loc )
+{
+  boost::throw_exception(
+      system::system_error(e.code,
+                           sqlite_category(),
+                           e.info.message().c_str()), loc);
+}
+
+
 BOOST_SQLITE_END_NAMESPACE
 
 #endif // BOOST_SQLITE_IMPL_ERROR_IPP

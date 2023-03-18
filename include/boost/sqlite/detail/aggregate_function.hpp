@@ -7,6 +7,7 @@
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/detail/catch.hpp>
+#include <boost/sqlite/error.hpp>
 #include <boost/sqlite/cstring_ref.hpp>
 #include <boost/sqlite/memory.hpp>
 #include <boost/sqlite/result.hpp>
@@ -16,8 +17,7 @@
 #include <boost/callable_traits/return_type.hpp>
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/core/span.hpp>
-#include <boost/leaf/handle_errors.hpp>
-#include <boost/leaf/result.hpp>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -47,13 +47,13 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
 
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<void>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
@@ -67,19 +67,18 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
 
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->final(*c))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               struct reaper {void operator()(context_type * c) { c->~context_type();}};
               std::unique_ptr<context_type, reaper> cl{c};
-              set_result(ctx, f->final(*c));
-              return {};
+              return f->final(*c);
             });
       },
       [](void * ptr) noexcept { delete_(static_cast<func_type*>(ptr));}
@@ -110,16 +109,16 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
 
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<void>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
-              BOOST_LEAF_CHECK(f->step(*c, span_type{aa, static_cast<std::size_t>(len)}));
+              f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
               return {};
             });
       },
@@ -130,20 +129,18 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
 
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->final(*c))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               struct reaper {void operator()(context_type * c) { c->~context_type();}};
               std::unique_ptr<context_type, reaper> cl{c};
-              BOOST_LEAF_AUTO(val, f->final(*c));
-              set_result(ctx, std::move(val));
-              return {};
+              return f->final(*c);
             });
       },
       [](void * ptr) noexcept { delete_(static_cast<func_type*>(ptr));}

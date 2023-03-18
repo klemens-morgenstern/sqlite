@@ -55,13 +55,12 @@ int sqlite3_##Name##_init(                                                \
   using boost::sqlite::sqlite3_api;                                       \
   SQLITE_EXTENSION_INIT2(pApi);                                           \
                                                                           \
-  return boost::sqlite::detail::execute_function_return(                  \
-          *pzErrMsg,                                                      \
-          [&]() -> boost::leaf::result<int>                               \
-          {                                                               \
-              sqlite_##Name##_impl(boost::sqlite::connection{db, false}); \
-              return SQLITE_OK;                                           \
-          });                                                             \
+  BOOST_SQLITE_TRY                                                        \
+  {                                                                       \
+    sqlite_##Name##_impl(boost::sqlite::connection{db, false});           \
+    return SQLITE_OK;                                                     \
+  }                                                                       \
+  BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*pzErrMsg);                    \
 }                                                                         \
 void sqlite_##Name##_impl(boost::sqlite::connection Conn)
 

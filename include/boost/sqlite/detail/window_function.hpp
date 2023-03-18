@@ -39,13 +39,13 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
 
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<void>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
@@ -59,20 +59,19 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->value(*c))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               struct reaper {void operator()(context_type * c) { c->~context_type();}};
               std::unique_ptr<context_type, reaper> cl{c};
 
-              set_result(ctx, f->value(*c));
-              return {};
+              return f->value(*c);
             });
       },
       [](sqlite3_context* ctx) //xValue
@@ -81,17 +80,16 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->value(*c))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
-              set_result(ctx, f->value(*c));
-              return {};
+              return f->value(*c);
             });
 
       },
@@ -102,13 +100,13 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->inverse(*c, span_type{aa, static_cast<std::size_t>(len)}))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               f->inverse(*c, span_type{aa, static_cast<std::size_t>(len)});
@@ -138,17 +136,17 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
       {
         auto aa =  reinterpret_cast<value*>(args);
         auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
+        auto  c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
 
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->step(*c, span_type{aa, static_cast<std::size_t>(len)}))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               return f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
@@ -157,26 +155,23 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
       },
       [](sqlite3_context* ctx) // xFinal
       {
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
+        auto f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->value(*c))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
 
               struct reaper {void operator()(context_type * c) { c->~context_type();}};
               std::unique_ptr<context_type, reaper> cl{c};
-              BOOST_LEAF_AUTO(val, f->value(*c));
-              set_result(ctx, std::move(val));
-
-              return val.error();
+              return f->value(*c);
             });
       },
       [](sqlite3_context* ctx) //xValue
@@ -185,18 +180,16 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->value(*c))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
-              BOOST_LEAF_AUTO(val, f->value(*c));
-              set_result(ctx, std::move(val));
-              return {};
+              return f->value(*c);
             });
 
       },
@@ -207,13 +200,13 @@ int create_window_function(sqlite3 * db, cstring_ref name, Func && func,
         auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
         execute_context_function(
             ctx,
-            [&]() -> leaf::result<void>
+            [&]() -> result<decltype(f->inverse(*c, span_type{aa, static_cast<std::size_t>(len)}))>
             {
               if (c == nullptr)
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
                 if (!p)
-                  return leaf::new_error(SQLITE_NOMEM);
+                  return error(SQLITE_NOMEM);
                 c = new (p) context_type();
               }
               return f->inverse(*c, span_type{aa, static_cast<std::size_t>(len)});

@@ -9,189 +9,156 @@
 #define BOOST_SQLITE_DETAIL_CATCH_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/detail/exception.hpp>
 #include <boost/sqlite/error.hpp>
+#include <boost/sqlite/result.hpp>
+
+#include <boost/system/system_error.hpp>
 
 #include <stdexcept>
-#include <boost/leaf/handle_errors.hpp>
-#include <boost/leaf/result.hpp>
-#include <boost/system/system_error.hpp>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 namespace detail
 {
 
-template<typename Func>
-void execute_context_function(sqlite3_context * ctx, Func && func) noexcept
+template<typename Func, typename ... Args>
+void execute_context_function_impl(std::false_type /* is_void */,
+                                   sqlite3_context * ctx,
+                                   Func && func, Args && ... args)
+    noexcept(noexcept(std::forward<Func>(func)(std::forward<Args>(args)...)))
 {
-  return leaf::try_handle_all(
-      std::forward<Func>(func),
-      [ctx](system::system_error & se)
-      {
-        if (se.code().category() == boost::sqlite::sqlite_category())
-          sqlite3_result_error_code(ctx, se.code().value());
-        else
-          sqlite3_result_error_code(ctx, SQLITE_ERROR);
-        sqlite3_result_error(ctx, se.what(), std::strlen(se.what()));
-      },
-      [ctx](std::bad_alloc    &) { sqlite3_result_error_nomem(ctx); },
-      [ctx](std::length_error &) { sqlite3_result_error_toobig(ctx); },
-      [ctx](std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);},
-      [ctx](std::length_error &) { sqlite3_result_error_toobig(ctx); },
-      [ctx](std::logic_error &le)
-      {
-        sqlite3_result_error_code(ctx, SQLITE_MISUSE);
-        sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));
-      },
-      [ctx](std::exception & ex)
-      {
-        sqlite3_result_error(ctx, ex.what(), std::strlen(ex.what()));
-      },
-      [ctx](int id, error_info &ei)
-      {
-        sqlite3_result_error_code(ctx, id);
-        sqlite3_result_error(ctx, ei.message().data(), ei.message().size());
-      },
-      [ctx](int id)
-      {
-        sqlite3_result_error_code(ctx, id);
-      },
-      [ctx]
-      {
-        sqlite3_result_error_code(ctx, SQLITE_ERROR);
-      }
-      );
+  set_result(ctx, std::forward<Func>(func)(std::forward<Args>(args)...));
 }
 
-
-template<typename Func>
-int execute_function_return(char * &msg, Func && func) noexcept
+template<typename Func, typename ... Args>
+void execute_context_function_impl(std::true_type  /* is_void */,
+                                   sqlite3_context * ctx,
+                                   Func && func, Args && ... args)
+    noexcept(noexcept(std::forward<Func>(func)(std::forward<Args>(args)...)))
 {
-  return leaf::try_handle_all(
-      std::forward<Func>(func),
-      [&msg](system::system_error & se)
-      {
-        msg = sqlite3_mprintf("%s", se.what());
-
-        if (se.code().category() == boost::sqlite::sqlite_category())
-          return se.code().value();
-        else
-          return SQLITE_ERROR;
-      },
-      [](std::bad_alloc    &) { return SQLITE_NOMEM; },
-      [](std::length_error &) { return SQLITE_TOOBIG; },
-      [](std::out_of_range &) { return SQLITE_RANGE;},
-      [&msg](std::logic_error &le)
-      {
-        msg = sqlite3_mprintf("%s", le.what());
-        return SQLITE_MISUSE;
-      },
-      [&msg](std::exception & ex)
-      {
-        msg = sqlite3_mprintf("%s", ex.what());
-        return SQLITE_ERROR;
-      },
-      [&msg](int id, error_info & ei)
-      {
-        msg = ei.release();
-        return id;
-      },
-      [&msg](int id)
-      {
-        return id;
-      },
-      [&msg]
-      {
-        return SQLITE_ERROR;
-      }
-  );
+  std::forward<Func>(func)(std::forward<Args>(args)...);
 }
 
-
-template<typename Func>
-int execute_function_return(Func && func) noexcept
+template<typename Func, typename ... Args>
+void execute_context_function(sqlite3_context * ctx,
+                              Func && func, Args && ... args) noexcept
 {
-  return leaf::try_handle_all(
-      std::forward<Func>(func),
-      [](system::system_error & se)
-      {
-        if (se.code().category() == boost::sqlite::sqlite_category())
-          return se.code().value();
-        else
-          return SQLITE_ERROR;
-      },
-      [](std::bad_alloc    &) { return SQLITE_NOMEM; },
-      [](std::length_error &) { return SQLITE_TOOBIG; },
-      [](std::out_of_range &) { return SQLITE_RANGE;},
-      [](std::logic_error &le){ return SQLITE_MISUSE; },
-      [](std::exception & ex) { return SQLITE_ERROR; },
-      [](int id) { return id; },
-      []         { return SQLITE_ERROR; }
-  );
+  using return_type = decltype(func(std::forward<Args>(args)...));
+  using is_result_type = is_result_type<return_type>;
+  using result_type = typename std::conditional<
+                          is_result_type::value,
+                          return_type,
+                          result<return_type>>::type::value_type;
+#if !defined(BOOST_NO_EXCEPTIONS)
+  try
+  {
+#endif
+    execute_context_function_impl(std::is_void<return_type>{}, ctx,
+                                  std::forward<Func>(func),
+                                  std::forward<Args>(args)...);
+#if !defined(BOOST_NO_EXCEPTIONS)
+  }
+  catch(boost::system::system_error & se)
+  {
+    if (se.code().category() == boost::sqlite::sqlite_category())
+      sqlite3_result_error_code(ctx, se.code().value());
+    const auto msg = boost::sqlite::detail::get_message(se);
+    if (!msg.empty())
+      sqlite3_result_error(ctx, msg.data(), msg.size());
+  }
+  catch(std::bad_alloc    &) { sqlite3_result_error_nomem(ctx); }
+  catch(std::length_error &) { sqlite3_result_error_toobig(ctx); }
+  catch(std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);}
+  catch(std::logic_error &le)
+  {
+    sqlite3_result_error_code(ctx, SQLITE_MISUSE);
+    sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));
+  }
+  catch(std::exception & ex)
+  {
+    sqlite3_result_error(ctx, ex.what(), std::strlen(ex.what()));
+  }
+  catch(...) {sqlite3_result_error_code(ctx, SQLITE_ERROR); }
+#endif
 }
 
 }
 BOOST_SQLITE_END_NAMESPACE
 
+#if defined(BOOST_NO_EXCEPTIONS)
+#define BOOST_SQLITE_TRY
+#define BOOST_SQLITE_CATCH_RESULT(ctx)
+#define BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(msg)
+#define BOOST_SQLITE_CATCH_AND_RETURN()
+
+#else
 
 #define BOOST_SQLITE_TRY try
-
-#define BOOST_SQLITE_CATCH_RESULT(ctx)                                             \
-catch (boost::system::system_error & se)                                           \
-{                                                                                  \
-  if (se.code().category() == boost::sqlite::sqlite_category())                    \
-    sqlite3_result_error_code(ctx, se.code().value());                             \
-  sqlite3_result_error(ctx, se.what(), std::strlen(se.what()));                    \
-}                                                                                  \
-catch(std::bad_alloc    &) { sqlite3_result_error_nomem(ctx); }                    \
-catch(std::length_error &) { sqlite3_result_error_toobig(ctx); }                   \
-catch(std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);}        \
-catch(std::logic_error &le)                                                        \
-{                                                                                  \
-  sqlite3_result_error_code(ctx, SQLITE_MISUSE);                                   \
-  sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));                    \
-}                                                                                  \
-catch(std::exception & ex)                                                         \
-{                                                                                  \
-  sqlite3_result_error(ctx, ex.what(), std::strlen(ex.what()));                    \
-}                                                                                  \
+#define BOOST_SQLITE_CATCH_RESULT(ctx)                                       \
+catch(boost::system::system_error & se)                                      \
+{                                                                            \
+  if (se.code().category() == boost::sqlite::sqlite_category())              \
+    sqlite3_result_error_code(ctx, se.code().value());                       \
+  const auto msg = boost::sqlite::detail::get_message(se);                   \
+  if (!msg.empty())                                                          \
+    sqlite3_result_error(ctx, msg.data(), msg.size());                       \
+}                                                                            \
+catch(std::bad_alloc    &) { sqlite3_result_error_nomem(ctx); }              \
+catch(std::length_error &) { sqlite3_result_error_toobig(ctx); }             \
+catch(std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);}  \
+catch(std::logic_error &le)                                                  \
+{                                                                            \
+  sqlite3_result_error_code(ctx, SQLITE_MISUSE);                             \
+  sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));              \
+}                                                                            \
+catch(std::exception & ex)                                                   \
+{                                                                            \
+  sqlite3_result_error(ctx, ex.what(), std::strlen(ex.what()));              \
+}                                                                            \
 catch(...) {sqlite3_result_error_code(ctx, SQLITE_ERROR); }
 
-#define BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(msg)                              \
-catch (boost::system::system_error & se)                                           \
-{                                                                                  \
-  auto code = SQLITE_ERROR;                                                        \
-  if (se.code().category() == boost::sqlite::sqlite_category())                    \
-    code = se.code().value();                                                      \
-  msg = sqlite3_mprintf("%s", se.what());                                          \
-  return code;                                                                     \
-}                                                                                  \
-catch(std::bad_alloc    &) { return SQLITE_NOMEM; }                                \
-catch(std::length_error &) { return SQLITE_TOOBIG; }                               \
-catch(std::out_of_range &) { return SQLITE_RANGE;}                                 \
-catch(std::logic_error &le)                                                        \
-{                                                                                  \
-    msg = sqlite3_mprintf("%s", le.what());                                        \
-    return SQLITE_MISUSE;                                                          \
-}                                                                                  \
-catch(std::exception & ex)                                                         \
-{                                                                                  \
-    msg = sqlite3_mprintf("%s", ex.what());                                        \
-    return SQLITE_ERROR;                                                           \
-}                                                                                  \
-catch(...) {return SQLITE_ERROR; }                                                 \
 
-#define BOOST_SQLITE_CATCH_AND_RETURN()                                            \
-catch (boost::system::system_error & se)                                           \
-{                                                                                  \
-  auto code = SQLITE_ERROR;                                                        \
-  if (se.code().category() == boost::sqlite::sqlite_category())                    \
-    code = se.code().value();                                                      \
-  return code;                                                                     \
-}                                                                                  \
-catch(std::bad_alloc    &) { return SQLITE_NOMEM; }                                \
-catch(std::length_error &) { return SQLITE_TOOBIG; }                               \
-catch(std::out_of_range &) { return SQLITE_RANGE;}                                 \
-catch(std::logic_error  &) { return SQLITE_MISUSE;}                                \
-catch(...) { return SQLITE_ERROR; }
+#define BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(msg)                        \
+catch (boost::system::system_error & se)                                     \
+{                                                                            \
+  auto code = SQLITE_ERROR;                                                  \
+  if (se.code().category() == boost::sqlite::sqlite_category())              \
+    code = se.code().value();                                                \
+  const auto pre = boost::sqlite::detail::get_message(se);                   \
+  msg = boost::sqlite::error_info(pre).release();                            \
+  return code;                                                               \
+}                                                                            \
+catch(std::bad_alloc    &) { return SQLITE_NOMEM; }                          \
+catch(std::length_error &) { return SQLITE_TOOBIG; }                         \
+catch(std::out_of_range &) { return SQLITE_RANGE;}                           \
+catch(std::logic_error &le)                                                  \
+{                                                                            \
+    msg = boost::sqlite::error_info(le.what()).release();                    \
+    return SQLITE_MISUSE;                                                    \
+}                                                                            \
+catch(std::exception & ex)                                                   \
+{                                                                            \
+    msg = boost::sqlite::error_info(ex.what()).release();                    \
+    return SQLITE_ERROR;                                                     \
+}                                                                            \
+catch(...) {return SQLITE_ERROR; }                                           \
+
+
+#define BOOST_SQLITE_CATCH_AND_RETURN()                                      \
+catch (boost::system::system_error & se)                                     \
+{                                                                            \
+  auto code = SQLITE_ERROR;                                                  \
+  if (se.code().category() == boost::sqlite::sqlite_category())              \
+    code = se.code().value();                                                \
+  return code;                                                               \
+}                                                                            \
+catch(std::bad_alloc    &) { return SQLITE_NOMEM; }                          \
+catch(std::length_error &) { return SQLITE_TOOBIG; }                         \
+catch(std::out_of_range &) { return SQLITE_RANGE;}                           \
+catch(std::logic_error  &) { return SQLITE_MISUSE;}                          \
+catch(...) { return SQLITE_ERROR; }                                          \
+
+#endif
 
 #endif //BOOST_SQLITE_DETAIL_CATCH_HPP

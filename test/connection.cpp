@@ -19,3 +19,11 @@ TEST_CASE("connection")
   CHECK_THROWS(conn.execute("elect * from nothing;"));
   conn.close();
 }
+
+TEST_CASE("exc")
+{
+  sqlite::connection conn;
+  conn.connect(":memory:");
+  CHECK_THROWS(conn.execute("select 932 fro 12;"));
+  conn.close();
+}

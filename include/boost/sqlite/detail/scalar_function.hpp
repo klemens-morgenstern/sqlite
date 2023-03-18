@@ -15,8 +15,7 @@
 #include <boost/callable_traits/return_type.hpp>
 #include <boost/callable_traits/has_void_return.hpp>
 #include <boost/core/span.hpp>
-#include <boost/leaf/handle_errors.hpp>
-#include <boost/leaf/result.hpp>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -49,18 +48,11 @@ auto create_scalar_function_impl(sqlite3 * db,
         boost::span<value, Extent> vals{aa, static_cast<std::size_t>(len)};
         using return_type = callable_traits::return_type_t<func_type>;
         using result_type = typename std::conditional<
-            leaf::is_result_type<return_type>::value,
+            is_result_type<return_type>::value,
             return_type,
-            leaf::result<return_type>>::type;
+            result<return_type>>::type;
 
-        execute_context_function(
-            ctx,
-            [&]() -> leaf::result<void>
-            {
-              BOOST_LEAF_AUTO(res, result_type(f(cc, vals)));
-              set_result(ctx, std::move(res));
-              return {};
-            });
+        execute_context_function(ctx, f, cc, vals);
       }, nullptr, nullptr,
       +[](void * ptr) noexcept {delete_(static_cast<func_type*>(ptr));}
   );
@@ -93,7 +85,7 @@ auto create_scalar_function_impl(sqlite3 * db,
             [&]()
             {
               f(cc, vals);
-              return leaf::result<void>();
+              return result<void>();
             });
 
       }, nullptr, nullptr,
@@ -124,18 +116,12 @@ auto create_scalar_function_impl(sqlite3 * db,
         boost::span<value, Extent> vals{aa, static_cast<std::size_t>(len)};
         using return_type = callable_traits::return_type_t<Func>;
         using result_type = typename std::conditional<
-            leaf::is_result_type<return_type>::value,
+            is_result_type<return_type>::value,
             return_type,
-            leaf::result<return_type>>::type;
+            result<return_type>>::type;
 
         execute_context_function(
-            ctx,
-            [&]() -> leaf::result<void>
-            {
-              BOOST_LEAF_AUTO(res, result_type(f(cc, vals)));
-              set_result(ctx, std::move(res));
-              return {};
-            });
+            ctx, f, cc, vals);
       }, nullptr, nullptr, nullptr);
 }
 
@@ -164,7 +150,7 @@ auto create_scalar_function_impl(sqlite3 * db,
             [&]()
             {
               f(cc, vals);
-              return leaf::result<void>();
+              return result<void>();
             });
 
       }, nullptr, nullptr, nullptr);

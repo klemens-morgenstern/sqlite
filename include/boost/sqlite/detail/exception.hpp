@@ -23,6 +23,17 @@ BOOST_NORETURN void throw_out_of_range(const char * msg,
 BOOST_NORETURN void throw_invalid_argument(const char * msg,
                                            const boost::source_location & loc);
 
+inline core::string_view get_message(const system::system_error & se)
+{
+  auto ec_len = se.code().what().size();
+  auto se_len = std::strlen(se.what());
+
+  if (ec_len == se_len)
+    return core::string_view();
+  else
+    return core::string_view(se.what(), se_len - (ec_len + 2));
+}
+
 
 }
 BOOST_SQLITE_END_NAMESPACE

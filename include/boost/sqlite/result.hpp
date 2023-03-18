@@ -100,6 +100,30 @@ inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T>
   sqlite3_result_pointer(ctx, ptr.release(), typeid(T).name(), +[](void * ptr){Deleter()(static_cast<T*>(ptr));});
 }
 
+inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, error err)
+{
+  sqlite3_result_error_code(ctx, err.code);
+  if (err.info)
+    sqlite3_result_error(ctx, err.info.message().c_str(), -1);
+}
+
+
+template<typename T>
+inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, result<T> res)
+{
+  if (res.has_value())
+    tag_invoke(tag, ctx, std::move(res).value());
+  else
+    tag_invoke(tag, ctx, std::move(res).error());
+}
+
+inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, result<void> res)
+{
+  if (res.has_error())
+    tag_invoke(tag, ctx, std::move(res).error());
+}
+
+
 namespace detail
 {
 
