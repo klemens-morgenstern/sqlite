@@ -20,103 +20,118 @@ void assign_value(int & res, sqlite::value val) { res = val.get_int();}
 void assign_value(std::string & res, sqlite::value val) { res = val.get_text();}
 
 template<typename T>
-struct describe_table
+struct describe_cursor : sqlite::vtab::cursor<>
+{
+  describe_cursor(
+      typename boost::unordered_map<sqlite3_int64, T>::const_iterator itr,
+      typename boost::unordered_map<sqlite3_int64, T>::const_iterator end
+      ) : itr(itr), end(end)
+  {
+  }
+
+  typename boost::unordered_map<sqlite3_int64, T>::const_iterator itr, end;
+  constexpr static std::size_t column_count = mp11::mp_size<describe::describe_members<T, describe::mod_any_access>>::value;
+
+  sqlite::result<void> next() {itr++; return {};}
+  sqlite::result<sqlite3_int64> row_id() {return itr->first;}
+
+  void column(sqlite::context<> ctx, int i, bool /* no_change */)
+  {
+    mp11::mp_with_index<column_count>(
+        i, [&](auto Idx)
+        {
+          using type = mp11::mp_at_c<describe::describe_members<T, describe::mod_public>, Idx>;
+          ctx.set_result(itr->second.*type::pointer);
+        });
+  }
+
+  bool eof() noexcept {return itr == end;}
+};
+
+template<typename T>
+struct describe_table :
+    sqlite::vtab::table<describe_cursor<T>>,
+    sqlite::vtab::modifiable
+{
+  boost::unordered_map<sqlite3_int64, T> &data;
+  describe_table(boost::unordered_map<sqlite3_int64, T> &data) : data(data) {}
+
+  std::string decl;
+  const char * declaration()
+  {
+    if (!decl.empty())
+      return decl.c_str();
+    mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
+        [&](auto elem)
+        {
+            if (decl.empty())
+              decl += "create table x(";
+            else
+              decl += ", ";
+
+            decl += elem.name;
+        });
+    decl += ");";
+    return decl.c_str();
+  }
+
+
+  sqlite3_int64 last_index = 0;
+
+  sqlite::result<describe_cursor<T>> open()
+  {
+    return describe_cursor<T>{data.begin(), data.end()};
+  }
+
+  sqlite::result<void> delete_(sqlite::value key)
+  {
+    data.erase(key.get_int64());
+    return {};
+  }
+  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
+                      int on_conflict)
+  {
+    T res;
+    sqlite_int64 id = key.is_null() ? last_index++ : key.get_int();
+    auto vtr = values.begin();
+    mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
+        [&](auto elem)
+        {
+          assign_value(res.*elem.pointer , *vtr);
+          vtr++;
+        });
+
+    auto itr = data.emplace(id, std::move(res)).first;
+    return itr->first;
+
+  }
+  sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
+                      span<sqlite::value> values, int on_conflict)
+  {
+    if (new_key.get_int() != old_key.get_int())
+      data.erase(old_key.get_int64());
+    auto & res = data[new_key.get_int64()];
+
+    auto vtr = values.begin();
+    mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
+        [&](auto elem)
+        {
+          assign_value(res.*elem.pointer , *vtr);
+          vtr++;
+        });
+    return 0u;
+  }
+};
+
+template<typename T>
+struct describe_module : sqlite::vtab::eponymous_module<describe_table<T>>
 {
   boost::unordered_map<sqlite3_int64, T> data;
   constexpr static std::size_t column_count = mp11::mp_size<describe::describe_members<T, describe::mod_any_access>>::value;
-
-  struct table_type
+  sqlite::result<describe_table<T>> connect(sqlite::connection conn,
+                                            int argc, const char * const  argv[])
   {
-    boost::unordered_map<sqlite3_int64, T> &data;
-    std::string decl;
-    const char * declaration()
-    {
-      if (!decl.empty())
-        return decl.c_str();
-      mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
-          [&](auto elem)
-          {
-              if (decl.empty())
-                decl += "create table x(";
-              else
-                decl += ", ";
-
-              decl += elem.name;
-          });
-      decl += ");";
-      return decl.c_str();
-    }
-
-
-    sqlite3_int64 last_index = 0;
-
-    struct cursor
-    {
-      typename boost::unordered_map<sqlite3_int64, T>::const_iterator itr, end;
-
-      void next() {itr++;}
-      sqlite3_int64 row_id() {return itr->first;}
-
-      void column(sqlite::context<> ctx, int i, bool /* no_change */)
-      {
-          mp11::mp_with_index<column_count>(
-              i, [&](auto Idx)
-              {
-                  using type = mp11::mp_at_c<describe::describe_members<T, describe::mod_public>, Idx>;
-                  ctx.set_result(itr->second.*type::pointer);
-              });
-      }
-
-      bool eof() noexcept {return itr == end;}
-    };
-
-    cursor open()
-    {
-      return cursor{data.begin(), data.end()};
-    }
-
-    void delete_(sqlite::value key)
-    {
-      data.erase(key.get_int64());
-    }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
-                        int on_conflict)
-    {
-      T res;
-      sqlite_int64 id = key.is_null() ? last_index++ : key.get_int();
-      auto vtr = values.begin();
-      mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
-          [&](auto elem)
-          {
-            assign_value(res.*elem.pointer , *vtr);
-            vtr++;
-          });
-
-      auto itr = data.emplace(id, std::move(res)).first;
-      return itr->first;
-
-    }
-    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
-                        span<sqlite::value> values, int on_conflict)
-    {
-      if (new_key.get_int() != old_key.get_int())
-        data.erase(old_key.get_int64());
-      auto & res = data[new_key.get_int64()];
-
-      auto vtr = values.begin();
-      mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
-          [&](auto elem)
-          {
-            assign_value(res.*elem.pointer , *vtr);
-            vtr++;
-          });
-      return 0u;
-    }
-  };
-
-  table_type connect(int argc, const char * const  argv[])
-  {
-    return table_type{data};
+    return describe_table<T>{data};
   }
 };
 
@@ -156,7 +171,7 @@ BOOST_DESCRIBE_STRUCT(boost_library, (), (name, first_released, standard));
 int main (int argc, char * argv[])
 {
   sqlite::connection conn{":memory:"};
-  auto & md = sqlite::create_module(conn, "boost_libraries", describe_table<boost_library>());
+  auto & md = sqlite::create_module(conn, "boost_libraries", describe_module<boost_library>());
 
   {
     auto p = conn.prepare("insert into boost_libraries (name, first_released, standard) values ($name, $version, $std);");

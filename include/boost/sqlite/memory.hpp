@@ -62,6 +62,16 @@ struct deleter
   }
 };
 
+template<typename T>
+struct deleter<T[]>
+{
+  static_assert(std::is_trivially_destructible<T>::value, "T[] needs to be trivially destructible");
+  void operator()(T* t)
+  {
+    sqlite3_free(t);
+  }
+};
+
 template<>
 struct deleter<void>
 {

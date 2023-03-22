@@ -81,114 +81,131 @@ std::ostream & operator<<(std::ostream & os, csv_data &cs)
   return os;
 }
 
-// The implementation is very inefficient. Don't use this in product.
-struct csv_impl
+
+using iterator_type = typename container::flat_map<sqlite3_int64, csv_data::row_type>::const_iterator;
+
+struct csv_cursor final : sqlite::vtab::cursor<sqlite::string_view>
 {
-  struct table_type
+  iterator_type itr, end;
+
+  csv_cursor(iterator_type itr,
+             iterator_type end) : itr(itr), end(end)
+  {}
+
+  sqlite::result<void> next() {itr++; return {};}
+  sqlite::result<sqlite3_int64> row_id()
   {
-    std::string path;
+    return itr->first;
+  }
 
-    csv_data data;
-    csv_data transaction_copy; // yeaup, inefficient, too.
+  sqlite::result<sqlite::string_view> column(int i, bool /* no_change */)
+  {
+    return itr->second.at(i);
+  }
 
+  bool eof() noexcept {return itr == end;}
+};
 
-    std::string decl;
-    const char * declaration()
+struct csv_table final
+    : sqlite::vtab::table<csv_cursor>,
+      sqlite::vtab::modifiable,
+      sqlite::vtab::transaction
+{
+  std::string path;
+  csv_data data;
+  csv_data transaction_copy; // yeaup, inefficient, too.
+
+  csv_table(std::string path) : path(std::move(path))
+  {}
+
+  std::string decl;
+  const char * declaration()
+  {
+    if (decl.empty())
     {
-      if (decl.empty())
+      std::ostringstream  oss;
+      decl = "create table x(";
+
+      for (auto & nm : data.names)
       {
-        std::ostringstream  oss;
-        decl = "create table x(";
-
-        for (auto & nm : data.names)
-        {
-          decl += nm;
-          if (&nm == &data.names.back())
-            decl += ");";
-          else
-            decl += ", ";
-        }
+        decl += nm;
+        if (&nm == &data.names.back())
+          decl += ");";
+        else
+          decl += ", ";
       }
-      return decl.c_str();
     }
-    using iterator_type = typename container::flat_map<sqlite3_int64, csv_data::row_type>::const_iterator;
-    struct cursor
-    {
-      iterator_type itr, end;
-      void next() {itr++;}
-      sqlite3_int64 row_id()
-      {
-        return itr->first;
-      }
+    return decl.c_str();
+  }
 
-      sqlite::string_view column(int i, bool /* no_change */)
-      {
-          return itr->second.at(i);
-      }
+  sqlite::result<cursor_type> open()
+  {
+    return cursor_type{data.rows.cbegin(), data.rows.cend()};
+  }
 
-      bool eof() noexcept {return itr == end;}
-    };
+  sqlite::result<void> delete_(sqlite::value key)
+  {
+    data.rows.erase(key.get_int64());
+    return {};
+  }
+  sqlite::result<sqlite_int64> insert(
+      sqlite::value key, span<sqlite::value> values, int on_conflict)
+  {
+    sqlite3_int64 id = 0;
+    if (!data.rows.empty())
+      id = std::prev(data.rows.end())->first + 1;
+    auto & ref = data.rows[id];
+    ref.reserve(values.size());
+    for (auto v : values)
+      ref.emplace_back(v.get_text());
 
-    cursor open()
-    {
-      return cursor{data.rows.cbegin(), data.rows.cend()};
-    }
+    return id;
+  }
+  sqlite::result<sqlite_int64> update(
+                      sqlite::value update, sqlite::value new_key,
+                      span<sqlite::value> values, int on_conflict)
+  {
+    if (!new_key.is_null())
+      throw std::logic_error("we can't manually set keys");
 
-    void delete_(sqlite::value key)
-    {
-      data.rows.erase(key.get_int64());
+    int i = 0;
+    auto & r = data.rows[update.get_int()];
+    for (auto val : values)
+      r[i].assign(val.get_text());
 
-    }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
-                        int on_conflict)
-    {
-      sqlite3_int64 id = 0;
-      if (!data.rows.empty())
-        id = std::prev(data.rows.end())->first + 1;
-      auto & ref = data.rows[id];
-      ref.reserve(values.size());
-      for (auto v : values)
-        ref.emplace_back(v.get_text());
+    return 0u;
+  }
 
-      return id;
-    }
-    sqlite_int64 update(sqlite::value update, sqlite::value new_key,
-                        span<sqlite::value> values, int on_conflict)
-    {
-      if (!new_key.is_null())
-        throw std::logic_error("we can't manually set keys");
+  // we do not read the csv , but just dump it on
+  sqlite::result<void> begin()  noexcept   {transaction_copy = data; return {};}
+  sqlite::result<void> sync()   noexcept   {return {};}
+  sqlite::result<void> commit() noexcept
+  {
+    // ok, let's write to disk.
+    //fs.(0);
+    std::ofstream fs{path, std::fstream::trunc};
+    fs << data << std::flush;
+    return {};
+  }
+  sqlite::result<void> rollback()  noexcept
+  {
+    data = std::move(transaction_copy);
+    return {};
+  }
 
-      int i = 0;
-      auto & r = data.rows[update.get_int()];
-      for (auto val : values)
-        r[i].assign(val.get_text());
+  sqlite::result<void> destroy()  noexcept
+  {
+    std::remove(path.c_str());
+    return {};
+  }
+};
 
-      return 0u;
-    }
+// The implementation is very inefficient. Don't use this in product.
+struct csv_module final : sqlite::vtab::module<csv_table>
+{
 
-    // we do not read the csv , but just dump it on
-    void begin()    {transaction_copy = data;}
-    void sync()     {}
-    void commit()
-    {
-      // ok, let's write to disk.
-      //fs.(0);
-      std::ofstream fs{path, std::fstream::trunc};
-      fs << data << std::flush;
-    }
-    void rollback()
-    {
-      data = std::move(transaction_copy);
-    }
-
-    void destroy()
-    {
-        std::remove(path.c_str());
-    }
-
-  };
-
-  table_type create(int argc, const char * const  argv[])
+  sqlite::result<table_type> create(sqlite::connection db,
+                                    int argc, const char * const  argv[])
   {
     if (argc < 4)
       throw std::invalid_argument("Need filename as first parameter");
@@ -202,9 +219,8 @@ struct csv_impl
     return tt;
   }
 
-
-
-  table_type connect(int argc, const char * const  argv[])
+  sqlite::result<table_type>  connect(sqlite::connection db,
+                                      int argc, const char * const  argv[])
   {
     if (argc < 4)
       throw std::invalid_argument("Need filename as first parameter");
@@ -227,7 +243,7 @@ struct csv_impl
 int main (int argc, char * argv[])
 {
   sqlite::connection conn{"./csv-example.db"};
-  sqlite::create_module(conn, "csv_file", csv_impl());
+  sqlite::create_module(conn, "csv_file", csv_module());
 
 
   const auto init = !conn.has_table("csv_example");

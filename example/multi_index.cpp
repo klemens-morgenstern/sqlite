@@ -30,177 +30,154 @@ using my_container = mi::multi_index_container<
   >
 >;
 
-struct multi_index_map
+
+struct multi_index_cursor final
+    : sqlite::vtab::cursor<sqlite::string_view>
 {
-  constexpr static bool eponymous_only = false;
+  my_container &data;
 
-  struct map_impl
+  multi_index_cursor(my_container &data) : data(data) {}
+  bool inverse = false;
+  int index = 0;
+  using const_iterator = typename my_container::const_iterator;
+  using const_iterator1 = typename my_container::nth_index_const_iterator<0>::type;
+  using const_iterator2 = typename my_container::nth_index_const_iterator<1>::type;
+
+  const_iterator begin{data.begin()}, end{data.end()};
+  const_iterator1 begin1 = data.get<0>().cbegin(), end1 = data.get<0>().cend();
+  const_iterator2 begin2 = data.get<1>().cbegin(), end2 = data.get<1>().cend();
+
+  sqlite::result<void> next()
   {
-    my_container data;
-    constexpr static const char * declaration()
+    switch (index)
     {
-      return R"(
-          create table url(
-              name text primary key unique not null,
-              version text);)";
+      case 0: inverse ? end--  : begin++;  break;
+      case 1: inverse ? end1-- : begin1++; break;
+      case 2: inverse ? end2-- : begin2++; break;
     }
-    enum indices // 32
+    return {};
+  }
+
+  sqlite::result<sqlite3_int64> row_id()
+  {
+    static_assert(sizeof(const_iterator) <= sizeof(sqlite3_int64), "");
+    typename my_container::const_iterator::node_type * node;
+    switch (index)
     {
-      no_index   = 0b00000000,
-      equal      = 0b00000001,
-      gt         = 0b00000100,
-      ge         = 0b00001100,
-      lt         = 0000010000,
-      le         = 0b00110000,
-      order_asc  = 0b01000000,
-      order_desc = 0b10000000,
-    };
+      case 0: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end ) : &*begin);
+      case 1: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end1) : &*begin1);
+      case 2: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end2) : &*begin2);
+    }
 
-    struct cursor
+    return sqlite3_int64();
+  }
+  sqlite::result<sqlite::string_view> column(int i, bool nochange)
+  {
+    const boost_library * lib;
+    switch (index)
     {
-      my_container &data;
-      sqlite3_index_info* last_info;
-      bool inverse = false;
-      int index = 0;
-      using const_iterator = typename my_container::const_iterator;
-      using const_iterator1 = typename my_container::nth_index_const_iterator<0>::type;
-      using const_iterator2 = typename my_container::nth_index_const_iterator<1>::type;
+      case 0: lib = &(inverse ? *std::prev(end) : *begin);   break;
+      case 1: lib = &(inverse ? *std::prev(end1) : *begin1); break;
+      case 2: lib = &(inverse ? *std::prev(end2) : *begin2); break;
+    }
 
-      const_iterator begin{data.begin()}, end{data.end()};
-      const_iterator1 begin1 = data.get<0>().cbegin(), end1 = data.get<0>().cend();
-      const_iterator2 begin2 = data.get<1>().cbegin(), end2 = data.get<1>().cend();
+    const auto & elem = *lib;
+    if (i == 0)
+      return elem.name;
+    else
+      return elem.version;
+  }
 
-      void next()
+
+  sqlite::result<void> filter(int idx, const char * idxStr, span<sqlite::value> values)
+  {
+    inverse = (idx == 0b1000) & idx;
+    index = idx & 0b11;
+
+    boost::optional<sqlite::cstring_ref> lower, upper, equal;
+    int lower_op = 0, upper_op = 0;
+
+    bool surely_empty = false;
+
+    for (int i = 0; i < values.size(); i++)
+    {
+      auto txt = values[i].get_text();
+      switch (idxStr[i])
       {
-        switch (index)
-        {
-          case 0: inverse ? end--  : begin++;  break;
-          case 1: inverse ? end1-- : begin1++; break;
-          case 2: inverse ? end2-- : begin2++; break;
-        }
-
-      }
-
-      sqlite3_int64 row_id()
-      {
-        static_assert(sizeof(const_iterator) <= sizeof(sqlite3_int64), "");
-        typename my_container::const_iterator::node_type * node;
-        switch (index)
-        {
-          case 0: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end ) : &*begin);
-          case 1: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end1) : &*begin1);
-          case 2: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end2) : &*begin2);
-        }
-
-        return sqlite3_int64();
-      }
-      sqlite::string_view column(int i, bool nochange)
-      {
-        const boost_library * lib;
-        switch (index)
-        {
-          case 0: lib = &(inverse ? *std::prev(end) : *begin);   break;
-          case 1: lib = &(inverse ? *std::prev(end1) : *begin1); break;
-          case 2: lib = &(inverse ? *std::prev(end2) : *begin2); break;
-        }
-
-        const auto & elem = *lib;
-        if (i == 0)
-          return elem.name;
-        else
-          return elem.version;
-      }
-
-
-      void filter(int idx, const char * idxStr, span<sqlite::value> values)
-      {
-        inverse = (idx == 0b1000) & idx;
-        index = idx & 0b11;
-
-        boost::optional<sqlite::cstring_ref> lower, upper, equal;
-        int lower_op = 0, upper_op = 0;
-
-        bool surely_empty = false;
-
-        for (int i = 0; i < values.size(); i++)
-        {
-          auto txt = values[i].get_text();
-          switch (idxStr[i])
+        case SQLITE_INDEX_CONSTRAINT_EQ:
+          if (equal && (*equal != txt))
+            // two different equal constraints do that to you.
+            surely_empty = true;
+          else
+            equal.emplace(txt);
+          break;
+        case SQLITE_INDEX_CONSTRAINT_GT:
+        case SQLITE_INDEX_CONSTRAINT_GE:
+          if (lower == txt)
           {
-            case SQLITE_INDEX_CONSTRAINT_EQ:
-              if (equal && (*equal != txt))
-                // two different equal constraints do that to you.
-                surely_empty = true;
-              else
-                equal.emplace(txt);
-              break;
-            case SQLITE_INDEX_CONSTRAINT_GT:
-            case SQLITE_INDEX_CONSTRAINT_GE:
-              if (lower == txt)
-              {
-                // pick the more restrictive one
-                if (lower_op == SQLITE_INDEX_CONSTRAINT_GE)
-                  lower_op == idxStr[i];
-              }
-              else
-              {
-                lower = (std::max)(lower.value_or(txt), txt);
-                lower_op = idxStr[i];
-              }
-
-              break;
-            case SQLITE_INDEX_CONSTRAINT_LE:
-            case SQLITE_INDEX_CONSTRAINT_LT:
-              if (upper == txt)
-              {
-                if (upper_op == SQLITE_INDEX_CONSTRAINT_LT)
-                  upper_op == idxStr[i];
-              }
-              else
-              {
-                upper = (std::min)(upper.value_or(txt), txt);
-                upper_op = idxStr[i];
-              }
-              break;
+            // pick the more restrictive one
+            if (lower_op == SQLITE_INDEX_CONSTRAINT_GE)
+              lower_op == idxStr[i];
           }
-        }
+          else
+          {
+            lower = (std::max)(lower.value_or(txt), txt);
+            lower_op = idxStr[i];
+          }
 
-        if (lower && equal && lower > equal)
-          surely_empty = true;
+          break;
+        case SQLITE_INDEX_CONSTRAINT_LE:
+        case SQLITE_INDEX_CONSTRAINT_LT:
+          if (upper == txt)
+          {
+            if (upper_op == SQLITE_INDEX_CONSTRAINT_LT)
+              upper_op == idxStr[i];
+          }
+          else
+          {
+            upper = (std::min)(upper.value_or(txt), txt);
+            upper_op = idxStr[i];
+          }
+          break;
+      }
+    }
 
-        if (upper && equal && upper < equal)
-          surely_empty = true;
-        if (surely_empty)
+    if (lower && equal && lower > equal)
+      surely_empty = true;
+
+    if (upper && equal && upper < equal)
+      surely_empty = true;
+    if (surely_empty)
+    {
+      end = begin;
+      end1 = begin1;
+      end2 = begin2;
+      return {};
+    }
+
+    switch (index)
+    {
+      default: break;
+      case 1:
+        if (equal)
+          std::tie(begin1, end1) = data.get<0>().equal_range(*equal);
+        else
         {
-          end = begin;
-          end1 = begin1;
-          end2 = begin2;
-          return;
-        }
-
-        switch (index)
-        {
-          default: break;
-          case 1:
-            if (equal)
-              std::tie(begin1, end1) = data.get<0>().equal_range(*equal);
-            else
-            {
-              if (lower)
-              {
-                if (lower_op == SQLITE_INDEX_CONSTRAINT_GE)
-                  begin1 = data.get<0>().lower_bound(*lower);
-                else // SQLITE_INDEX_CONSTRAINT_GT
-                  begin1 = data.get<0>().upper_bound(*lower);
-              }
-              if (upper)
-              {
-                if (upper_op == SQLITE_INDEX_CONSTRAINT_LE)
-                  end1 = data.get<0>().upper_bound(*upper);
-                else // SQLITE_INDEX_CONSTRAINT_LT
-                  end1 = data.get<0>().lower_bound(*upper);
-              }
-            break;
+          if (lower)
+          {
+            if (lower_op == SQLITE_INDEX_CONSTRAINT_GE)
+              begin1 = data.get<0>().lower_bound(*lower);
+            else // SQLITE_INDEX_CONSTRAINT_GT
+              begin1 = data.get<0>().upper_bound(*lower);
+          }
+          if (upper)
+          {
+            if (upper_op == SQLITE_INDEX_CONSTRAINT_LE)
+              end1 = data.get<0>().upper_bound(*upper);
+            else // SQLITE_INDEX_CONSTRAINT_LT
+              end1 = data.get<0>().lower_bound(*upper);
+          }
+          break;
           case 2:
             if (equal)
               std::tie(begin2, end2) = data.get<1>().equal_range(*equal);
@@ -222,123 +199,151 @@ struct multi_index_map
                   end2 = data.get<1>().lower_bound(*upper);
               }
             }
-            break;
-            }
-        }
-      }
-
-      bool eof() const noexcept
-      {
-        switch (index)
-        {
-          case 0: return begin == end;
-          case 1: return begin1 == end1;
-          case 2: return begin2 == end2;
-          default: return true;
-        }
-      }
-    };
-
-    cursor open()
-    {
-      return cursor{data, last_info};
-    }
-
-    void delete_(sqlite::value key)
-    {
-      data.erase(key.get_text());
-    }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
-                        int on_conflict)
-    {
-      data.insert({values[0].get_text(), values[1].get_text()});
-      return 0;
-    }
-
-    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
-                        span<sqlite::value> values, int on_conflict)
-    {
-      if (new_key.get_int() != old_key.get_int())
-      {
-
-        auto node = reinterpret_cast<my_container::value_type *>(old_key.get_int64());
-        data.erase(data.iterator_to(*node));
-      }
-
-      auto res = data.insert({values[0].get_text(), values[1].get_text()});
-      if (!res.second)
-        data.replace(res.first, {values[0].get_text(), values[1].get_text()});
-      return 0;
-    }
-
-    sqlite3_index_info* last_info;
-
-
-    void best_index(sqlite3_index_info* info)
-    {
-        // we're using the index to encode the mode, because it's simple enough.
-        // more complex application should use it as an index like intended
-
-        last_info = info;
-        int idx = 0;
-        // idx = 1 => name
-        // idx = 2 => version
-        if (info->nConstraint > 0)
-        {
-          info->idxStr = static_cast<char*>(sqlite3_malloc(info->nConstraint+1));
-          std::memset(info->idxStr, '\0', info->nConstraint+1);
-          info->needToFreeIdxStr = 1;
-        }
-
-        for (int i = 0; i < info->nConstraint; i++)
-        {
-          auto & ct = info->aConstraint[i];
-          if (info->idxNum == 0) // if we're first, set the thing
-            info->idxNum = (ct.iColumn + 1);
-          // check if we're already building an index
-          if (info->idxNum != (ct.iColumn + 1)) // wrong column, ignore.
-            continue;
-          if ( ct.usable != 0 ) // aye, that's us
-          {
-            switch (ct.op)
-            {
-              // we'll stick to these
-              case SQLITE_INDEX_CONSTRAINT_EQ: BOOST_FALLTHROUGH;
-              case SQLITE_INDEX_CONSTRAINT_GT: BOOST_FALLTHROUGH;
-              case SQLITE_INDEX_CONSTRAINT_GE: BOOST_FALLTHROUGH;
-              case SQLITE_INDEX_CONSTRAINT_LE: BOOST_FALLTHROUGH;
-              case SQLITE_INDEX_CONSTRAINT_LT:
-                info->idxStr[idx] = ct.op;
-                info->aConstraintUsage[i].argvIndex = ++idx; // use it -> value in this position in `filter`.
-                info->aConstraintUsage[i].omit = 1; // tell sqlite that we're sure enough, so sqlite doesn't check
-                break;
-              default:
-                break;
-            }
-          }
-        }
-
-        if (info->nOrderBy == 1)
-        {
-          if ((info->aOrderBy->iColumn == 0)
-           || (idx == 0) || (idx == 1))
-          {
-            info->orderByConsumed = true;
-            if (info->aOrderBy->desc)
-              idx |= 0b1001; // encode inversion, because why not ?
-          }
-          else if ((info->aOrderBy->iColumn == 0)
-                   || (idx == 0) || (idx == 2))
-          {
-            info->orderByConsumed = true;
-            if (info->aOrderBy->desc)
-              idx |= 0b1010; // encode inversion, because why not ?
-          }
+          break;
         }
     }
+    return {};
+  }
+
+  bool eof() noexcept
+  {
+    switch (index)
+    {
+      case 0: return begin == end;
+      case 1: return begin1 == end1;
+      case 2: return begin2 == end2;
+      default: return true;
+    }
+  }
+};
+
+struct map_impl
+    : sqlite::vtab::table<multi_index_cursor>,
+      sqlite::vtab::modifiable
+{
+  my_container data;
+  const char * declaration()
+  {
+    return R"(
+          create table url(
+              name text primary key unique not null,
+              version text);)";
+  }
+  enum indices // 32
+  {
+    no_index   = 0b00000000,
+    equal      = 0b00000001,
+    gt         = 0b00000100,
+    ge         = 0b00001100,
+    lt         = 0000010000,
+    le         = 0b00110000,
+    order_asc  = 0b01000000,
+    order_desc = 0b10000000,
   };
 
-  map_impl connect(int argc, const char * const *argv)
+  sqlite::result<cursor_type> open()
+  {
+    return cursor_type(data);
+  }
+
+  sqlite::result<void> delete_(sqlite::value key)
+  {
+    data.erase(key.get_text());
+    return {};
+  }
+  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
+                                      int on_conflict)
+  {
+    data.insert({values[0].get_text(), values[1].get_text()});
+    return 0;
+  }
+
+  sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
+                                      span<sqlite::value> values, int on_conflict)
+  {
+    if (new_key.get_int() != old_key.get_int())
+    {
+
+      auto node = reinterpret_cast<my_container::value_type *>(old_key.get_int64());
+      data.erase(data.iterator_to(*node));
+    }
+
+    auto res = data.insert({values[0].get_text(), values[1].get_text()});
+    if (!res.second)
+      data.replace(res.first, {values[0].get_text(), values[1].get_text()});
+    return 0;
+  }
+
+  sqlite::result<void> best_index(sqlite::vtab::index_info & info) override
+  {
+    // we're using the index to encode the mode, because it's simple enough.
+    // more complex application should use it as an index like intended
+
+    int idx = 0;
+    int idx_res = 0;
+    sqlite::unique_ptr<char[]> str;
+    // idx = 1 => name
+    // idx = 2 => version
+    if (!info.constraints().empty())
+    {
+      auto sz =  info.constraints().size() + 1u;
+      str.reset(new (sqlite::memory_tag{}) char[sz]);
+      std::memset(str.get(), '\0', sz);
+    }
+
+    for (auto & ct : info.constraints())
+    {
+      if (idx_res == 0) // if we're first, set the thing
+        idx_res = (ct.iColumn + 1);
+      // check if we're already building an index
+      if (idx_res != (ct.iColumn + 1)) // wrong column, ignore.
+        continue;
+      if ( ct.usable != 0 ) // aye, that's us
+      {
+        switch (ct.op)
+        {
+          // we'll stick to these
+          case SQLITE_INDEX_CONSTRAINT_EQ: BOOST_FALLTHROUGH;
+          case SQLITE_INDEX_CONSTRAINT_GT: BOOST_FALLTHROUGH;
+          case SQLITE_INDEX_CONSTRAINT_GE: BOOST_FALLTHROUGH;
+          case SQLITE_INDEX_CONSTRAINT_LE: BOOST_FALLTHROUGH;
+          case SQLITE_INDEX_CONSTRAINT_LT:
+            str[idx] = ct.op;
+            info.usage_of(ct).argvIndex = ++idx; // use it -> value in this position in `filter`.
+            info.usage_of(ct).omit = 1; // tell sqlite that we're sure enough, so sqlite doesn't check
+            break;
+          default:
+            break;
+        }
+      }
+    }
+
+    if (info.order_by().size() == 1u)
+    {
+      if ((info.order_by()[0].iColumn == 0)
+          || (idx == 0) || (idx == 1))
+      {
+        info.set_already_ordered();
+        if (info.order_by()[0].desc != 0)
+          idx |= 0b1001; // encode inversion, because why not ?
+      }
+      else if ((info.order_by()[0].iColumn == 0) || (idx == 0) || (idx == 2))
+      {
+        info.set_already_ordered();
+        if (info.order_by()[0].desc)
+          idx |= 0b1010; // encode inversion, because why not ?
+      }
+    }
+    info.set_index(idx_res);
+    if (str)
+      info.set_index_string(str.release(), true);
+    return {};
+  }
+};
+
+struct multi_index_map final : sqlite::vtab::eponymous_module<map_impl>
+{
+  sqlite::result<map_impl> connect(sqlite::connection, int argc, const char * const *argv)
   {
     return map_impl{};
   }
@@ -397,7 +402,7 @@ int main (int argc, char * argv[])
 
   {
     auto p = conn.prepare("insert into my_map (name, version) values (?, ?);");
-    for (const auto & d : data)
+    for (const auto & d : ::data)
       p.execute(d);
   }
 

@@ -30,7 +30,7 @@ struct connection
     /// The handle of the connection
     using handle_type = sqlite3*;
     /// Returns the handle
-    handle_type handle() { return impl_.get(); }
+    handle_type handle() const { return impl_.get(); }
     /// Release the owned handle.
     handle_type release() &&    { return impl_.release(); }
 

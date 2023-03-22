@@ -188,9 +188,10 @@ struct cstring_ref
   const_pointer view_;
 };
 
-inline std::ostream& operator<<( std::ostream & os, cstring_ref str )
+template<typename Char>
+inline std::basic_ostream<Char>& operator<<( std::basic_ostream<Char> & os, cstring_ref str )
 {
-  return os << str.c_str();
+  return os << core::string_view(str);
 }
 
 

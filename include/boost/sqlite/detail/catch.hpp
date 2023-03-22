@@ -40,6 +40,16 @@ void execute_context_function_impl(std::true_type  /* is_void */,
   std::forward<Func>(func)(std::forward<Args>(args)...);
 }
 
+template<typename T>
+int extract_error(char * &errMsg, result<T> & res)
+{
+  error err = std::move(res).error();
+  if (err.info)
+    errMsg = err.info.release();
+  return err.code;
+}
+
+
 template<typename Func, typename ... Args>
 void execute_context_function(sqlite3_context * ctx,
                               Func && func, Args && ... args) noexcept

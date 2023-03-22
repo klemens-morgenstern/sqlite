@@ -51,4 +51,12 @@ BOOST_SQLITE_END_NAMESPACE
   ec.assign(ev, boost::sqlite::sqlite_category(), &loc##__LINE__); \
 }
 
+#if defined(BOOST_SQLITE_NO_VIRTUAL)
+#define BOOST_SQLITE_VIRTUAL
+#define BOOST_SQLITE_PURE
+#else
+#define BOOST_SQLITE_VIRTUAL virtual
+#define BOOST_SQLITE_PURE = 0
+#endif
+
 #endif // BOOST_SQLITE_DETAIL_HPP

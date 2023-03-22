@@ -21,47 +21,75 @@ using namespace boost;
 
 TEST_SUITE_BEGIN("vtable");
 
-struct simple_test_impl
+struct del_info : sqlite3_index_info
+{
+  del_info() : sqlite3_index_info()
+  {
+
+  }
+
+  ~del_info()
+  {
+    if (needToFreeIdxStr)
+      sqlite3_free(idxStr);
+  }
+};
+
+struct trivial_struct
+{
+  trivial_struct() = default;
+  int i{1}, j{2}, k{3};
+};
+
+
+
+struct simple_cursor : sqlite::vtab::cursor<core::string_view>
+{
+
+  simple_cursor(std::vector<std::string>::const_iterator itr,
+                std::vector<std::string>::const_iterator end) : itr(itr), end(end) {}
+  std::vector<std::string>::const_iterator  itr, end;
+
+  sqlite::result<void> next() {itr++; return {};}
+  sqlite::result<sqlite3_int64> row_id() {return *reinterpret_cast<sqlite3_int64*>(&itr);}
+
+  sqlite::result<core::string_view> column(int i, bool /* no_change */)
+  {
+    if (i > 0)
+      throw_exception(std::out_of_range("column out of range"));
+
+    return *itr;
+  }
+
+  bool eof() noexcept {return itr == end;}
+};
+
+struct simple_table : sqlite::vtab::table<simple_cursor>
+{
+  const char * declaration()
+  {
+    return R"(create table x(name text);)";
+  }
+
+  simple_table(std::vector<std::string> & names) : names(names) {}
+  std::vector<std::string> & names;
+
+  sqlite::result<cursor_type> open()
+  {
+    return cursor_type{names.begin(), names.end()};
+  }
+
+};
+
+struct simple_test_impl : sqlite::vtab::eponymous_module<simple_table>
 {
   std::vector<std::string> names = {"ruben", "vinnie", "richard", "klemens"};
 
-  struct table_type
-  {
-    constexpr static const char * declaration()
-    {
-      return R"(create table x(name text);)";
-    }
-
-    std::vector<std::string> & names;
 
 
-    struct cursor
-    {
-      std::vector<std::string>::const_iterator  itr, end;
 
-      void next() {itr++;}
-      sqlite3_int64 row_id() {return *reinterpret_cast<sqlite3_int64*>(&itr);}
-
-      core::string_view column(int i, bool /* no_change */)
-      {
-        if (i > 0)
-          throw_exception(std::out_of_range("column out of range"));
-
-        return *itr;
-      }
-
-      bool eof() noexcept {return itr == end;}
-    };
-
-    cursor open()
-    {
-      return cursor{names.begin(), names.end()};
-    }
-
-  };
-
-
-  table_type connect(int argc, const char * const  argv[])
+  sqlite::result<table_type> connect(sqlite::connection,
+                                     int argc, const char * const  argv[])
   {
     return table_type{names};
   }
@@ -92,80 +120,93 @@ TEST_CASE("simple reader")
   CHECK_THROWS(conn.query("insert into test_table values('chris')"));
 }
 
+struct modifyable_table;
 
-struct modifyable_test_impl
+struct modifyable_cursor : sqlite::vtab::cursor<variant2::variant<int, core::string_view>>
 {
-  struct table_type : intrusive::list_base_hook<intrusive::link_mode<intrusive::auto_unlink> >
+  using iterator = boost::unordered_map<int, std::string>::const_iterator;
+
+  modifyable_cursor(iterator itr, iterator end) : itr(itr), end(end) {}
+
+  iterator itr, end;
+
+  sqlite::result<void> next()            noexcept {itr++; return {};}
+  sqlite::result<sqlite3_int64> row_id() noexcept {return itr->first;}
+
+  sqlite::result<column_type> column(int i, bool /* no_change */) noexcept
   {
-    constexpr static const char * declaration()
+    switch (i)
     {
-      return R"(create table x(id integer primary key autoincrement, name text);)";
+      case 0: return itr->first;
+      case 1: return itr->second;
+      default:
+        return sqlite::error(SQLITE_RANGE, sqlite::error_info("column out of range"));
+
     }
+  }
 
-    std::string name;
-    boost::unordered_map<int, std::string> names;
+  bool eof() noexcept {return itr == end;}
+};
 
-    int last_index = 0;
+struct modifyable_table :
+    sqlite::vtab::table<modifyable_cursor>,
+    intrusive::list_base_hook<intrusive::link_mode<intrusive::auto_unlink> >,
+    sqlite::vtab::modifiable
+{
+  const char * declaration()
+  {
+    return R"(create table x(id integer primary key autoincrement, name text);)";
+  }
 
-    table_type() = default;
-    table_type(table_type && lhs) : name(std::move(lhs.name)), names(std::move(lhs.names)), last_index(lhs.last_index )
-    {
-      this->swap_nodes(lhs);
-    }
+  std::string name;
+  boost::unordered_map<int, std::string> names;
 
-    struct cursor
-    {
-      boost::unordered_map<int, std::string>::const_iterator  itr, end;
+  int last_index = 0;
 
-      void next() {itr++;}
-      sqlite3_int64 row_id() {return itr->first;}
+  modifyable_table() = default;
+  modifyable_table(modifyable_table && lhs)
+    : name(std::move(lhs.name)), names(std::move(lhs.names)), last_index(lhs.last_index )
+  {
+    this->swap_nodes(lhs);
+  }
 
-      variant2::variant<int, core::string_view> column(int i, bool /* no_change */)
-      {
-        switch (i)
-        {
-          case 0: return itr->first;
-          case 1: return itr->second;
-          default:
-            throw_exception(std::out_of_range("column out of range"));
 
-        }
+  sqlite::result<modifyable_cursor> open()
+  {
+    return modifyable_cursor{names.begin(), names.end()};
+  }
 
-        CHECK(sqlite::get_vtable<table_type>(this).name == "test_table");
-      }
+  sqlite::result<void> delete_(sqlite::value key)
+  {
+    CHECK(names.erase(key.get_int()) == 1);
+    return {};
+  }
+  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
+                      int on_conflict)
+  {
+    int id = values[0].is_null() ? last_index++ : values[0].get_int();
+    auto itr = names.emplace(id, values[1].get_text()).first;
+    return itr->first;
+  }
+  sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
+                      span<sqlite::value> values,
+                      int on_conflict)
+  {
+    if (new_key.get_int() != old_key.get_int())
+      names.erase(old_key.get_int());
+    names.insert_or_assign(new_key.get_int(), values[1].get_text());
+    return 0u;
+  }
+};
 
-      bool eof() noexcept {return itr == end;}
-    };
+struct modifyable_test_impl : sqlite::vtab::eponymous_module<modifyable_table>
+{
+  modifyable_test_impl() = default;
 
-    cursor open()
-    {
-      return cursor{names.begin(), names.end()};
-    }
-
-    void delete_(sqlite::value key)
-    {
-      CHECK(names.erase(key.get_int()) == 1);
-    }
-    sqlite_int64 insert(sqlite::value key, span<sqlite::value> values,
-                        int on_conflict)
-    {
-      int id = values[0].is_null() ? last_index++ : values[0].get_int();
-      auto itr = names.emplace(id, values[1].get_text()).first;
-      return itr->first;
-    }
-    sqlite_int64 update(sqlite::value old_key, sqlite::value new_key,
-                        span<sqlite::value> values,
-                        int on_conflict)
-    {
-      if (new_key.get_int() != old_key.get_int())
-        names.erase(old_key.get_int());
-      names.insert_or_assign(new_key.get_int(), values[1].get_text());
-      return 0u;
-    }
-  };
   intrusive::list<table_type, intrusive::constant_time_size<false>> list;
 
-  table_type connect(int argc, const char * const  argv[])
+  sqlite::result<table_type> connect(sqlite::connection,
+                                     int argc, const char * const  argv[]) noexcept
   {
     table_type tt{};
     tt.name.assign(argv[2]);

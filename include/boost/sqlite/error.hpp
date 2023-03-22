@@ -117,8 +117,12 @@ struct error
   /// The additional information of the error
   error_info info;
 
-  explicit error(int code, error_info info) : code(code), info(std::move(info)) {}
+  error(int code, error_info info) : code(code), info(std::move(info)) {}
   explicit error(int code)                  : code(code)                        {}
+  error(int code, core::string_view info)
+          : code(code),
+            info(info) {}
+
   error(system::error_code code, error_info info)
           : code(code.category() == sqlite_category() ? code.value() : SQLITE_FAIL),
             info(std::move(info)) {}

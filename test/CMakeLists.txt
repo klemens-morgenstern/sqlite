@@ -9,7 +9,7 @@ add_test(NAME boost_sqlite_tests COMMAND boost_sqlite_tests)
 add_subdirectory(extension)
 
 
-file(GLOB_RECURSE ALL_PUBLIC_HEADERS RELATIVE ${CMAKE_SOURCE_DIR}/include/ ${CMAKE_SOURCE_DIR}/include/boost/sqlite/*.hpp)
+file(GLOB ALL_PUBLIC_HEADERS RELATIVE ${CMAKE_SOURCE_DIR}/include/ ${CMAKE_SOURCE_DIR}/include/boost/sqlite/*.hpp)
 set(ALL_PUBLIC_HEADER_TESTS "")
 foreach(HEADER ${ALL_PUBLIC_HEADERS})
     get_filename_component(NAME ${HEADER} NAME_WLE)
