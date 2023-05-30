@@ -59,7 +59,7 @@ set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/doc")
 configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
 
 add_custom_target(
-        doc
+        boost_sqlite_doc
         COMMAND doxygen "${PROJECT_BINARY_DIR}/doc/Doxyfile"
         COMMENT "Building documentation using Doxygen"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
