@@ -48,7 +48,7 @@ endif()
 
 if (NOT BOOST_SQLITE_BUILD_INLINE)
     find_package(Threads REQUIRED)
-    find_package(Boost REQUIRED system json)
+    find_package(Boost REQUIRED system json url)
     include_directories(include)
 endif()
 

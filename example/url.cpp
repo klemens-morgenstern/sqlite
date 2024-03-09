@@ -9,7 +9,6 @@
 #include <boost/sqlite/vtable.hpp>
 #include <boost/system/result.hpp>
 #include <boost/url.hpp>
-#include <boost/url/src.hpp>
 
 using namespace boost;
 
@@ -34,7 +33,7 @@ void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, const urls::segme
 
 struct url_cursor final
     : sqlite::vtab::cursor<
-        variant2::variant<variant2::monostate, urls::string_view, urls::pct_string_view>
+        variant2::variant<variant2::monostate, core::string_view, urls::pct_string_view>
         >
 {
   url_cursor(urls::url_view view) : view(view ) {}
@@ -125,7 +124,7 @@ struct url_module final : sqlite::vtab::eponymous_module<url_wrapper>
 };
 
 struct segements_cursor final : sqlite::vtab::cursor<
-    variant2::variant<variant2::monostate, int, urls::string_view, urls::segments_encoded_view>>
+    variant2::variant<variant2::monostate, int, core::string_view, urls::segments_encoded_view>>
 {
   segements_cursor(urls::segments_encoded_view view) : view(view) {}
   urls::segments_encoded_view view;
@@ -205,7 +204,7 @@ struct segments_module final : sqlite::vtab::eponymous_module<segment_wrapper>
 };
 
 struct query_cursor final : sqlite::vtab::cursor<
-    variant2::variant<variant2::monostate, int, urls::string_view, urls::pct_string_view>
+    variant2::variant<variant2::monostate, int, core::string_view, urls::pct_string_view>
     >
 {
   urls::params_encoded_view view;
