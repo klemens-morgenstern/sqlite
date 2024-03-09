@@ -23,14 +23,14 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
 
   const_iterator begin{data.begin()}, end{data.end()};
 
-  sqlite::result<void> next() { if (inverse) end--; else begin++; return {};}
+  sqlite::result<void> next() override { if (inverse) end--; else begin++; return {};}
 
-  sqlite::result<sqlite3_int64> row_id()
+  sqlite::result<sqlite3_int64> row_id() override
   {
     return {system::in_place_error, SQLITE_MISUSE,
             "this shouldn't be called, we're omitting the row id"};
   }
-  sqlite::result<sqlite::string_view> column(int i, bool nochange)
+  sqlite::result<sqlite::string_view> column(int i, bool nochange) override
   {
     auto & elem = inverse ? *std::prev(end) : *begin;
 
@@ -44,7 +44,7 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
     if (idx != 0)
       inverse = true;
 
-    for (int i = 0; i < values.size(); i ++)
+    for (auto i = 0u; i < values.size(); i ++)
     {
       auto txt = values[i].get_text();
       switch (idxStr[i])
@@ -96,20 +96,20 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
     return {};
   }
 
-  bool eof() noexcept
+  bool eof() noexcept override
   {
     return begin == end;
   }
 };
 
 
-struct map_impl
+struct map_impl final
     : sqlite::vtab::table<ordered_map_cursor>,
       sqlite::vtab::modifiable
 
 {
   container::flat_map<std::string, std::string> data;
-  const char * declaration()
+  const char * declaration() override
   {
     return R"(
           create table url(
@@ -129,18 +129,18 @@ struct map_impl
   };
 
 
-  sqlite::result<cursor_type> open()
+  sqlite::result<cursor_type> open() override
   {
     return cursor_type{data};
   }
 
-  sqlite::result<void> delete_(sqlite::value key)
+  sqlite::result<void> delete_(sqlite::value key) override
   {
     data.erase(key.get_text());
     return {};
   }
   sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                                      int on_conflict)
+                                      int on_conflict) override
   {
     data.emplace(values[0].get_text(), values[1].get_text());
     return 0;
@@ -148,7 +148,7 @@ struct map_impl
 
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
                                       span<sqlite::value> values,
-                                      int on_conflict)
+                                      int on_conflict) override
   {
     if (new_key.get_int() != old_key.get_int())
       data.erase(old_key.get_text());
@@ -273,6 +273,7 @@ int main (int argc, char * argv[])
 {
   sqlite::connection conn{":memory:"};
   auto & m = sqlite::create_module(conn, "my_map", ordered_map_module());
+  boost::ignore_unused(m);
 
   {
     auto p = conn.prepare("insert into my_map (name, data) values (?, ?);");

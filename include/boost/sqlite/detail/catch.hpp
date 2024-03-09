@@ -55,11 +55,6 @@ void execute_context_function(sqlite3_context * ctx,
                               Func && func, Args && ... args) noexcept
 {
   using return_type = decltype(func(std::forward<Args>(args)...));
-  using is_result_type = is_result_type<return_type>;
-  using result_type = typename std::conditional<
-                          is_result_type::value,
-                          return_type,
-                          result<return_type>>::type::value_type;
 #if !defined(BOOST_NO_EXCEPTIONS)
   try
   {

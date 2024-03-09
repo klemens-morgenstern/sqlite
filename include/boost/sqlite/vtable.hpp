@@ -158,7 +158,7 @@ struct in
             }
         }
 
-      iterator & operator++()
+        iterator & operator++()
         {
           auto res = sqlite3_vtab_in_next(value_, &out_.handle());
           if (res != SQLITE_OK)
@@ -167,9 +167,10 @@ struct in
             BOOST_SQLITE_ASSIGN_EC(ec, res);
             detail::throw_error_code(ec, ec.location());
           }
+          return *this;
         }
 
-      iterator operator++(int)
+        iterator operator++(int)
         {
             auto last = *this;
             ++(*this);
@@ -264,7 +265,7 @@ struct index_info
   int on_conflict() const {return sqlite3_vtab_on_conflict(db_);}
   value * rhs_value(std::size_t idx) const
   {
-    value * v;
+    value * v = nullptr;
     if (sqlite3_vtab_rhs_value(
           info_, static_cast<int>(idx),
           reinterpret_cast<sqlite3_value**>(v)) == SQLITE_OK)

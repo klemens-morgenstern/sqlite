@@ -61,7 +61,7 @@ struct multi_index_cursor final
   sqlite::result<sqlite3_int64> row_id()
   {
     static_assert(sizeof(const_iterator) <= sizeof(sqlite3_int64), "");
-    typename my_container::const_iterator::node_type * node;
+
     switch (index)
     {
       case 0: return reinterpret_cast<sqlite3_int64>(inverse ? &*std::prev(end ) : &*begin);
@@ -99,7 +99,7 @@ struct multi_index_cursor final
 
     bool surely_empty = false;
 
-    for (int i = 0; i < values.size(); i++)
+    for (auto i = 0u; i < values.size(); i++)
     {
       auto txt = values[i].get_text();
       switch (idxStr[i])
@@ -117,7 +117,7 @@ struct multi_index_cursor final
           {
             // pick the more restrictive one
             if (lower_op == SQLITE_INDEX_CONSTRAINT_GE)
-              lower_op == idxStr[i];
+              lower_op = idxStr[i];
           }
           else
           {
@@ -131,7 +131,7 @@ struct multi_index_cursor final
           if (upper == txt)
           {
             if (upper_op == SQLITE_INDEX_CONSTRAINT_LT)
-              upper_op == idxStr[i];
+              upper_op = idxStr[i];
           }
           else
           {
@@ -217,12 +217,12 @@ struct multi_index_cursor final
   }
 };
 
-struct map_impl
+struct map_impl final
     : sqlite::vtab::table<multi_index_cursor>,
       sqlite::vtab::modifiable
 {
   my_container data;
-  const char * declaration()
+  const char * declaration() override
   {
     return R"(
           create table url(
@@ -241,25 +241,25 @@ struct map_impl
     order_desc = 0b10000000,
   };
 
-  sqlite::result<cursor_type> open()
+  sqlite::result<cursor_type> open() override
   {
     return cursor_type(data);
   }
 
-  sqlite::result<void> delete_(sqlite::value key)
+  sqlite::result<void> delete_(sqlite::value key) override
   {
     data.erase(key.get_text());
     return {};
   }
   sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                                      int on_conflict)
+                                      int on_conflict) override
   {
     data.insert({values[0].get_text(), values[1].get_text()});
     return 0;
   }
 
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
-                                      span<sqlite::value> values, int on_conflict)
+                                      span<sqlite::value> values, int on_conflict) override
   {
     if (new_key.get_int() != old_key.get_int())
     {
@@ -399,6 +399,7 @@ int main (int argc, char * argv[])
 {
   sqlite::connection conn{":memory:"};
   auto & m = sqlite::create_module(conn, "my_map", multi_index_map());
+  boost::ignore_unused(m);
 
   {
     auto p = conn.prepare("insert into my_map (name, version) values (?, ?);");

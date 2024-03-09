@@ -45,11 +45,6 @@ auto create_scalar_function_impl(sqlite3 * db,
         auto aa =  reinterpret_cast<value*>(args);
         auto &f = *reinterpret_cast<func_type*>(sqlite3_user_data(ctx));
         boost::span<value, Extent> vals{aa, static_cast<std::size_t>(len)};
-        using return_type = callable_traits::return_type_t<func_type>;
-        using result_type = typename std::conditional<
-            is_result_type<return_type>::value,
-            return_type,
-            result<return_type>>::type;
 
         execute_context_function(ctx, f, cc, vals);
       }, nullptr, nullptr,
@@ -113,11 +108,6 @@ auto create_scalar_function_impl(sqlite3 * db,
         auto &f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
 
         boost::span<value, Extent> vals{aa, static_cast<std::size_t>(len)};
-        using return_type = callable_traits::return_type_t<Func>;
-        using result_type = typename std::conditional<
-            is_result_type<return_type>::value,
-            return_type,
-            result<return_type>>::type;
 
         execute_context_function(
             ctx, f, cc, vals);

@@ -43,7 +43,7 @@ struct trivial_struct
 
 
 
-struct simple_cursor : sqlite::vtab::cursor<core::string_view>
+struct simple_cursor final : sqlite::vtab::cursor<core::string_view>
 {
 
   simple_cursor(std::vector<std::string>::const_iterator itr,
@@ -64,7 +64,7 @@ struct simple_cursor : sqlite::vtab::cursor<core::string_view>
   bool eof() noexcept {return itr == end;}
 };
 
-struct simple_table : sqlite::vtab::table<simple_cursor>
+struct simple_table final : sqlite::vtab::table<simple_cursor>
 {
   const char * declaration()
   {
@@ -81,7 +81,7 @@ struct simple_table : sqlite::vtab::table<simple_cursor>
 
 };
 
-struct simple_test_impl : sqlite::vtab::eponymous_module<simple_table>
+struct simple_test_impl final : sqlite::vtab::eponymous_module<simple_table>
 {
   std::vector<std::string> names = {"ruben", "vinnie", "richard", "klemens"};
 
@@ -122,7 +122,7 @@ TEST_CASE("simple reader")
 
 struct modifyable_table;
 
-struct modifyable_cursor : sqlite::vtab::cursor<variant2::variant<int, core::string_view>>
+struct modifyable_cursor final : sqlite::vtab::cursor<variant2::variant<int, core::string_view>>
 {
   using iterator = boost::unordered_map<int, std::string>::const_iterator;
 
@@ -148,7 +148,7 @@ struct modifyable_cursor : sqlite::vtab::cursor<variant2::variant<int, core::str
   bool eof() noexcept {return itr == end;}
 };
 
-struct modifyable_table :
+struct modifyable_table final :
     sqlite::vtab::table<modifyable_cursor>,
     intrusive::list_base_hook<intrusive::link_mode<intrusive::auto_unlink> >,
     sqlite::vtab::modifiable
@@ -199,7 +199,7 @@ struct modifyable_table :
   }
 };
 
-struct modifyable_test_impl : sqlite::vtab::eponymous_module<modifyable_table>
+struct modifyable_test_impl final : sqlite::vtab::eponymous_module<modifyable_table>
 {
   modifyable_test_impl() = default;
 

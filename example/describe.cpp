@@ -20,7 +20,7 @@ void assign_value(int & res, sqlite::value val) { res = val.get_int();}
 void assign_value(std::string & res, sqlite::value val) { res = val.get_text();}
 
 template<typename T>
-struct describe_cursor : sqlite::vtab::cursor<>
+struct describe_cursor final : sqlite::vtab::cursor<>
 {
   describe_cursor(
       typename boost::unordered_map<sqlite3_int64, T>::const_iterator itr,
@@ -49,7 +49,7 @@ struct describe_cursor : sqlite::vtab::cursor<>
 };
 
 template<typename T>
-struct describe_table :
+struct describe_table final :
     sqlite::vtab::table<describe_cursor<T>>,
     sqlite::vtab::modifiable
 {
@@ -124,7 +124,7 @@ struct describe_table :
 };
 
 template<typename T>
-struct describe_module : sqlite::vtab::eponymous_module<describe_table<T>>
+struct describe_module final : sqlite::vtab::eponymous_module<describe_table<T>>
 {
   boost::unordered_map<sqlite3_int64, T> data;
   constexpr static std::size_t column_count = mp11::mp_size<describe::describe_members<T, describe::mod_any_access>>::value;
@@ -172,6 +172,7 @@ int main (int argc, char * argv[])
 {
   sqlite::connection conn{":memory:"};
   auto & md = sqlite::create_module(conn, "boost_libraries", describe_module<boost_library>());
+  boost::ignore_unused(md);
 
   {
     auto p = conn.prepare("insert into boost_libraries (name, first_released, standard) values ($name, $version, $std);");

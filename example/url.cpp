@@ -14,7 +14,6 @@ using namespace boost;
 
 
 constexpr int pct_subtype = static_cast<int>('U');
-constexpr int segment_subtype = static_cast<int>('S');
 
 void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, urls::pct_string_view value)
 {
@@ -75,7 +74,7 @@ struct url_cursor final
 struct url_wrapper final : sqlite::vtab::table<url_cursor>
 {
   urls::url value;
-  const char * declaration()
+  const char * declaration() override
   {
     return R"(
           create table url(
@@ -90,7 +89,7 @@ struct url_wrapper final : sqlite::vtab::table<url_cursor>
               url text hidden);)";
   }
 
-  sqlite::result<url_cursor> open()
+  sqlite::result<url_cursor> open() override
   {
     return url_cursor{value};
   }
@@ -130,10 +129,10 @@ struct segements_cursor final : sqlite::vtab::cursor<
   urls::segments_encoded_view view;
   urls::segments_encoded_view::const_iterator itr{view.begin()};
 
-  sqlite::result<void> next() { itr++; return {};}
+  sqlite::result<void> next() override { itr++; return {};}
 
-  sqlite::result<sqlite3_int64> row_id() {return std::distance(view.begin(), itr);}
-  sqlite::result<column_type> column(int i, bool nochange)
+  sqlite::result<sqlite3_int64> row_id() override {return std::distance(view.begin(), itr);}
+  sqlite::result<column_type> column(int i, bool nochange) override
   {
     nochange = true;
     switch (i)
@@ -153,13 +152,13 @@ struct segements_cursor final : sqlite::vtab::cursor<
     itr = view.begin();
     return {};
   }
-  bool eof() noexcept {return itr == view.end();}
+  bool eof() noexcept override {return itr == view.end();}
 };
 
 struct segment_wrapper final : sqlite::vtab::table<segements_cursor>
 {
   urls::segments_encoded_view value;
-  const char * declaration()
+  const char * declaration() override
   {
     return R"(
           create table segments(
@@ -170,7 +169,7 @@ struct segment_wrapper final : sqlite::vtab::table<segements_cursor>
 
 
 
-  sqlite::result<segements_cursor> open()
+  sqlite::result<segements_cursor> open() override
   {
     return segements_cursor{value};
   }
@@ -210,10 +209,10 @@ struct query_cursor final : sqlite::vtab::cursor<
   urls::params_encoded_view view;
   urls::params_encoded_view::const_iterator itr{view.begin()};
 
-  sqlite::result<void> next() { itr++; return {};}
+  sqlite::result<void> next() override { itr++; return {};}
 
-  sqlite::result<sqlite3_int64> row_id() {return std::distance(view.begin(), itr);}
-  sqlite::result<column_type> column(int i, bool nochange)
+  sqlite::result<sqlite3_int64> row_id() override {return std::distance(view.begin(), itr);}
+  sqlite::result<column_type> column(int i, bool nochange) override
   {
     nochange = true;
     switch (i)
@@ -239,12 +238,12 @@ struct query_cursor final : sqlite::vtab::cursor<
 
     return {};
   }
-  bool eof()  noexcept {return itr == view.end();}
+  bool eof() noexcept override {return itr == view.end();}
 };
 
 struct query_wrapper final : sqlite::vtab::table<query_cursor>
 {
-  const char * declaration()
+  const char * declaration() override
   {
     return R"(
           create table queries(
@@ -254,7 +253,7 @@ struct query_wrapper final : sqlite::vtab::table<query_cursor>
               query_string text hidden);)";
   }
 
-  sqlite::result<query_cursor> open()
+  sqlite::result<query_cursor> open() override
   {
     return query_cursor{};
   }

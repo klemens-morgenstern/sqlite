@@ -399,7 +399,7 @@ struct statement
                    error_info & ei)
     {
         const auto sz =  sqlite3_bind_parameter_count(impl_.get());
-        if (sizeof...(Args) < sz)
+        if (static_cast<int>(sizeof...(Args)) < sz)
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
             ei.format("To few parameters provided. Needed %ld got %ld",
