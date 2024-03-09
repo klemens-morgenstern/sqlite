@@ -22,6 +22,29 @@
 #define BOOST_SQLITE_END_NAMESPACE } }
 #endif
 
+// copied from boost.json
+#if defined(BOOST_SQLITE_DOCS)
+# define BOOST_SQLITE_DECL
+#else
+# if (defined(BOOST_SQLITE_DYN_LINK) || defined(BOOST_ALL_DYN_LINK)) && !defined(BOOST_SQLITE_STATIC_LINK)
+#  if defined(BOOST_SQLITE_SOURCE)
+#   define BOOST_SQLITE_DECL        BOOST_SYMBOL_EXPORT
+#  else
+#   define BOOST_SQLITE_DECL        BOOST_SYMBOL_IMPORT
+#  endif
+# endif // shared lib
+# ifndef  BOOST_SQLITE_DECL
+#  define BOOST_SQLITE_DECL
+# endif
+# if !defined(BOOST_SQLITE_SOURCE) && !defined(BOOST_ALL_NO_LIB) && !defined(BOOST_SQLITE_NO_LIB)
+#  define BOOST_LIB_NAME boost_json
+#  if defined(BOOST_ALL_DYN_LINK) || defined(BOOST_SQLITE_DYN_LINK)
+#   define BOOST_DYN_LINK
+#  endif
+#  include <boost/config/auto_link.hpp>
+# endif
+#endif
+
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 
@@ -32,12 +55,6 @@ extern const sqlite3_api_routines *sqlite3_api;
 using string_view = boost::core::string_view;
 
 BOOST_SQLITE_END_NAMESPACE
-
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-# define BOOST_SQLITE_DECL inline
-#else
-# define BOOST_SQLITE_DECL
-#endif
 
 #define BOOST_SQLITE_RETURN_EC(ev)                                              \
 {                                                                               \

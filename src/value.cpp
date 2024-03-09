@@ -2,8 +2,6 @@
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BOOST_SQLITE_IMPL_VALUE_IPP
-#define BOOST_SQLITE_IMPL_VALUE_IPP
 
 #include <boost/sqlite/value.hpp>
 
@@ -39,4 +37,3 @@ blob_view value::get_blob() const
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_VALUE_IPP

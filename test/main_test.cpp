@@ -7,4 +7,3 @@
 #include "doctest.h"
 
 #include <boost/sqlite.hpp>
-#include <boost/sqlite/src.hpp>

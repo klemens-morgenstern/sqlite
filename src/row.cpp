@@ -2,8 +2,6 @@
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BOOST_SQLITE_IMPL_ROW_IPP
-#define BOOST_SQLITE_IMPL_ROW_IPP
 
 #include <boost/sqlite/row.hpp>
 
@@ -24,4 +22,3 @@ field row::at(std::size_t idx) const
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_ROW_IPP

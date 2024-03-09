@@ -70,8 +70,5 @@ backup(connection & source,
 
 BOOST_SQLITE_END_NAMESPACE
 
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-#include <boost/sqlite/impl/backup.ipp>
-#endif
 
 #endif //BOOST_SQLITE_BACKUP_HPP

@@ -2,8 +2,6 @@
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-#ifndef BOOST_SQLITE_DETAIL_IMPL_EXCEPTION_IPP
-#define BOOST_SQLITE_DETAIL_IMPL_EXCEPTION_IPP
 
 #include <boost/sqlite/detail/exception.hpp>
 #include <boost/system/system_error.hpp>
@@ -46,5 +44,3 @@ void throw_invalid_argument(const char * msg,
 
 }
 BOOST_SQLITE_END_NAMESPACE
-
-#endif //BOOST_SQLITE_DETAIL_IMPL_EXCEPTION_IPP

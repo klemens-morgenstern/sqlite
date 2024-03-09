@@ -147,8 +147,5 @@ blob_handle open_blob(connection & conn,
 
 BOOST_SQLITE_END_NAMESPACE
 
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-#include <boost/sqlite/impl/blob.ipp>
-#endif
 
 #endif //BOOST_SQLITE_BLOB_HPP

@@ -5,4 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <boost/sqlite/src.hpp>
+#include <boost/sqlite/connection.hpp>
+
+BOOST_SQLITE_BEGIN_NAMESPACE
+
+BOOST_SYMBOL_EXPORT const sqlite3_api_routines *sqlite3_api{nullptr};
+
+BOOST_SQLITE_END_NAMESPACE

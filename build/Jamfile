@@ -16,8 +16,22 @@ project boost/sqlite
 
 lib sqlite3 ;
 
-lib boost_sqlite     : src.cpp     sqlite3 /boost//json ;
-lib boost_sqlite_ext : src_ext.cpp sqlite3 /boost//json : <define>BOOST_SQLITE_COMPILE_EXTENSION=1 ;
+local SOURCES =
+        detail/exception.cpp
+        backup.cpp
+        blob.cpp
+        connection.cpp
+        error.cpp
+        field.cpp
+        json.cpp
+        meta_data.cpp
+        resultset.cpp
+        row.cpp
+        value.cpp ;
+
+
+lib boost_sqlite     : $(SOURCES)         sqlite3 /boost//json ;
+lib boost_sqlite_ext : $(SOURCES) ext.cpp sqlite3 /boost//json : <define>BOOST_SQLITE_COMPILE_EXTENSION=1 ;
 alias extension : boost_sqlite_ext ;
 
 boost-install boost_sqlite ;

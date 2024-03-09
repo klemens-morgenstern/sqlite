@@ -5,8 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_META_DATA_IPP
-#define BOOST_SQLITE_IMPL_META_DATA_IPP
 
 #include <boost/sqlite/meta_data.hpp>
 
@@ -83,4 +81,3 @@ auto table_column_meta_data(connection& conn,
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_META_DATA_IPP

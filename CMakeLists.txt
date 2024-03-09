@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.12...3.20)
 
 set(BOOST_SQLITE_VERSION 1)
 if(BOOST_SUPERPROJECT_VERSION)
@@ -11,75 +11,80 @@ project(boost_sqlite
         LANGUAGES CXX)
 
 set(BOOST_SQLITE_IS_ROOT OFF)
-
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     set(BOOST_SQLITE_IS_ROOT ON)
 endif()
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../boost.css)
-    set(BOOST_SQLITE_SHOULD_BE_INLINE ON)
-else()
-    set(BOOST_SQLITE_SHOULD_BE_INLINE OFF)
-endif()
-
-option(BOOST_SQLITE_BUILD_INLINE "Configure as if part of the boost source tree" ${BOOST_SQLITE_SHOULD_BE_INLINE})
-
-if(NOT BOOST_SUPERPROJECT_VERSION)
-    option(BOOST_SQLITE_INSTALL "Install boost::sqlite files" ON)
-    option(BOOST_SQLITE_BUILD_TESTS "Build boost::sqlite tests" ON)
-    option(BOOST_SQLITE_BUILD_EXAMPLES "Build boost::sqlite examples" ON)
-else()
-    set(BOOST_SQLITE_BUILD_TESTS ${BUILD_TESTING})
-endif()
-
-
-if(BOOST_SQLITE_IS_ROOT AND BOOST_SQLITE_BUILD_INLINE)
-    #
-    # Building inside Boost tree, but as a separate project e.g. on Travis or
-    # other CI, or when producing Visual Studio Solution and Projects.
-
-    set(BOOST_INCLUDE_LIBRARIES SQLITE)
-    set(BOOST_EXCLUDE_LIBRARIES SQLITE)
-
-    set(CMAKE_FOLDER _deps)
-    add_subdirectory(../.. _deps/boost EXCLUDE_FROM_ALL)
-    unset(CMAKE_FOLDER)
-endif()
-
-if (NOT BOOST_SQLITE_BUILD_INLINE)
-    find_package(Threads REQUIRED)
-    find_package(Boost REQUIRED system json url)
-    include_directories(include)
-endif()
-
-
-find_package(Doxygen REQUIRED doxygen)
-
-set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/doc")
-configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
-
-add_custom_target(
-        boost_sqlite_doc
-        COMMAND ${DOXYGEN_EXECUTABLE} "${PROJECT_BINARY_DIR}/doc/Doxyfile"
-        COMMENT "Building documentation using Doxygen"
-        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-        VERBATIM
+set(BOOST_SQLITE_SOURCES
+    src/detail/exception.cpp
+    src/backup.cpp
+    src/blob.cpp
+    src/connection.cpp
+    src/error.cpp
+    src/field.cpp
+    src/json.cpp
+    src/meta_data.cpp
+    src/resultset.cpp
+    src/row.cpp
+    src/value.cpp
 )
 
 find_package(SQLite3 REQUIRED)
 
-add_library(boost_sqlite src/src.cpp)
+if (BOOST_SQLITE_IS_ROOT)
+    if(NOT BOOST_SUPERPROJECT_VERSION)
+        option(BOOST_SQLITE_INSTALL "Install boost::sqlite files" ON)
+        option(BOOST_SQLITE_BUILD_TESTS "Build boost::sqlite tests" ON)
+        option(BOOST_SQLITE_BUILD_EXAMPLES "Build boost::sqlite examples" ON)
+    else()
+        set(BOOST_SQLITE_BUILD_TESTS ${BUILD_TESTING})
+    endif()
+
+    find_package(Threads REQUIRED)
+    find_package(Boost REQUIRED system json url)
+
+endif()
+
+add_library(boost_sqlite ${BOOST_SQLITE_SOURCES})
 target_include_directories(boost_sqlite PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(boost_sqlite PUBLIC Boost::system Boost::json SQLite::SQLite3)
-target_compile_definitions(boost_sqlite PUBLIC BOOST_SQLITE_SEPARATE_COMPILATION=1 BOOST_FILESYSTEM_NO_DEPRECATED=1)
 add_library(Boost::sqlite ALIAS boost_sqlite)
 
-add_library(boost_sqlite_ext src/src_ext.cpp)
+add_library(boost_sqlite_ext ${BOOST_SQLITE_SOURCES} src/ext.cpp)
 target_include_directories(boost_sqlite_ext PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(boost_sqlite_ext PUBLIC Boost::system Boost::json SQLite::SQLite3)
-target_compile_definitions(boost_sqlite_ext PUBLIC BOOST_SQLITE_SEPARATE_COMPILATION=1 BOOST_FILESYSTEM_NO_DEPRECATED=1 BOOST_SQLITE_COMPILE_EXTENSION=1)
+target_compile_definitions(boost_sqlite_ext PUBLIC BOOST_SQLITE_COMPILE_EXTENSION=1)
 set_property(TARGET boost_sqlite_ext PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_library(Boost::sqlite_ext ALIAS boost_sqlite_ext)
+
+if (NOT BOOST_SQLITE_IS_ROOT)
+    if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
+        set(BOOST_SQLITE_BUILD_TESTS ON)
+    endif()
+else()
+    if(NOT BOOST_SUPERPROJECT_VERSION)
+        option(BOOST_SQLITE_INSTALL "Install boost::sqlite files" ON)
+        option(BOOST_SQLITE_BUILD_TESTS "Build boost::sqlite tests" ON)
+        option(BOOST_SQLITE_BUILD_EXAMPLES "Build boost::sqlite examples" ON)
+    else()
+        set(BOOST_SQLITE_BUILD_TESTS ${BUILD_TESTING})
+    endif()
+
+    find_package(Doxygen REQUIRED doxygen)
+
+    set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/doc")
+    configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
+
+    add_custom_target(
+            boost_sqlite_doc
+            COMMAND ${DOXYGEN_EXECUTABLE} "${PROJECT_BINARY_DIR}/doc/Doxyfile"
+            COMMENT "Building documentation using Doxygen"
+            WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+            VERBATIM
+    )
+
+endif()
+
 
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(boost_sqlite     PUBLIC BOOST_SQLITE_DYN_LINK=1)

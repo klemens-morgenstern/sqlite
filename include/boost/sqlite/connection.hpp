@@ -144,8 +144,5 @@ struct connection
 
 BOOST_SQLITE_END_NAMESPACE
 
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-#include <boost/sqlite/impl/connection.ipp>
-#endif
 
 #endif //BOOST_SQLITE_CONNECTION_HPP

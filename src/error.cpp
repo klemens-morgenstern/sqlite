@@ -5,8 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_ERROR_IPP
-#define BOOST_SQLITE_IMPL_ERROR_IPP
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/error.hpp>
@@ -58,4 +56,3 @@ void throw_exception_from_error( error const & e, boost::source_location const &
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif // BOOST_SQLITE_IMPL_ERROR_IPP

@@ -5,8 +5,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_RESULTSET_IPP
-#define BOOST_SQLITE_IMPL_RESULTSET_IPP
+#include <boost/sqlite/resultset.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -60,4 +59,3 @@ resultset::iterator resultset::iterator::operator++()
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_RESULTSET_IPP

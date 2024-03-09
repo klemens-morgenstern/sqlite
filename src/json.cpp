@@ -5,11 +5,10 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_JSON_IPP
-#define BOOST_SQLITE_IMPL_JSON_IPP
-
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/json.hpp>
+#include <boost/sqlite/resultset.hpp>
+
 #include <boost/json/parse.hpp>
 #include <boost/json/serializer.hpp>
 #include <boost/json/value.hpp>
@@ -119,4 +118,3 @@ void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_JSON_IPP

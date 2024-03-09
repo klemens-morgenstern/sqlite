@@ -150,8 +150,5 @@ struct is_result_type<result<T>> : std::true_type {};
 
 BOOST_SQLITE_END_NAMESPACE
 
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-#include <boost/sqlite/impl/error.ipp>
-#endif
 
 #endif // BOOST_SQLITE_ERROR_HPP

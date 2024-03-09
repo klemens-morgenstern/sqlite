@@ -142,8 +142,5 @@ struct resultset
 
 BOOST_SQLITE_END_NAMESPACE
 
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-#include <boost/sqlite/impl/resultset.ipp>
-#endif
 
 #endif //BOOST_SQLITE_RESULTSET_HPP

@@ -5,8 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_BLOB_IPP
-#define BOOST_SQLITE_IMPL_BLOB_IPP
 
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/connection.hpp>
@@ -94,4 +92,3 @@ void blob_handle::write_at(const void *data, int len, int offset)
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_BLOB_IPP

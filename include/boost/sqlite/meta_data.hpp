@@ -55,8 +55,4 @@ column_meta_data table_column_meta_data(connection  & conn,
 BOOST_SQLITE_END_NAMESPACE
 
 
-#if defined(BOOST_SQLITE_HEADER_ONLY)
-#include <boost/sqlite/impl/meta_data.ipp>
-#endif
-
 #endif //BOOST_SQLITE_META_DATA_HPP

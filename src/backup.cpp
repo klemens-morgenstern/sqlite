@@ -5,8 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_BACKUP_IPP
-#define BOOST_SQLITE_IMPL_BACKUP_IPP
 
 #include <boost/sqlite/backup.hpp>
 #include <boost/sqlite/connection.hpp>
@@ -61,4 +59,3 @@ backup(connection & source,
 
 BOOST_SQLITE_END_NAMESPACE
 
-#endif //BOOST_SQLITE_IMPL_BACKUP_IPP

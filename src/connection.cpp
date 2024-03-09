@@ -5,8 +5,6 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BOOST_SQLITE_IMPL_CONNECTION_IPP
-#define BOOST_SQLITE_IMPL_CONNECTION_IPP
 
 #include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/statement.hpp>
@@ -158,4 +156,3 @@ void connection::execute(cstring_ref q)
 BOOST_SQLITE_END_NAMESPACE
 
 
-#endif //BOOST_SQLITE_IMPL_CONNECTION_IPP
