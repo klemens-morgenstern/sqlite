@@ -21,7 +21,7 @@ struct collate_length
   }
 };
 
-TEST_CASE("collation")
+BOOST_AUTO_TEST_CASE(collation)
 {
   sqlite::connection conn(":memory:");
   conn.execute(
@@ -36,5 +36,5 @@ TEST_CASE("collation")
     names.emplace_back(r.at(0).get_text());
 
   std::vector<std::string> cmp = {"peter", "ruben"};
-  CHECK(names == cmp);
+  BOOST_CHECK(names == cmp);
 }

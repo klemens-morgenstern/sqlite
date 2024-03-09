@@ -6,10 +6,11 @@
 #include <boost/sqlite/meta_data.hpp>
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
+#include <boost/algorithm/string.hpp>
 
 using namespace boost;
 
-TEST_CASE("meta-data")
+BOOST_AUTO_TEST_CASE(meta_data)
 {
   sqlite::connection conn;
   conn.connect(":memory:");
@@ -18,30 +19,27 @@ TEST_CASE("meta-data")
   );
 
 
+
   auto fn = table_column_meta_data(conn,  "author", "first_name");
-  CHECK_MESSAGE(doctest::String(fn.data_type.data(), fn.data_type.size()).compare("TEXT", true) == 0,
-                fn.data_type);
-  CHECK(!fn.auto_increment);
-  CHECK_MESSAGE(doctest::String(fn.collation.data(), fn.collation.size()).compare("BINARY", true) == 0,
-                fn.collation);
-  CHECK(!fn.primary_key);
-  CHECK( fn.not_null);
+  BOOST_CHECK_MESSAGE(boost::iequals(fn.data_type, "TEXT"), fn.data_type);
+  BOOST_CHECK(!fn.auto_increment);
+  BOOST_CHECK_MESSAGE(boost::iequals(fn.collation, "BINARY"), fn.collation);
+  BOOST_CHECK(!fn.primary_key);
+  BOOST_CHECK( fn.not_null);
 
   auto ln = table_column_meta_data(conn, "main", "author", "last_name");
-  CHECK_MESSAGE(doctest::String(ln.data_type.data(), ln.data_type.size()).compare("TEXT", true)  == 0,
-                ln.data_type);
-  CHECK(!ln.auto_increment);
-  CHECK_MESSAGE(doctest::String(ln.collation.data(), fn.collation.size()).compare("BINARY", true)  ==0,
-                ln.collation);
-  CHECK(!ln.primary_key);
-  CHECK(!ln.not_null);
+  BOOST_CHECK_MESSAGE(boost::iequals(ln.data_type, "TEXT"), ln.data_type);
+  BOOST_CHECK(!ln.auto_increment);
+  BOOST_CHECK_MESSAGE(boost::iequals(ln.collation, "BINARY"), ln.collation);
+  BOOST_CHECK(!ln.primary_key);
+  BOOST_CHECK(!ln.not_null);
 
   auto id = table_column_meta_data(conn, "main", "author", "id");
-  CHECK(doctest::String(id.data_type.data(), id.data_type.size()).compare("INTEGER", true) == 0);
-  CHECK( id.auto_increment);
-  CHECK(doctest::String(id.collation.data(), fn.collation.size()).compare("BINARY", true) == 0);
-  CHECK( id.primary_key);
-  CHECK( id.not_null);
+  BOOST_CHECK(boost::iequals(id.data_type, "INTEGER"));
+  BOOST_CHECK( id.auto_increment);
+  BOOST_CHECK(boost::iequals(id.collation, "BINARY"));
+  BOOST_CHECK( id.primary_key);
+  BOOST_CHECK( id.not_null);
 
   conn.close();
 }

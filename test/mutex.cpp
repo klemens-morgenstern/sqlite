@@ -8,25 +8,24 @@
 
 #include <boost/sqlite/mutex.hpp>
 
-#include "doctest.h"
-
+#include <boost/test/unit_test.hpp>
 #include <mutex>
 
 using namespace boost;
 
-TEST_CASE("mutex")
+BOOST_AUTO_TEST_CASE(mutex)
 {
   sqlite::mutex mtx;
   sqlite::recursive_mutex rmtx;
-  CHECK(mtx.try_lock());
-  CHECK(!mtx.try_lock());
+  BOOST_CHECK(mtx.try_lock());
+  BOOST_CHECK(!mtx.try_lock());
   mtx.unlock();
 
   std::lock_guard<sqlite::mutex> l1{mtx};
   std::lock_guard<sqlite::recursive_mutex> l2{rmtx};
   std::lock_guard<sqlite::recursive_mutex> l{rmtx};
 
-  CHECK(rmtx.try_lock());
-  CHECK(rmtx.try_lock());
-  CHECK(rmtx.try_lock());
+  BOOST_CHECK(rmtx.try_lock());
+  BOOST_CHECK(rmtx.try_lock());
+  BOOST_CHECK(rmtx.try_lock());
 }

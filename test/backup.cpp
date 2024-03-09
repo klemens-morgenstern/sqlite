@@ -16,7 +16,7 @@
 
 using namespace boost;
 
-TEST_CASE("backup")
+BOOST_AUTO_TEST_CASE(backup)
 {
   sqlite::connection conn1{":memory:"};
   conn1.execute(
@@ -39,8 +39,8 @@ TEST_CASE("backup")
   for (auto r : conn2.query("select first_name from author;"))
     names2.emplace_back(r.at(0u).get_text());
 
-  CHECK(!names1.empty());
-  CHECK(!names2.front().empty());
-  CHECK(names1 == names2);
-  CHECK_THROWS(sqlite::backup(conn1, conn2, "foo", "bar"));
+  BOOST_CHECK(!names1.empty());
+  BOOST_CHECK(!names2.front().empty());
+  BOOST_CHECK(names1 == names2);
+  BOOST_CHECK_THROW(sqlite::backup(conn1, conn2, "foo", "bar"), boost::system::system_error);
 }

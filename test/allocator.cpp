@@ -6,11 +6,11 @@
 //
 
 #include <boost/sqlite/allocator.hpp>
-#include "doctest.h"
+#include <boost/test/unit_test.hpp>
 
 using namespace boost;
 
-TEST_CASE("allocator")
+BOOST_AUTO_TEST_CASE(allocator)
 {
 
   sqlite::allocator<int> alloc;

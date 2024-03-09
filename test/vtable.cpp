@@ -5,7 +5,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include "doctest.h"
+#include <boost/test/unit_test.hpp>
 #include "test.hpp"
 
 #include <iostream>
@@ -19,7 +19,7 @@
 using namespace boost;
 
 
-TEST_SUITE_BEGIN("vtable");
+BOOST_AUTO_TEST_SUITE(vtable);
 
 struct del_info : sqlite3_index_info
 {
@@ -97,7 +97,7 @@ struct simple_test_impl final : sqlite::vtab::eponymous_module<simple_table>
 };
 
 
-TEST_CASE("simple reader")
+BOOST_AUTO_TEST_CASE(simple_reader)
 {
   sqlite::connection conn(":memory:");
   auto & m = create_module(conn, "test_table", simple_test_impl{});
@@ -105,19 +105,19 @@ TEST_CASE("simple reader")
   auto itr = m.names.begin();
   for (auto q : conn.query("select * from test_table ;"))
   {
-    CHECK(q.size() == 1);
-    CHECK(q.at(0).get_text() == *itr++);
+    BOOST_CHECK(q.size() == 1);
+    BOOST_CHECK(q.at(0).get_text() == *itr++);
   }
 
   m.names.emplace_back("marcelo");
   itr = m.names.begin();
   for (auto q : conn.query("select * from test_table ;"))
   {
-    CHECK(q.size() == 1);
-    CHECK(q.at(0).get_text() == *itr++);
+    BOOST_CHECK(q.size() == 1);
+    BOOST_CHECK(q.at(0).get_text() == *itr++);
   }
 
-  CHECK_THROWS(conn.query("insert into test_table values('chris')"));
+  BOOST_CHECK_THROW(conn.query("insert into test_table values('chris')"), boost::system::system_error);
 }
 
 struct modifyable_table;
@@ -178,7 +178,7 @@ struct modifyable_table final :
 
   sqlite::result<void> delete_(sqlite::value key)
   {
-    CHECK(names.erase(key.get_int()) == 1);
+    BOOST_CHECK(names.erase(key.get_int()) == 1);
     return {};
   }
   sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
@@ -216,38 +216,41 @@ struct modifyable_test_impl final : sqlite::vtab::eponymous_module<modifyable_ta
 };
 
 
-TEST_CASE("modifyable reader")
+BOOST_AUTO_TEST_CASE(modifyable_reader)
 {
   sqlite::connection conn(":memory:");
 
   auto & m = create_module(conn, "name_table", modifyable_test_impl{});
   conn.execute("create virtual table test_table USING name_table; ");
 
-  CHECK(m.list.size() == 1);
-  CHECK(m.list.front().name == "test_table");
-  CHECK(m.list.front().names.empty());
+  BOOST_CHECK(m.list.size() == 1);
+  BOOST_CHECK(m.list.front().name == "test_table");
+  BOOST_CHECK(m.list.front().names.empty());
 
   conn.prepare("insert into test_table(name) values ($1), ($2), ($3), ($4);")
       .execute(std::make_tuple("vinnie", "richard", "ruben", "peter"));
 
   auto & t = m.list.front();
-  CHECK(t.names.size() == 4);
-  CHECK(t.names[0] == "vinnie");
-  CHECK(t.names[1] == "richard");
-  CHECK(t.names[2] == "ruben");
-  CHECK(t.names[3] == "peter");
+  BOOST_CHECK(t.names.size() == 4);
+  BOOST_CHECK(t.names[0] == "vinnie");
+  BOOST_CHECK(t.names[1] == "richard");
+  BOOST_CHECK(t.names[2] == "ruben");
+  BOOST_CHECK(t.names[3] == "peter");
 
   conn.prepare("delete from test_table where name = $1;").execute(std::make_tuple("richard"));
 
-  CHECK(t.names.size() == 3);
-  CHECK(t.names[0] == "vinnie");
-  CHECK(t.names[2] == "ruben");
-  CHECK(t.names[3] == "peter");
+  BOOST_CHECK(t.names.size() == 3);
+  BOOST_CHECK(t.names[0] == "vinnie");
+  BOOST_CHECK(t.names[2] == "ruben");
+  BOOST_CHECK(t.names[3] == "peter");
 
   conn.prepare("update test_table set name = $1 where id = 0;").execute(std::make_tuple("richard"));
 
-  CHECK(t.names.size() == 3);
-  CHECK(t.names[0] == "richard");
-  CHECK(t.names[2] == "ruben");
-  CHECK(t.names[3] == "peter");
+  BOOST_CHECK(t.names.size() == 3);
+  BOOST_CHECK(t.names[0] == "richard");
+  BOOST_CHECK(t.names[2] == "ruben");
+  BOOST_CHECK(t.names[3] == "peter");
 }
+
+
+BOOST_AUTO_TEST_SUITE_END()

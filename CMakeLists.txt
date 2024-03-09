@@ -41,7 +41,7 @@ if (BOOST_SQLITE_IS_ROOT)
     endif()
 
     find_package(Threads REQUIRED)
-    find_package(Boost REQUIRED system json url)
+    find_package(Boost REQUIRED system json OPTIONAL_COMPONENTS url unit_test_framework)
 
 endif()
 

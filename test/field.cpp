@@ -9,7 +9,7 @@
 
 using namespace boost;
 
-TEST_CASE("field")
+BOOST_AUTO_TEST_CASE(field)
 {
   sqlite::connection conn(":memory:");
   // language=sqlite
@@ -27,20 +27,20 @@ create table type_tester(
   auto res = conn.query("select * from type_tester");
   auto r = res.current();
 
-  CHECK(r[0].type() == sqlite::value_type::integer);
-  CHECK(r[0].get_int() == 42);
+  BOOST_CHECK(r[0].type() == sqlite::value_type::integer);
+  BOOST_CHECK(r[0].get_int() == 42);
 
-  CHECK(r[1].type() == sqlite::value_type::floating);
-  CHECK(r[1].get_double() == 1.2);
+  BOOST_CHECK(r[1].type() == sqlite::value_type::floating);
+  BOOST_CHECK(r[1].get_double() == 1.2);
 
-  CHECK(r[2].type() == sqlite::value_type::null);
-  CHECK(r[3].type() == sqlite::value_type::text);
-  CHECK(r[3].get_text() == "text");
+  BOOST_CHECK(r[2].type() == sqlite::value_type::null);
+  BOOST_CHECK(r[3].type() == sqlite::value_type::text);
+  BOOST_CHECK(r[3].get_text() == "text");
 
-  CHECK(r[4].type() == sqlite::value_type::blob);
+  BOOST_CHECK(r[4].type() == sqlite::value_type::blob);
 
   sqlite::blob bl{4u};
   char raw_data[4] = {4,5,6,7};
   std::memcpy(bl.data(), raw_data, 4);
-  CHECK(std::memcmp(bl.data(), r[4].get_blob().data(), 4u) == 0u);
+  BOOST_CHECK(std::memcmp(bl.data(), r[4].get_blob().data(), 4u) == 0u);
 }

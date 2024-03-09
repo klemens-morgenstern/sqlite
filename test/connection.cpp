@@ -8,7 +8,7 @@
 
 using namespace boost;
 
-TEST_CASE("connection")
+BOOST_AUTO_TEST_CASE(connection)
 {
   sqlite::connection conn;
   conn.connect(":memory:");
@@ -16,14 +16,14 @@ TEST_CASE("connection")
 #include "test-db.sql"
   );
 
-  CHECK_THROWS(conn.execute("elect * from nothing;"));
+  BOOST_CHECK_THROW(conn.execute("elect * from nothing;"), boost::system::system_error);
   conn.close();
 }
 
-TEST_CASE("exc")
+BOOST_AUTO_TEST_CASE(exc)
 {
   sqlite::connection conn;
   conn.connect(":memory:");
-  CHECK_THROWS(conn.execute("select 932 fro 12;"));
+  BOOST_CHECK_THROW(conn.execute("select 932 fro 12;"), boost::system::system_error);
   conn.close();
 }

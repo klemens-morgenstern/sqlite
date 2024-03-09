@@ -12,7 +12,7 @@
 
 using namespace boost;
 
-TEST_CASE("scalar")
+BOOST_AUTO_TEST_CASE(scalar)
 {
   sqlite::connection conn(":memory:");
   conn.execute(
@@ -46,10 +46,10 @@ TEST_CASE("scalar")
 
 
   std::vector<std::string> nm = {"PETER", "VINNIE", "RICHARD", "RUBEN"};
-  CHECK(nm == names);
+  BOOST_CHECK(nm == names);
 }
 
-TEST_CASE("aggregate")
+BOOST_AUTO_TEST_CASE(aggregate)
 {
   sqlite::connection conn(":memory:");
   conn.execute(
@@ -80,12 +80,12 @@ TEST_CASE("aggregate")
   for (auto r : conn.query("select char_counter(first_name) from author;"))
     lens.emplace_back(r.at(0).get_int64());
 
-  CHECK(lens.size() == 1u);
-  CHECK(lens[0]  == (5 + 6 + 7 + 5));
+  BOOST_CHECK(lens.size() == 1u);
+  BOOST_CHECK(lens[0]  == (5 + 6 + 7 + 5));
 }
 
 #if SQLITE_VERSION_NUMBER >= 3025000
-TEST_CASE("window")
+BOOST_AUTO_TEST_CASE(window)
 {
   sqlite::connection conn(":memory:");
   conn.execute(
@@ -125,10 +125,10 @@ select win_counter(first_name) over (
     from author order by last_name asc;)"))
     lens.emplace_back(r.at(0).get_int64());
 
-  CHECK(lens.size() == 4u);
-  CHECK(lens[0] == 11);
-  CHECK(lens[1] == 18);
-  CHECK(lens[2] == 18);
-  CHECK(lens[3] == 12);
+  BOOST_CHECK(lens.size() == 4u);
+  BOOST_CHECK(lens[0] == 11);
+  BOOST_CHECK(lens[1] == 18);
+  BOOST_CHECK(lens[2] == 18);
+  BOOST_CHECK(lens[3] == 12);
 }
 #endif

@@ -9,7 +9,7 @@
 
 using namespace boost;
 
-TEST_CASE("hooks")
+BOOST_AUTO_TEST_CASE(hooks)
 {
   sqlite::connection conn(":memory:");
   conn.execute(
@@ -20,9 +20,9 @@ TEST_CASE("hooks")
   auto l =
       [&](int op, core::string_view db, core::string_view table, sqlite3_int64 id) noexcept
       {
-        CHECK(op == SQLITE_INSERT);
-        CHECK(db == "main");
-        CHECK(table == "library");
+        BOOST_CHECK(op == SQLITE_INSERT);
+        BOOST_CHECK(db == "main");
+        BOOST_CHECK(table == "library");
         called = true;
       };
 
@@ -34,7 +34,7 @@ TEST_CASE("hooks")
       ('mustache',(select id from author where first_name = 'peter'  and last_name = 'dimov'));
     )");
 
-  CHECK(called);
+  BOOST_CHECK(called);
 
 #if defined(SQLITE_ENABLE_PREUPDATE_HOOK)
   auto hk = [](sqlite::preupdate_context ctx,

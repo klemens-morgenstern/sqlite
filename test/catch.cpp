@@ -4,16 +4,15 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/sqlite/detail/catch.hpp>
-#include "doctest.h"
-
+#include <boost/test/unit_test.hpp>
 using namespace boost;
 
-TEST_CASE("prefix")
+BOOST_AUTO_TEST_CASE(prefix)
 {
   system::system_error se(SQLITE_TOOBIG, sqlite::sqlite_category());
-  CHECK(sqlite::detail::get_message(se).empty());
+  BOOST_CHECK(sqlite::detail::get_message(se).empty());
 
   se = system::system_error(SQLITE_TOOBIG, sqlite::sqlite_category(), "foobar");
 
-  CHECK(sqlite::detail::get_message(se) == "foobar");
+  BOOST_CHECK(sqlite::detail::get_message(se) == "foobar");
 }

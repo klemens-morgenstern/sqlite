@@ -8,7 +8,7 @@
 #ifndef BOOST_SQLITE_TEST_HPP
 #define BOOST_SQLITE_TEST_HPP
 
-#include "doctest.h"
+#include <boost/test/unit_test.hpp>
 
 struct query_helper
 {

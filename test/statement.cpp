@@ -7,14 +7,17 @@
 
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
+
 #include <boost/json.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include <unordered_map>
 
 
 using namespace boost;
 
 
-TEST_CASE("connection")
+BOOST_AUTO_TEST_CASE(statement)
 {
   sqlite::connection conn;
   conn.connect(":memory:");
@@ -24,19 +27,19 @@ TEST_CASE("connection")
   auto ip = data.get();
   auto q = conn.prepare("select $1;").execute(std::make_tuple(std::move(data)));
   sqlite::row r = q.current();
-  CHECK(r.size() == 1u);
+  BOOST_CHECK(r.size() == 1u);
 
   auto v = r.at(0).get_value();
-  CHECK(v.type() == sqlite::value_type::null);
-  CHECK(v.get_pointer<int>() != nullptr);
-  CHECK(v.get_pointer<int>() == ip);
-  CHECK(v.get_pointer<double>() == nullptr);
+  BOOST_CHECK(v.type() == sqlite::value_type::null);
+  BOOST_CHECK(v.get_pointer<int>() != nullptr);
+  BOOST_CHECK(v.get_pointer<int>() == ip);
+  BOOST_CHECK(v.get_pointer<double>() == nullptr);
 #endif
-  CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({}));
+  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;").execute({}), boost::system::system_error);
 }
 
 
-TEST_CASE("decltype")
+BOOST_AUTO_TEST_CASE(decltype_)
 {
   sqlite::connection conn;
   conn.connect(":memory:");
@@ -45,15 +48,15 @@ TEST_CASE("decltype")
   );
   auto q = conn.prepare("select* from author;");
 
-  CHECK(doctest::String(q.declared_type(0).data()).compare("INTEGER", true) == 0);
-  CHECK(doctest::String(q.declared_type(1).data()).compare("TEXT",    true) == 0);
-  CHECK(doctest::String(q.declared_type(2).data()).compare("TEXT",    true) == 0);
+  BOOST_CHECK(boost::iequals(q.declared_type(0), "INTEGER"));
+  BOOST_CHECK(boost::iequals(q.declared_type(1), "TEXT"));
+  BOOST_CHECK(boost::iequals(q.declared_type(2), "TEXT"));
 
-  CHECK_THROWS(conn.prepare("elect * from nothing;"));
+  BOOST_CHECK_THROW(conn.prepare("elect * from nothing;"), boost::system::system_error);
 }
 
 
-TEST_CASE("map")
+BOOST_AUTO_TEST_CASE(map)
 {
   sqlite::connection conn;
   conn.connect(":memory:");
@@ -61,12 +64,11 @@ TEST_CASE("map")
 #include "test-db.sql"
   );
   auto q = conn.prepare("select * from author where first_name = $name;").execute({{"name", 42}});
-  CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute({{"n4ame", 123}}));
+  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;").execute({{"n4ame", 123}}), boost::system::system_error);
 
   std::unordered_map<std::string, variant2::variant<int, std::string>> params = {{"name", 42}};
   q = conn.prepare("select * from author where first_name = $name;").execute(params);
-  CHECK_THROWS(conn.prepare("select * from nothing where name = $name;").execute(params));
+  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;").execute(params), boost::system::system_error);
 
-  CHECK_THROWS(conn.prepare("elect * from nothing;"));
-
+  BOOST_CHECK_THROW(conn.prepare("elect * from nothing;"), boost::system::system_error);
 }

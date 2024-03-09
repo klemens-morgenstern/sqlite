@@ -15,7 +15,7 @@
 
 using namespace boost;
 
-TEST_CASE("blob")
+BOOST_AUTO_TEST_CASE(blob)
 {
   sqlite::connection conn{":memory:"};
   // language=sqlite
@@ -35,22 +35,22 @@ TEST_CASE("blob")
 
   auto bh = open_blob(conn, "main", "blobs", "bb", 1);
 
-  CHECK(bh.size() == 4096 * 4096);
+  BOOST_CHECK(bh.size() == 4096 * 4096);
 
 
   unsigned char buf[4096];
   std::generate(std::begin(buf), std::end(buf), [&]{return static_cast<unsigned char>(dist(rng));});
   bh.read_at(buf, 4096, 4096);
-  CHECK(std::all_of(std::begin(buf), std::end(buf), [](unsigned char c) {return c == 0u;}));
+  BOOST_CHECK(std::all_of(std::begin(buf), std::end(buf), [](unsigned char c) {return c == 0u;}));
 
   bh.write_at(blobby.data(), blobby.size(), 0u);
   bh.read_at(buf, 4096, 4096);
-  CHECK(std::memcmp(buf, blobby.data() + 4096, 4096) == 0);
+  BOOST_CHECK(std::memcmp(buf, blobby.data() + 4096, 4096) == 0);
 
-  CHECK_THROWS(open_blob(conn, "main", "doesnt-exit", "blobber", 2));
+  BOOST_CHECK_THROW(open_blob(conn, "main", "doesnt-exit", "blobber", 2), boost::system::system_error);
 
   sqlite::blob_handle bb;
-  CHECK_THROWS(bb.read_at(blobby.data(), blobby.size(), 0));
-  CHECK_THROWS(bb.write_at(blobby.data(), blobby.size(), 0));
+  BOOST_CHECK_THROW(bb.read_at(blobby.data(), blobby.size(), 0), boost::system::system_error);
+  BOOST_CHECK_THROW(bb.write_at(blobby.data(), blobby.size(), 0), boost::system::system_error);
 
 }
