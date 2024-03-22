@@ -18,8 +18,8 @@ sqlite provides an excellent C-API, so this library does not attempt to hide, bu
 You can either build the library and link against `boost_sqlite` for embedding it, 
 or `boost_sqlite_ext` for extensions.
 
-Alternatively you can include `boost/sqlite/src.hpp`. If you want to use it for extensions
-you'll need to define `BOOST_SQLITE_COMPILE_EXTENSION` or include `boost/sqlite/extensions.hpp` first.
+If you want to use it for extensions you'll need to 
+define `BOOST_SQLITE_COMPILE_EXTENSION` or include `boost/sqlite/extensions.hpp` first.
 
 ## Quickstart
 
