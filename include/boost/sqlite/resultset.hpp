@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <boost/sqlite/row.hpp>
+#include <boost/describe/members.hpp>
 
 #include <boost/system/result.hpp>
 
@@ -80,8 +81,8 @@ struct resultset
     {
       using value_type = value;
       using difference_type   = int;
-      using reference         = field&;
-      using iterator_category = std::random_access_iterator_tag;
+      using reference         = value&;
+      using iterator_category = std::forward_iterator_tag;
 
       iterator() {}
       explicit iterator(sqlite3_stmt * stmt, bool sentinel) : sentinel_(sentinel )
@@ -89,7 +90,7 @@ struct resultset
         row_.stm_ = stmt;
       }
 
-      bool operator!=(iterator rhs)
+      bool operator!=(iterator rhs) const
       {
         return sentinel_ != rhs.sentinel_;
       }
@@ -100,9 +101,11 @@ struct resultset
       BOOST_SQLITE_DECL
       iterator operator++();
 
-      void operator++(int)
+      iterator operator++(int)
       {
+        auto l = *this;
         ++(*this);
+        return l;
       }
 
      private:
@@ -118,6 +121,7 @@ struct resultset
   private:
     friend struct connection;
     friend struct statement;
+
     struct deleter_
     {
         constexpr deleter_() noexcept {}
