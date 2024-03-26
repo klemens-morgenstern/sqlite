@@ -195,7 +195,7 @@ The plugin can then be loaded & used like this:
 ```sql
 SELECT load_extension('./test_library');
 
-select asset((3 * 4) = 12);
+select assert((3 * 4) = 12);
 ```
 
 To build a plugin you need to define `BOOST_SQLITE_COMPILE_EXTENSION` 

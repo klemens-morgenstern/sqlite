@@ -258,7 +258,7 @@ auto create_scalar_function(
 
   struct aggregate_func
   {
-F      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
       }
