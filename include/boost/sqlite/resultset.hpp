@@ -17,7 +17,7 @@ struct connection ;
   @brief Representation of a result from a database.
   @ingroup reference
 
-  If is a forward-range with input iterators.
+  If is a forward-range with output iterators.
 
   @par Example
 
@@ -34,7 +34,7 @@ struct connection ;
   while (rs.read_next()) // read it line by line
 
 
-    @endcode
+  @endcode
 
 */
 struct resultset
