@@ -10,7 +10,6 @@
 #include <boost/sqlite/cstring_ref.hpp>
 #include <boost/sqlite/value.hpp>
 
-#include <boost/variant2/variant.hpp>
 #include <boost/core/detail/string_view.hpp>
 
 

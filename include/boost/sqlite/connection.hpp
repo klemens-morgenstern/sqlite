@@ -14,6 +14,9 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
+template<typename T>
+struct static_resultset;
+
 /** @brief main object for a connection to a database.
   @ingroup reference
 
@@ -72,6 +75,33 @@ struct connection
             error_info & ei);
 
     BOOST_SQLITE_DECL resultset query(core::string_view q);
+
+    template<typename T>
+    static_resultset<T> query(
+        core::string_view q,
+        system::error_code & ec,
+        error_info & ei)
+    {
+        static_resultset<T> tmp = query(q, ec, ei);
+        if (ec)
+            return {};
+        tmp.check_columns_(ec, ei);
+        if (ec)
+            return {};
+
+        return tmp;
+    }
+
+    template<typename T>
+    static_resultset<T> query(core::string_view q)
+    {
+        system::error_code ec;
+        error_info ei;
+        auto tmp = query<T>(q, ec, ei);
+        if (ec)
+            throw_exception(system::system_error(ec, ei.message()));
+        return tmp;
+    }
     ///@}
 
     ///@{

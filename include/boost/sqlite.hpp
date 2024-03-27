@@ -25,6 +25,7 @@
 #include <boost/sqlite/resultset.hpp>
 #include <boost/sqlite/row.hpp>
 #include <boost/sqlite/statement.hpp>
+#include <boost/sqlite/static_resultset.hpp>
 #include <boost/sqlite/string.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/sqlite/vtable.hpp>
