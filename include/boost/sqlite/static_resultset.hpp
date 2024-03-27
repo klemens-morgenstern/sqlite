@@ -237,7 +237,34 @@ T tag_invoke(convert_row_tag<T> tag, const row & r)
 
 }
 
-/// A typed resultset using a tuple or a described struct.
+/**
+  @brief A typed resultset using a tuple or a described struct.
+  @ingroup reference
+  @tparam T The static type of the query.
+
+
+  If is a forward-range with output iterators.
+
+  @par Example
+
+  @code{.cpp}
+
+  extern sqlite::connection conn;
+  struct user { std::string first_name; std::string last_name; };
+  BOOST_DESCRIBE_STRUCT(user, (), (first_name, last_name));
+
+  sqlite::resultset rs = conn.query("select first_name, last_name from users;");
+
+  do
+  {
+    user usr = r.current();
+    handle_row(u);
+  }
+  while (rs.read_next()) // read it line by line
+
+  @endcode
+
+*/
 template<typename T>
 struct static_resultset
 {
