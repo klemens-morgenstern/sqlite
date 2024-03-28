@@ -12,7 +12,20 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-/// A simple transaction guard implementing RAAI for transactions
+/**
+ * @brief A simple transaction guard implementing RAAI for transactions
+ * @ingroup reference
+ *
+ *   @par Example
+ *   @code{.cpp}
+ *     sqlite::connection conn;
+ *     conn.connect("./my-database.db");
+ *
+ *     sqlite::transaction t{conn};
+ *     conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
+ *     t.commit();
+ *   @endcode
+ */
 struct transaction
 {
   /// The mode of the transaction
@@ -88,7 +101,20 @@ struct transaction
   bool completed_ = true;
 };
 
-/// A simple transaction guard implementing RAAI for transactions
+/**
+ * @brief A simple transaction guard implementing RAAI for savepoints. Savepoints can be used recursively.
+ * @ingroup reference
+ *
+ * @par Example
+ * @code{.cpp}
+ *   sqlite::connection conn;
+ *   conn.connect("./my-database.db");
+ *
+ *   sqlite::savepoint t{conn, "my-savepoint};
+ *   conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
+ *   t.commit();
+ * @endcode
+*/
 struct savepoint
 {
   /// A tag to use, to adopt an already initiated transaction.
