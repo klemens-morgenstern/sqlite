@@ -563,9 +563,9 @@ static void assign_shadow_name(sqlite3_module & md, const Module & mod)
   md.xShadowName = +[](const char * name){return Func(name) != 0;};
 }
 
-};
-
 #endif
+
+};
 
 template<typename Module>
 const sqlite3_module make_module(const Module & mod)
