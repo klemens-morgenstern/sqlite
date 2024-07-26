@@ -134,7 +134,7 @@ struct function_setter
     void **ppArg_;
 };
 
-#if SQLITE_VERSION_NUMBER > 3038000
+#if SQLITE_VERSION_NUMBER >= 3038000
 /** @brief Utility function that can be used in `xFilter` for the `in` operator.
     @see https://www.sqlite.org/capi3ref.html#sqlite3_vtab_in_first
     @ingroup reference
@@ -254,15 +254,21 @@ struct index_info
     return *itr;
   }
 
+#if SQLITE_VERSION_NUMBER >= 3022000
+
   /// Receive the collation for the contrainst of the position.
   const char * collation(std::size_t idx) const
   {
     return sqlite3_vtab_collation(info_, static_cast<int>(idx));
   }
+#endif
 
+  int on_conflict() const {return sqlite3_vtab_on_conflict(db_);}
+
+#if SQLITE_VERSION_NUMBER >= 3038000
   /// Returns true if the constraint is
   bool   distinct() const {return sqlite3_vtab_distinct(info_);}
-  int on_conflict() const {return sqlite3_vtab_on_conflict(db_);}
+
   value * rhs_value(std::size_t idx) const
   {
     value * v = nullptr;
@@ -273,15 +279,17 @@ struct index_info
     else
       return nullptr;
   }
+#endif
+
   void set_already_ordered() { info_->orderByConsumed = 1; }
   void set_estimated_cost(double cost) { info_->estimatedCost = cost; }
-#if SQLITE_VERSION_NUMBER > 3008200
+#if SQLITE_VERSION_NUMBER >= 3008200
   void set_estimated_rows(sqlite3_int64 rows) { info_->estimatedRows = rows; }
 #endif
-#if SQLITE_VERSION_NUMBER > 3009000
+#if SQLITE_VERSION_NUMBER >= 3009000
   void set_index_scan_flags(int flags) { info_->idxFlags = flags; }
 #endif
-#if SQLITE_VERSION_NUMBER > 3010000
+#if SQLITE_VERSION_NUMBER >= 3010000
   std::bitset<64u> columns_used()
   {
     return std::bitset<64u>(info_->colUsed);
@@ -309,20 +317,22 @@ struct index_info
 
 struct module_config
 {
+#if SQLITE_VERSION_NUMBER >= 3031000
   /// @brief Can be used to set SQLITE_VTAB_INNOCUOUS
   void set_innocuous()
   {
     sqlite3_vtab_config(db_, SQLITE_VTAB_INNOCUOUS);
   }
+  /// @brief Can be used to set SQLITE_VTAB_DIRECTONLY
+  void set_directonly() {sqlite3_vtab_config(db_, SQLITE_VTAB_DIRECTONLY);}
+
+#endif
 
   /// @brief Can be used to set SQLITE_VTAB_CONSTRAINT_SUPPORT
   void set_constraint_support(bool enabled = false)
   {
     sqlite3_vtab_config(db_, SQLITE_VTAB_CONSTRAINT_SUPPORT, enabled ? 1 : 0);
   }
-
-  /// @brief Can be used to set SQLITE_VTAB_DIRECTONLY
-  void set_directonly() {sqlite3_vtab_config(db_, SQLITE_VTAB_DIRECTONLY);}
 
  private:
   explicit module_config(sqlite3 *db) : db_(db) {}
