@@ -19,7 +19,11 @@ BOOST_AUTO_TEST_CASE(transaction)
   auto check_size = [&]{
     std::size_t n = 0ull;
     for (auto l : conn.query("select * from test"))
+    {
+      boost::ignore_unused(l);
       n++;
+    }
+
     return n;
   };
 

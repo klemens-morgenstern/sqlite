@@ -69,7 +69,7 @@ template<typename Tuple, std::size_t ... Ns>
 Tuple convert_row_to_tuple_impl(convert_row_tag<Tuple>, const row & r,
                                               mp11::index_sequence<Ns...>)
 {
-  return { tag_invoke(value_to_tag<typename std::tuple_element<Ns, Tuple>::type>{}, r[Ns])... };
+  return Tuple{ tag_invoke(value_to_tag<typename std::tuple_element<Ns, Tuple>::type>{}, r[Ns])... };
 
 }
 
