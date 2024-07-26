@@ -57,6 +57,8 @@ struct author
 BOOST_DESCRIBE_STRUCT(author, (), (last_name, first_name));
 #endif
 
+#if __cplusplus > 201402L
+
 BOOST_AUTO_TEST_CASE(reflection)
 {
         sqlite::connection conn;
@@ -66,27 +68,28 @@ BOOST_AUTO_TEST_CASE(reflection)
     );
 
 
-    bool found = false;
-    for (author t : conn.query<author>("select first_name, last_name from author where last_name = 'hodges';"))
-    {
-      BOOST_CHECK(t.first_name == "richard");
-      BOOST_CHECK(t.last_name == "hodges");
-      found = true;
-    }
-    BOOST_CHECK(found);
-
-    found = false;
-    for (author t : conn.prepare("select first_name, last_name from author where last_name = ?;")
-                        .execute<author>({"hodges"}))
-    {
-      BOOST_CHECK(t.first_name == "richard");
-      BOOST_CHECK(t.last_name == "hodges");
-      found = true;
-    }
-    BOOST_CHECK(found);
-
-    BOOST_CHECK_THROW(conn.query<author>("select id, first_name, last_name from author where last_name = 'hodges';"),
-    system::system_error);
-    conn.close();
+  bool found = false;
+  for (author t : conn.query<author>("select first_name, last_name from author where last_name = 'hodges';"))
+  {
+    BOOST_CHECK(t.first_name == "richard");
+    BOOST_CHECK(t.last_name == "hodges");
+    found = true;
   }
+  BOOST_CHECK(found);
 
+  found = false;
+  for (author t : conn.prepare("select first_name, last_name from author where last_name = ?;")
+                      .execute<author>({"hodges"}))
+  {
+    BOOST_CHECK(t.first_name == "richard");
+    BOOST_CHECK(t.last_name == "hodges");
+    found = true;
+  }
+  BOOST_CHECK(found);
+
+  BOOST_CHECK_THROW(conn.query<author>("select id, first_name, last_name from author where last_name = 'hodges';"),
+  system::system_error);
+  conn.close();
+}
+
+#endif

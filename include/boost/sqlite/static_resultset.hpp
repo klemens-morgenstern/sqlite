@@ -14,6 +14,7 @@
 
 #include <boost/describe/members.hpp>
 
+#include <array>
 
 #if __cplusplus >= 202002L
 #include <boost/pfr/core.hpp>
@@ -79,6 +80,7 @@ std::tuple<Args...> tag_invoke(convert_row_tag<std::tuple<Args...>> tag, const r
   return convert_row_to_tuple_impl(tag, r, mp11::make_index_sequence<sizeof...(Args)>{});
 }
 
+#if defined(BOOST_DESCRIBE_CXX14)
 
 template<typename T, typename = typename std::enable_if<describe::has_describe_members<T>::value>::type>
 void tag_invoke(check_columns_tag<T>, const resultset & r,
@@ -148,13 +150,14 @@ T tag_invoke(convert_row_tag<T> tag, const row & r)
           if (D.name == c.column_name())
           {
             auto & r = res.*D.pointer;
-            r = tag_invoke(value_to_tag<std::decay_t<decltype(r)>>{}, c);
+            r = tag_invoke(value_to_tag<typename std::decay<decltype(r)>::type>{}, c);
           }
         });
   }
   return res;
 }
 
+#endif
 
 #if __cplusplus >= 202002L
 

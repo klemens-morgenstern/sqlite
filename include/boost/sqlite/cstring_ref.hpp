@@ -68,13 +68,21 @@ struct cstring_ref
   BOOST_CONSTEXPR const_iterator end()    const BOOST_NOEXCEPT {return view_ + length();};
   BOOST_CONSTEXPR const_iterator cbegin() const BOOST_NOEXCEPT {return view_;};
   BOOST_CONSTEXPR const_iterator cend()   const BOOST_NOEXCEPT {return view_ + length();};
-  BOOST_CONSTEXPR const_reverse_iterator rbegin()  const BOOST_NOEXCEPT {return reverse_iterator(view_ + length());};
-  BOOST_CONSTEXPR const_reverse_iterator rend()    const BOOST_NOEXCEPT {return reverse_iterator(view_);};
-  BOOST_CONSTEXPR const_reverse_iterator crbegin() const BOOST_NOEXCEPT {return reverse_iterator(view_ + length());};
-  BOOST_CONSTEXPR const_reverse_iterator crend()   const BOOST_NOEXCEPT {return reverse_iterator(view_);};
+
+#if defined(BOOST_NO_CXX17)
+  const_reverse_iterator rbegin()  const BOOST_NOEXCEPT {return reverse_iterator(end());};
+  const_reverse_iterator rend()    const BOOST_NOEXCEPT {return reverse_iterator(begin());};
+  const_reverse_iterator crbegin() const BOOST_NOEXCEPT {return reverse_iterator(end());};
+  const_reverse_iterator crend()   const BOOST_NOEXCEPT {return reverse_iterator(begin());};
+#else
+  BOOST_CONSTEXPR const_reverse_iterator rbegin()  const BOOST_NOEXCEPT {return reverse_iterator(end());};
+  BOOST_CONSTEXPR const_reverse_iterator rend()    const BOOST_NOEXCEPT {return reverse_iterator(begin());};
+  BOOST_CONSTEXPR const_reverse_iterator crbegin() const BOOST_NOEXCEPT {return reverse_iterator(end());};
+  BOOST_CONSTEXPR const_reverse_iterator crend()   const BOOST_NOEXCEPT {return reverse_iterator(begin());};
+#endif
 
   BOOST_CONSTEXPR size_type size() const BOOST_NOEXCEPT {return length(); }
-  BOOST_CONSTEXPR size_type length() const BOOST_NOEXCEPT {return traits_type::length(view_); }
+  BOOST_CONSTEXPR size_type length() const BOOST_NOEXCEPT {return length_impl_(); }
   BOOST_CONSTEXPR size_type max_size() const BOOST_NOEXCEPT {return static_cast<std::size_t>(-1); }
   BOOST_ATTRIBUTE_NODISCARD BOOST_CONSTEXPR bool empty() const BOOST_NOEXCEPT {return *view_ ==  '\0'; }
 
@@ -100,7 +108,7 @@ struct cstring_ref
     return cstring_ref(view_ + pos);
   }
 
-  BOOST_CONSTEXPR string_view_type substr(size_type pos, size_type length) const
+  BOOST_CXX14_CONSTEXPR string_view_type substr(size_type pos, size_type length) const
   {
     return string_view_type(view_).substr(pos, length);
   }
@@ -185,6 +193,10 @@ struct cstring_ref
 
  private:
   BOOST_CONSTEXPR static const_pointer   null_char_()         {return "\0";}
+  constexpr std::size_t length_impl_(std::size_t n = 0) const BOOST_NOEXCEPT
+  {
+    return view_[n] == null_char_()[0] ? n : length_impl_(n+1);
+  }
   const_pointer view_;
 };
 
