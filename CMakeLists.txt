@@ -102,7 +102,7 @@ if(BOOST_SQLITE_INSTALL AND NOT BOOST_SUPERPROJECT_VERSION)
             )
 endif()
 
-if(BOOST_SQLITE_BUILD_TESTS)
+if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(test)
 endif()
