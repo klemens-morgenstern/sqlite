@@ -32,12 +32,12 @@
 #  else
 #   define BOOST_SQLITE_DECL        BOOST_SYMBOL_IMPORT
 #  endif
-# endif // shared lib
+# endif // static lib
 # ifndef  BOOST_SQLITE_DECL
 #  define BOOST_SQLITE_DECL
 # endif
 # if !defined(BOOST_SQLITE_SOURCE) && !defined(BOOST_ALL_NO_LIB) && !defined(BOOST_SQLITE_NO_LIB)
-#  define BOOST_LIB_NAME boost_json
+#  define BOOST_LIB_NAME boost_sqlite
 #  if defined(BOOST_ALL_DYN_LINK) || defined(BOOST_SQLITE_DYN_LINK)
 #   define BOOST_DYN_LINK
 #  endif

@@ -19,7 +19,7 @@
 using namespace boost;
 
 
-BOOST_AUTO_TEST_SUITE(vtable);
+BOOST_AUTO_TEST_SUITE(vtable_);
 
 struct del_info : sqlite3_index_info
 {
@@ -211,7 +211,7 @@ struct modifyable_test_impl final : sqlite::vtab::eponymous_module<modifyable_ta
     table_type tt{};
     tt.name.assign(argv[2]);
     list.push_back(tt);
-    return tt;
+    return sqlite::result<table_type>(std::move(tt));
   }
 };
 

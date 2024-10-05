@@ -12,14 +12,20 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 namespace detail
 {
 
+BOOST_SQLITE_DECL
 BOOST_NORETURN void throw_error_code(const boost::system::error_code & ec,
                                      const boost::source_location & loc = BOOST_CURRENT_LOCATION);
+
+BOOST_SQLITE_DECL
 BOOST_NORETURN void throw_error_code(const boost::system::error_code & ec,
                                      const error_info & ei,
                                      const boost::source_location & loc = BOOST_CURRENT_LOCATION);
+
+BOOST_SQLITE_DECL
 BOOST_NORETURN void throw_out_of_range(const char * msg,
                                        const boost::source_location & loc);
 
+BOOST_SQLITE_DECL
 BOOST_NORETURN void throw_invalid_argument(const char * msg,
                                            const boost::source_location & loc);
 

@@ -30,6 +30,7 @@ git submodule update --init --depth 20 --jobs 4 \
     libs/assert \
     libs/config \
     libs/container \
+    libs/container_hash \
     libs/core \
     libs/callable_traits \
     libs/describe \
