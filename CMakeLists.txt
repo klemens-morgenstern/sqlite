@@ -29,7 +29,11 @@ set(BOOST_SQLITE_SOURCES
     src/value.cpp
 )
 
-find_package(SQLite3 REQUIRED)
+find_package(SQLite3)
+if(NOT SQLite3_FOUND)
+    message(STATUS "Boost.sqlite has been disabled, because the required package Sqlite3 hasn't been found")
+    return()
+endif()
 
 if (BOOST_SQLITE_IS_ROOT)
     if(NOT BOOST_SUPERPROJECT_VERSION)

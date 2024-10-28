@@ -35,6 +35,7 @@ git submodule update --init --depth 20 --jobs 4 \
     libs/callable_traits \
     libs/describe \
     libs/filesystem \
+    libs/intrusive \
     libs/optional \
     libs/system \
     libs/move \
