@@ -262,8 +262,16 @@ Furthermore, boost.sqlite has a non-throwing interface and supports variants & j
 
  - [sqlite_modern_cpp](https://github.com/SqliteModernCpp/sqlite_modern_cpp)
 
-This library takes a different approach, by making everything an `iostream` interface. 
+This library takes a different approach, by making everything an `iostream` interface.
+`iostream` interfaces have somewhat fallen out of favor. 
 
  - [sqlite_orm](https://github.com/fnc12/sqlite_orm)
 
-As the name says, it's an ORM. So it does more than give easy access to a database.
+As the name says, it's an ORM. While there is nothing wrong with ORMs, they are one layer of abstraction
+above a client library like this.
+
+ - [SOCI](https://github.com/SOCI/soci)
+
+SOCI is an abstraction layer for multiple databases in C++, including sqlite. 
+It's interfaces encourages dynamic building of query string, which should not be considered safe.
+
