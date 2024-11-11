@@ -18,7 +18,9 @@
 
 using namespace boost;
 
-// This example demonstrates how to use the vtable interface - the csv part is inefficient.
+// This example demonstrates how to use the vtable interface to read & write from a csv file.
+// The csv implementation is not efficient, but for demontration purposes.
+
 
 struct csv_data
 {
@@ -201,7 +203,7 @@ struct csv_table final
   }
 };
 
-// The implementation is very inefficient. Don't use this in product.
+// The implementation is very inefficient. Don't use this in production.
 struct csv_module final : sqlite::vtab::module<csv_table>
 {
 
@@ -225,6 +227,7 @@ struct csv_module final : sqlite::vtab::module<csv_table>
   {
     if (argc < 4)
       throw std::invalid_argument("Need filename as first parameter");
+
     table_type tt{argv[3]};
     tt.data.names.reserve(argc - 4);
     for (int i = 4; i < argc; i++)
@@ -246,22 +249,21 @@ int main (int argc, char * argv[])
   sqlite::connection conn{"./csv-example.db"};
   sqlite::create_module(conn, "csv_file", csv_module());
 
-
-  const auto init = !conn.has_table("csv_example");
-  if (init)
+  const auto empty_csv = !conn.has_table("csv_example");
+  if (empty_csv)
     conn.execute("CREATE VIRTUAL TABLE if not exists csv_example USING csv_file(./csv-example.csv, username, first_name, last_name);");
 
   {
     conn.execute("begin");
     auto p = conn.prepare("insert into csv_example values (?, ?, ?)");
-    if (init)
-      p.execute({"anathal", "ruben",    "perez"});
+    if (empty_csv)
+      p.execute({"anarthal", "ruben",    "perez"});
 
     p.execute({"pdimov",              "peter",    "dimov"});
     p.execute({"klemens-morgenstern", "klemens",  "morgenstern"});
 
-    if (init)
-      p.execute({"richard", "hodges",   "madmongo1"});
+    if (empty_csv)
+      p.execute({"madmongo1", "richard", "hodges"});
 
     conn.execute("commit");
   }

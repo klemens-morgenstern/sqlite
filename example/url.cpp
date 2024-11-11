@@ -18,6 +18,7 @@ constexpr int pct_subtype = static_cast<int>('U');
 void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, urls::pct_string_view value)
 {
   using boost::sqlite::ext::sqlite3_api;
+  // we're using the sqlite API here directly, because we need to set a different subtype
   sqlite3_result_text(ctx, value.data(), value.size(), nullptr);
   sqlite3_result_subtype(ctx, pct_subtype);
 }
@@ -26,6 +27,7 @@ void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, urls::pct_string_
 void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, const urls::segments_encoded_view & value)
 {
   using boost::sqlite::ext::sqlite3_api;
+  // we're using the sqlite API here directly, because we need to set a different subtype
   sqlite3_result_text(ctx, value.buffer().data(), value.buffer().size(), nullptr);
   sqlite3_result_subtype(ctx, pct_subtype);
 }

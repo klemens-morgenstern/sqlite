@@ -556,7 +556,9 @@ const sqlite3_module make_module(const Module & mod);
 
  @param The requirements for `module`.
 
- @returns A reference to the module as stored in the database.
+ @tparam T The implementation type of the module. It must inherit
+
+ @returns A reference to the module as stored in the database. It's lifetime is managed by the database.
 
 
 */

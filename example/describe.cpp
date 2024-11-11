@@ -13,6 +13,8 @@
 #include <iomanip>
 #include <iostream>
 
+// This example shows how a virtual table can be created using boost.describe
+
 using namespace boost;
 
 // add more conversions here if you need more types in the described struct
@@ -172,7 +174,6 @@ int main (int argc, char * argv[])
 {
   sqlite::connection conn{":memory:"};
   auto & md = sqlite::create_module(conn, "boost_libraries", describe_module<boost_library>());
-  boost::ignore_unused(md);
 
   {
     auto p = conn.prepare("insert into boost_libraries (name, first_released, standard) values ($name, $version, $std);");
@@ -184,8 +185,15 @@ int main (int argc, char * argv[])
     p.execute({{"name", "beast"},           {"version", 66}, {"std", 11}});
     p.execute({{"name", "describe"},        {"version", 77}, {"std", 14}});
   }
+
+
   print_table(std::cout, conn.query("select * from boost_libraries;"));
-  conn.execute("update boost_libraries set standard = 11 where standard = 98;");
+
+  // same as conn.execute("update boost_libraries set standard = 11 where standard = 98;");
+  for (auto & p : md.data)
+    if (p.second.standard == 98)
+      p.second.standard = 11;
+
   print_table(std::cout, conn.query("select * from boost_libraries;"));
 
   conn.prepare("delete from boost_libraries where name = ?").execute({"mpi"});

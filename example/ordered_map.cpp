@@ -11,6 +11,7 @@
 
 using namespace boost;
 
+// this examples shows how to expose an ordered map as a vtable.
 
 struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
 {
@@ -112,7 +113,7 @@ struct map_impl final
   const char * declaration() override
   {
     return R"(
-          create table url(
+          create table my_map(
               name text primary key unique not null,
               data text) WITHOUT ROWID;)";
   }
@@ -292,8 +293,8 @@ int main (int argc, char * argv[])
 
   print(std::cout, conn.query("select * from my_map where name < 'url' and name >= 'system' order by name desc;"));
   print(std::cout, conn.query("select * from my_map where data == '1.81.0';"));
-  conn.query("delete from my_map where data == '1.81.0';");
 
+  conn.query("delete from my_map where data == '1.81.0';");
 
   return 0;
 }
