@@ -15,11 +15,19 @@
 #include <boost/describe/members.hpp>
 
 #include <array>
+#include <cstdint>
 
 #if __cplusplus >= 202002L
 #include <boost/pfr/core.hpp>
 #include <boost/pfr/core_name.hpp>
 #include <boost/pfr/traits.hpp>
+#endif
+
+
+namespace boost { template<typename> class optional;}
+
+#if __cplusplus >= 201702L
+#include  <optional>
 #endif
 
 BOOST_SQLITE_BEGIN_NAMESPACE
@@ -30,10 +38,15 @@ namespace detail
 template<typename T>
 struct value_to_tag {};
 
-inline value        tag_invoke(value_to_tag<value>,        const field & f) {return f.get_value();}
-inline int          tag_invoke(value_to_tag<int>,          const field & f) {return f.get_int();}
-inline sqlite_int64 tag_invoke(value_to_tag<sqlite_int64>, const field & f) {return f.get_int64();}
-inline double       tag_invoke(value_to_tag<double>,       const field & f) {return f.get_double();}
+inline int           tag_invoke(value_to_tag<int>,          const field & f) {return f.get_int();}
+inline sqlite_int64  tag_invoke(value_to_tag<sqlite_int64>, const field & f) {return f.get_int64();}
+inline std::int64_t  tag_invoke(value_to_tag<std::int64_t>, const field & f,
+                                std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value> * = nullptr)
+{
+  return static_cast<std::int64_t>(f.get_int64());
+}
+
+inline double        tag_invoke(value_to_tag<double>,        const field & f) {return f.get_double();}
 
 template<typename Allocator, typename Traits>
 inline std::basic_string<char, Allocator, Traits>
@@ -45,6 +58,29 @@ inline std::basic_string<char, Allocator, Traits>
 inline string_view  tag_invoke(value_to_tag<string_view>, const field & f) {return f.get_text();}
 inline blob         tag_invoke(value_to_tag<blob>,        const field & f) {return blob(f.get_blob());}
 inline blob_view    tag_invoke(value_to_tag<blob_view>,   const field & f) {return f.get_blob();}
+
+template<typename T>
+inline auto tag_invoke(value_to_tag<std::optional<T>>, const field & f)
+    -> std::optional<decltype(tag_invoke(value_to_tag<T>{}, f))>
+{
+  if (f.is_null())
+    return {};
+  else
+    return tag_invoke(value_to_tag<T>{}, f);
+}
+
+template<typename T>
+inline auto tag_invoke(value_to_tag<boost::optional<T>>, const field & f)
+    -> boost::optional<decltype(tag_invoke(value_to_tag<T>{}, f))>
+{
+  if (f.is_null())
+    return {};
+  else
+    return tag_invoke(value_to_tag<T>{}, f);
+}
+
+
+
 
 
 template<typename>
