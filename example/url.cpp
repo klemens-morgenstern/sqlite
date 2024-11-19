@@ -45,9 +45,8 @@ struct url_cursor final
   sqlite::result<void> next() { done = true; return {};}
 
   sqlite::result<sqlite3_int64> row_id() {return static_cast<sqlite3_int64>(0);}
-  sqlite::result<column_type> column(int i, bool nochange)
+  sqlite::result<column_type> column(int i, bool /*nochange*/)
   {
-    nochange = true;
     switch (i)
     {
       case 0: return view.scheme();
@@ -63,7 +62,7 @@ struct url_cursor final
         return variant2::monostate{};
     }
   }
-  sqlite::result<void> filter(int idx, const char * idxStr, span<sqlite::value> values)
+  sqlite::result<void> filter(int /*idx*/, const char * /*idxStr*/, span<sqlite::value> values)
   {
     if (values.size() > 0u)
       view = urls::parse_uri(values[0].get_text()).value();
@@ -117,8 +116,8 @@ struct url_wrapper final : sqlite::vtab::table<url_cursor>
 
 struct url_module final : sqlite::vtab::eponymous_module<url_wrapper>
 {
-  sqlite::result<url_wrapper> connect(sqlite::connection db,
-                                      int argc, const char * const *argv)
+  sqlite::result<url_wrapper> connect(sqlite::connection /*db*/,
+                                      int /*argc*/, const char * const */*argv*/)
   {
       return url_wrapper{};
   }
@@ -134,9 +133,9 @@ struct segements_cursor final : sqlite::vtab::cursor<
   sqlite::result<void> next() override { itr++; return {};}
 
   sqlite::result<sqlite3_int64> row_id() override {return std::distance(view.begin(), itr);}
-  sqlite::result<column_type> column(int i, bool nochange) override
+  sqlite::result<column_type> column(int i, bool /*nochange*/) override
   {
-    nochange = true;
+    //nochange = true;
     switch (i)
     {
       case 0: return std::distance(view.begin(), itr);
@@ -146,7 +145,7 @@ struct segements_cursor final : sqlite::vtab::cursor<
         return variant2::monostate{};
     }
   }
-  sqlite::result<void> filter(int idx, const char * idxStr,
+  sqlite::result<void> filter(int /*idx*/, const char * /*idxStr*/,
                               span<sqlite::value> values) override
   {
     if (values.size() > 0u)
@@ -197,8 +196,8 @@ struct segment_wrapper final : sqlite::vtab::table<segements_cursor>
 
 struct segments_module final : sqlite::vtab::eponymous_module<segment_wrapper>
 {
-  sqlite::result<segment_wrapper> connect(sqlite::connection conn,
-                                          int argc, const char * const *argv)
+  sqlite::result<segment_wrapper> connect(sqlite::connection /*conn*/,
+                                          int /*argc*/, const char * const */*argv*/)
   {
     return segment_wrapper{};
   }
@@ -214,9 +213,9 @@ struct query_cursor final : sqlite::vtab::cursor<
   sqlite::result<void> next() override { itr++; return {};}
 
   sqlite::result<sqlite3_int64> row_id() override {return std::distance(view.begin(), itr);}
-  sqlite::result<column_type> column(int i, bool nochange) override
+  sqlite::result<column_type> column(int i, bool /*nochange*/) override
   {
-    nochange = true;
+    //nochange = true;
     switch (i)
     {
       case 0: return std::distance(view.begin(), itr);
@@ -231,7 +230,7 @@ struct query_cursor final : sqlite::vtab::cursor<
         return variant2::monostate{};
     }
   }
-  sqlite::result<void> filter(int idx, const char * idxStr,
+  sqlite::result<void> filter(int /*idx*/, const char * /*idxStr*/,
                               span<sqlite::value> values) override
   {
     if (values.size() > 0u)
@@ -280,8 +279,8 @@ struct query_wrapper final : sqlite::vtab::table<query_cursor>
 
 struct query_module final : sqlite::vtab::eponymous_module<query_wrapper>
 {
-  sqlite::result<query_wrapper> connect(sqlite::connection conn,
-                        int argc, const char * const *argv)
+  sqlite::result<query_wrapper> connect(sqlite::connection /*conn*/,
+                        int /*argc*/, const char * const */*argv*/)
   {
     return query_wrapper{};
   }

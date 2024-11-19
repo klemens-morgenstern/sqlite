@@ -90,8 +90,7 @@ struct describe_table final :
     data.erase(key.get_int64());
     return {};
   }
-  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                      int on_conflict)
+  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values, int /*on_conflict*/)
   {
     T res;
     sqlite_int64 id = key.is_null() ? last_index++ : key.get_int();
@@ -108,7 +107,7 @@ struct describe_table final :
 
   }
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
-                      span<sqlite::value> values, int on_conflict)
+                      span<sqlite::value> values, int /*on_conflict*/)
   {
     if (new_key.get_int() != old_key.get_int())
       data.erase(old_key.get_int64());
@@ -130,8 +129,8 @@ struct describe_module final : sqlite::vtab::eponymous_module<describe_table<T>>
 {
   boost::unordered_map<sqlite3_int64, T> data;
   constexpr static std::size_t column_count = mp11::mp_size<describe::describe_members<T, describe::mod_any_access>>::value;
-  sqlite::result<describe_table<T>> connect(sqlite::connection conn,
-                                            int argc, const char * const  argv[])
+  sqlite::result<describe_table<T>> connect(sqlite::connection ,
+                                            int, const char * const [])
   {
     return describe_table<T>{data};
   }
@@ -170,7 +169,7 @@ struct boost_library
 BOOST_DESCRIBE_STRUCT(boost_library, (), (name, first_released, standard));
 
 
-int main (int argc, char * argv[])
+int main (int /*argc*/, char * /*argv*/[])
 {
   sqlite::connection conn{":memory:"};
   auto & md = sqlite::create_module(conn, "boost_libraries", describe_module<boost_library>());

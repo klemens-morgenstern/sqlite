@@ -58,7 +58,7 @@ inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, String && str)
 }
 
 
-inline void tag_invoke(set_result_tag, sqlite3_context * ctx, variant2::monostate) { }
+inline void tag_invoke(set_result_tag, sqlite3_context * , variant2::monostate) { }
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const value & val)
 {
   sqlite3_result_value(ctx, val.handle());
@@ -100,7 +100,7 @@ inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T>
   sqlite3_result_pointer(ctx, ptr.release(), typeid(T).name(), +[](void * ptr){Deleter()(static_cast<T*>(ptr));});
 }
 
-inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, error err)
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, error err)
 {
   sqlite3_result_error_code(ctx, err.code);
   if (err.info)

@@ -113,7 +113,7 @@ static int destroy(sqlite3_vtab * tab)
 }
 
 template<typename Module, typename Table>
-static void assign_create(sqlite3_module & md, const Module & mod,
+static void assign_create(sqlite3_module & md, const Module &,
                    const sqlite::vtab::eponymous_module<Table> & base)
 {
   md.xConnect = md.xCreate = &connect<Module>;
@@ -123,8 +123,8 @@ static void assign_create(sqlite3_module & md, const Module & mod,
 }
 
 template<typename Module, typename Table>
-static void assign_create(sqlite3_module & md, const Module & mod,
-                   const sqlite::vtab::module<Table> & base)
+static void assign_create(sqlite3_module & md, const Module &,
+                   const sqlite::vtab::module<Table> &)
 {
   md.xConnect    = &connect<Module>;
   md.xDisconnect = &disconnect<Table>;
@@ -329,14 +329,14 @@ static int update(sqlite3_vtab * pVTab, int argc, sqlite3_value ** argv, sqlite3
 }
 
 template<typename Module>
-static void assign_update(sqlite3_module & md, const Module & mod,
+static void assign_update(sqlite3_module & md, const Module &,
                    std::true_type /* modifiable */)
 {
   md.xUpdate = &update<typename Module::table_type>;
 }
 
 template<typename Module>
-static void assign_update(sqlite3_module & md, const Module & mod,
+static void assign_update(sqlite3_module & /*md*/, const Module &,
                    std::false_type /* modifiable */)
 {
 }
@@ -406,13 +406,13 @@ static int rollback(sqlite3_vtab* pVTab)
 }
 
 template<typename Module>
-static void assign_transaction(sqlite3_module & md, const Module & mod,
+static void assign_transaction(sqlite3_module & /*md*/, const Module &,
                         std::false_type /* modifiable */)
 {
 }
 
 template<typename Module>
-static void assign_transaction(sqlite3_module & md, const Module & mod,
+static void assign_transaction(sqlite3_module & md, const Module &,
                         std::true_type /* modifiable */)
 {
   md.xBegin    = &begin   <typename Module::table_type>;
@@ -441,13 +441,13 @@ static int find_function(sqlite3_vtab *pVtab, int nArg, const char *zName,
 }
 
 template<typename Module>
-static void assign_find_function(sqlite3_module & md, const Module & mod,
+static void assign_find_function(sqlite3_module & /*md*/, const Module &,
                           std::false_type /* overloadable */)
 {
 }
 
 template<typename Module>
-static void assign_find_function(sqlite3_module & md, const Module & mod,
+static void assign_find_function(sqlite3_module & md, const Module &,
                           std::true_type /* overloadable */)
 {
   md.xFindFunction = &find_function<typename Module::table_type>;
@@ -470,13 +470,13 @@ static int rename(sqlite3_vtab* pVTab, const char * name)
 }
 
 template<typename Module>
-static void assign_rename(sqlite3_module & md, const Module & mod,
+static void assign_rename(sqlite3_module & /*md*/, const Module &,
                    std::false_type /* renamable */)
 {
 }
 
 template<typename Module>
-static void assign_rename(sqlite3_module & md, const Module & mod,
+static void assign_rename(sqlite3_module & md, const Module &,
                    std::true_type /* renamable */)
 {
   md.xRename = &rename<typename Module::table_type>;
@@ -532,13 +532,13 @@ static int rollback_to(sqlite3_vtab* pVTab, int i)
 }
 
 template<typename Module>
-static void assign_recursive_transaction(sqlite3_module & md, const Module & mod,
+static void assign_recursive_transaction(sqlite3_module & /*md*/, const Module &,
                                   std::false_type /* recursive_transaction */)
 {
 }
 
 template<typename Module>
-static void assign_recursive_transaction(sqlite3_module & md, const Module & mod,
+static void assign_recursive_transaction(sqlite3_module & md, const Module &,
                                   std::true_type /* recursive_transaction */)
 {
   md.xSavepoint  = &savepoint  <typename Module::table_type>;
@@ -551,10 +551,10 @@ static void assign_recursive_transaction(sqlite3_module & md, const Module & mod
 #if SQLITE_VERSION_NUMBER >= 3026000
 
 template<typename Table>
-static void assign_shadow_name(sqlite3_module & md, const sqlite::vtab::module<Table> &) {}
+static void assign_shadow_name(sqlite3_module & /*md*/, const sqlite::vtab::module<Table> &) {}
 
 template<typename Table>
-static void assign_shadow_name(sqlite3_module & md, const sqlite::vtab::eponymous_module<Table> &) {}
+static void assign_shadow_name(sqlite3_module & /*md*/, const sqlite::vtab::eponymous_module<Table> &) {}
 
 template<typename Module,
     bool (*Func)(const char *) = &Module::shadow_name>

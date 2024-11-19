@@ -152,7 +152,7 @@ struct csv_table final
     return {};
   }
   sqlite::result<sqlite_int64> insert(
-      sqlite::value key, span<sqlite::value> values, int on_conflict)
+      sqlite::value /*key*/, span<sqlite::value> values, int /*on_conflict*/)
   {
     sqlite3_int64 id = 0;
     if (!data.rows.empty())
@@ -166,7 +166,7 @@ struct csv_table final
   }
   sqlite::result<sqlite_int64> update(
                       sqlite::value update, sqlite::value new_key,
-                      span<sqlite::value> values, int on_conflict)
+                      span<sqlite::value> values, int /*on_conflict*/)
   {
     if (!new_key.is_null())
       throw std::logic_error("we can't manually set keys");
@@ -207,7 +207,7 @@ struct csv_table final
 struct csv_module final : sqlite::vtab::module<csv_table>
 {
 
-  sqlite::result<table_type> create(sqlite::connection db,
+  sqlite::result<table_type> create(sqlite::connection /*db*/,
                                     int argc, const char * const  argv[])
   {
     if (argc < 4)
@@ -222,7 +222,7 @@ struct csv_module final : sqlite::vtab::module<csv_table>
     return tt;
   }
 
-  sqlite::result<table_type>  connect(sqlite::connection db,
+  sqlite::result<table_type>  connect(sqlite::connection /*db*/,
                                       int argc, const char * const  argv[])
   {
     if (argc < 4)
@@ -244,7 +244,7 @@ struct csv_module final : sqlite::vtab::module<csv_table>
 };
 
 
-int main (int argc, char * argv[])
+int main (int /*argc*/, char * /*argv*/[])
 {
   sqlite::connection conn{"./csv-example.db"};
   sqlite::create_module(conn, "csv_file", csv_module());

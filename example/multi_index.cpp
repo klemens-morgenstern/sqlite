@@ -71,7 +71,7 @@ struct multi_index_cursor final
 
     return sqlite3_int64();
   }
-  sqlite::result<sqlite::string_view> column(int i, bool nochange)
+  sqlite::result<sqlite::string_view> column(int i, bool /*nochange*/)
   {
     const boost_library * lib;
     switch (index)
@@ -251,15 +251,15 @@ struct map_impl final
     data.erase(key.get_text());
     return {};
   }
-  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                                      int on_conflict) override
+  sqlite::result<sqlite_int64> insert(sqlite::value /*key*/, span<sqlite::value> values,
+                                      int /*on_conflict*/) override
   {
     data.insert({values[0].get_text(), values[1].get_text()});
     return 0;
   }
 
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
-                                      span<sqlite::value> values, int on_conflict) override
+                                      span<sqlite::value> values, int /*on_conflict*/) override
   {
     if (new_key.get_int() != old_key.get_int())
     {
@@ -343,7 +343,7 @@ struct map_impl final
 
 struct multi_index_map final : sqlite::vtab::eponymous_module<map_impl>
 {
-  sqlite::result<map_impl> connect(sqlite::connection, int argc, const char * const *argv)
+  sqlite::result<map_impl> connect(sqlite::connection, int, const char * const *)
   {
     return map_impl{};
   }
@@ -395,7 +395,7 @@ void print(std::ostream & os, sqlite::resultset rw, boost::source_location loc =
   os << "]" << std::endl;
 }
 
-int main (int argc, char * argv[])
+int main (int /*argc*/, char * /*argv*/[])
 {
   sqlite::connection conn{":memory:"};
   auto & m = sqlite::create_module(conn, "my_map", multi_index_map());

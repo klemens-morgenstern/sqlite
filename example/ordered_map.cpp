@@ -31,7 +31,7 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
     return {system::in_place_error, SQLITE_MISUSE,
             "this shouldn't be called, we're omitting the row id"};
   }
-  sqlite::result<sqlite::string_view> column(int i, bool nochange) override
+  sqlite::result<sqlite::string_view> column(int i, bool /*nochange*/) override
   {
     auto & elem = inverse ? *std::prev(end) : *begin;
 
@@ -140,8 +140,8 @@ struct map_impl final
     data.erase(key.get_text());
     return {};
   }
-  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                                      int on_conflict) override
+  sqlite::result<sqlite_int64> insert(sqlite::value /*key*/, span<sqlite::value> values,
+                                      int /*on_conflict*/) override
   {
     data.emplace(values[0].get_text(), values[1].get_text());
     return 0;
@@ -149,7 +149,7 @@ struct map_impl final
 
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
                                       span<sqlite::value> values,
-                                      int on_conflict) override
+                                      int /*on_conflict*/) override
   {
     if (new_key.get_int() != old_key.get_int())
       data.erase(old_key.get_text());
@@ -178,7 +178,7 @@ struct map_impl final
     {
       if ((idx & equal) != 0)
         break;
-      auto & ct = info.constraints()[i];
+      auto ct = info.constraints()[i];
       if (ct.iColumn == 0
           && ct.usable != 0) // aye, that's us
       {
@@ -219,7 +219,7 @@ struct ordered_map_module final : sqlite::vtab::eponymous_module<map_impl>
 {
 
   sqlite::result<map_impl> connect(
-      sqlite::connection conn, int argc, const char * const *argv)
+      sqlite::connection /*conn*/, int /*argc*/, const char * const */*argv*/)
   {
     return map_impl{};
   }
@@ -270,7 +270,7 @@ void print(std::ostream & os, sqlite::resultset rw)
   os << "]" << std::endl;
 }
 
-int main (int argc, char * argv[])
+int main (int /*argc*/, char * /*argv*/[])
 {
   sqlite::connection conn{":memory:"};
   auto & m = sqlite::create_module(conn, "my_map", ordered_map_module());

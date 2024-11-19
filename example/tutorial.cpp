@@ -11,7 +11,7 @@
 
 using namespace boost;
 
-int main(int argc, char *argv[])
+int main(int /*argc*/, char */*argv*/[])
 {
   sqlite::connection conn{":memory:"};
 
