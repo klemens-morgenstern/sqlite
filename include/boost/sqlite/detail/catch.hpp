@@ -66,19 +66,19 @@ void execute_context_function(sqlite3_context * ctx,
   }
   catch(boost::system::system_error & se)
   {
-    if (se.code().category() == boost::sqlite::sqlite_category())
-      sqlite3_result_error_code(ctx, se.code().value());
-    const auto msg = boost::sqlite::detail::get_message(se);
+     const auto msg = boost::sqlite::detail::get_message(se);
     if (!msg.empty())
       sqlite3_result_error(ctx, msg.data(), msg.size());
+    if (se.code().category() == boost::sqlite::sqlite_category())
+      sqlite3_result_error_code(ctx, se.code().value());
   }
   catch(std::bad_alloc    &) { sqlite3_result_error_nomem(ctx); }
   catch(std::length_error &) { sqlite3_result_error_toobig(ctx); }
   catch(std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);}
   catch(std::logic_error &le)
   {
-    sqlite3_result_error_code(ctx, SQLITE_MISUSE);
     sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));
+    sqlite3_result_error_code(ctx, SQLITE_MISUSE);
   }
   catch(std::exception & ex)
   {
@@ -114,8 +114,8 @@ catch(std::length_error &) { sqlite3_result_error_toobig(ctx); }             \
 catch(std::out_of_range &) { sqlite3_result_error_code(ctx, SQLITE_RANGE);}  \
 catch(std::logic_error &le)                                                  \
 {                                                                            \
-  sqlite3_result_error_code(ctx, SQLITE_MISUSE);                             \
   sqlite3_result_error(ctx, le.what(), std::strlen(le.what()));              \
+  sqlite3_result_error_code(ctx, SQLITE_MISUSE);                             \
 }                                                                            \
 catch(std::exception & ex)                                                   \
 {                                                                            \

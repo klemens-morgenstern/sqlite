@@ -130,8 +130,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Args && args, int 
                   return error(SQLITE_NOMEM);
                 c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
-              c->step(*c, span_type{aa, static_cast<std::size_t>(len)});
-              return {};
+              return c->step(span_type{aa, static_cast<std::size_t>(len)});
             });
       },
       [](sqlite3_context* ctx)
@@ -141,7 +140,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Args && args, int 
 
         execute_context_function(
             ctx,
-            [&]() -> result<decltype(c->final(*c))>
+            [&]() -> result<decltype(c->final())>
             {
               if (c == nullptr)
               {

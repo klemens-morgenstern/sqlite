@@ -102,9 +102,9 @@ inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T>
 
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, error err)
 {
-  sqlite3_result_error_code(ctx, err.code);
   if (err.info)
     sqlite3_result_error(ctx, err.info.message().c_str(), -1);
+  sqlite3_result_error_code(ctx, err.code);
 }
 
 

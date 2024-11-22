@@ -117,7 +117,8 @@ struct context
   /// Set the an error through the context, instead of throwing it.
   void set_error(cstring_ref message, int code = SQLITE_ERROR)
   {
-    sqlite3_result_error(ctx_, message.c_str(), code);
+    sqlite3_result_error(ctx_, message.c_str(), -1);
+    sqlite3_result_error_code(ctx_, code);
   }
   /// Returns the connection of the context.
   connection get_connection() const
@@ -344,7 +345,7 @@ void create_aggregate_function(
  @param args The arguments to construct Func from.
  @param ec The system::error_code
 
- @tparam Func The function to be added
+@tparam Func The function to be added
 
  @throws `system::system_error` when the overload without `ec` is used.
 
