@@ -222,7 +222,7 @@ auto create_scalar_function(
   @endcode
 
  */
-template<typename Func>
+template<typename Func, typename Args = std::tuple<>>
 auto create_scalar_function(
     connection & conn,
     cstring_ref name,
@@ -251,8 +251,10 @@ auto create_scalar_function(
 
  @param conn The connection to add the function to.
  @param name The name of the function
- @param func The function to be added
+ @param args
  @param ec The system::error_code
+
+@tparam Func The function to be added
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -260,12 +262,13 @@ auto create_scalar_function(
  `func` needs to be an object with two functions:
 
  @code{.cpp}
- void step(State &, boost::span<sqlite::value, N> args);
- T final(State &);
+ void step(boost::span<sqlite::value, N> args);
+ T final();
  @endcode
 
- `State` can be any type and will get deduced together with `N`.
- An aggregrate function will create a new `State` for a new `aggregate` and call `step` for every step.
+
+
+ An aggregrate function will create a new `Func` for a new `aggregate` from the args tuple and call `step` for every step.
  When the aggregation is done `final` is called and the result is returned to sqlite.
 
  @par Example
@@ -275,6 +278,7 @@ auto create_scalar_function(
 
   struct aggregate_func
   {
+      aggregate_func(std::size_t init) : counter(init) {}
       std::size_t counter;
       void step(, boost::span<sqlite::value, 1u> val)
       {
@@ -288,23 +292,23 @@ auto create_scalar_function(
   };
 
   sqlite::create_function<aggregate_func>(
-    conn, "char_counter");
+    conn, "char_counter", std::make_tuple(42));
 
   @endcode
 
  */
-template<typename Func>
+template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
     connection & conn,
     cstring_ref name,
-    Func && func,
+    Args && args,
     function_flags flags,
     system::error_code & ec,
     error_info & ei)
 {
     using func_type = typename std::decay<Func>::type;
-    auto res = detail::create_aggregate_function(
-        conn.handle(), name, std::forward<Func>(func), static_cast<int>(flags),
+    auto res = detail::create_aggregate_function<Func>(
+        conn.handle(), name, std::forward<Args>(args), static_cast<int>(flags),
         callable_traits::has_void_return<decltype(&func_type::step)>{}
         );
     if (res != 0)
@@ -314,16 +318,16 @@ void create_aggregate_function(
     }
 }
 
-template<typename Func>
+template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
     connection & conn,
     cstring_ref name,
-    Func && func,
+    Args && args= {},
     function_flags flags = {})
 {
     system::error_code ec;
     error_info ei;
-    create_aggregate_function(conn, name, std::forward<Func>(func), flags, ec, ei);
+    create_aggregate_function<Func>(conn, name, std::forward<Args>(args), flags, ec, ei);
     if (ec)
         detail::throw_error_code(ec, ei);
 }
@@ -337,8 +341,10 @@ void create_aggregate_function(
 
  @param conn The connection to add the function to.
  @param name The name of the function
- @param func The function to be added
+ @param args The arguments to construct Func from.
  @param ec The system::error_code
+
+ @tparam Func The function to be added
 
  @throws `system::system_error` when the overload without `ec` is used.
 
@@ -362,17 +368,17 @@ void create_aggregate_function(
 
   struct window_func
   {
-      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      std::size_t counter;
+      void step(boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
       }
-
-      void inverse(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      void inverse(boost::span<sqlite::value, 1u> val)
       {
         counter -= val[0].get_text().size();
       }
 
-      std::size_t final(std::size_t & counter)
+      std::size_t final()
       {
         return counter;
       }
@@ -383,31 +389,31 @@ void create_aggregate_function(
     aggregate_func{});
   @endcode
  */
-template<typename Func>
+template<typename Func, typename Args = std::tuple<>>
 void create_window_function(
     connection & conn,
     cstring_ref name,
-    Func && func,
+    Args && args,
     function_flags flags,
     system::error_code & ec)
 {
     using func_type = typename std::decay<Func>::type;
-    auto res = detail::create_window_function(
-            conn.handle(), name, std::forward<Func>(func), static_cast<int>(flags),
+    auto res = detail::create_window_function<Func>(
+            conn.handle(), name, std::forward<Args>(args), static_cast<int>(flags),
             callable_traits::has_void_return<decltype(&func_type::step)>{});
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
 }
 
-template<typename Func>
+template<typename Func, typename Args = std::tuple<>>
 void create_window_function(
     connection & conn,
     cstring_ref name,
-    Func && func,
+    Args && args = {},
     function_flags flags = {})
 {
     system::error_code ec;
-    create_window_function(conn, name, std::forward<Func>(func), flags, ec);
+    create_window_function<Func>(conn, name, std::forward<Args>(args), flags, ec);
     if (ec)
         detail::throw_error_code(ec);
 }

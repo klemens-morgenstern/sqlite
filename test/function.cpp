@@ -58,21 +58,22 @@ BOOST_AUTO_TEST_CASE(aggregate)
 
   struct aggregate_func
   {
-      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      aggregate_func(int value) : counter(value) {}
+      std::size_t counter;
+      void step(boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
       }
 
-      std::size_t final(std::size_t & counter)
+      std::size_t final()
       {
         return counter;
       }
   };
 
-  sqlite::create_aggregate_function(
+  sqlite::create_aggregate_function<aggregate_func>(
       conn,
-      "char_counter",
-      aggregate_func{});
+      "char_counter", std::make_tuple(0));
 
   std::vector<std::size_t> lens;
 
@@ -94,27 +95,27 @@ BOOST_AUTO_TEST_CASE(window)
 
   struct window_func
   {
-    void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+    std::size_t counter;
+    void step(boost::span<sqlite::value, 1u> val)
     {
       counter += val[0].get_text().size();
     }
 
-    void inverse(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+    void inverse(boost::span<sqlite::value, 1u> val)
     {
       counter -= val[0].get_text().size();
     }
 
 
-    std::size_t value(std::size_t & counter)
+    std::size_t value()
     {
       return counter;
     }
   };
 
-  sqlite::create_window_function(
+  sqlite::create_window_function<window_func>(
       conn,
-      "win_counter",
-      window_func{});
+      "win_counter");
 
   std::vector<std::size_t> lens;
 

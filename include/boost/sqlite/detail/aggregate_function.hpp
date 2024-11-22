@@ -25,25 +25,37 @@ namespace detail
 {
 
 template<typename Func>
-int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int flags,
+struct aggregate_function_maker
+{
+  void * mem;
+
+  template<typename ... Args>
+  Func* operator()(Args && ... args)
+  {
+    return new (mem) Func(std::forward<Args>(args)...);
+  }
+};
+
+template<typename Func, typename Args>
+int create_aggregate_function(sqlite3 * db, cstring_ref name, Args && args, int flags,
                               std::true_type /* void return */)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
-  using context_type = typename std::remove_reference<typename std::tuple_element<1u, args_type>::type>::type;
-  using span_type    = typename std::tuple_element<2U, args_type>::type;
+  using span_type    = typename std::tuple_element<1U, args_type>::type;
   using func_type    = typename std::decay<Func>::type;
+  using func_args_type    = typename std::decay<Args>::type;
 
   return sqlite3_create_function_v2(
       db, name.c_str(),
       span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
       SQLITE_UTF8 | flags,
-      new (memory_tag{}) func_type(std::forward<Func>(func)),
+      new (memory_tag{}) func_args_type(std::forward<Args>(args)),
       nullptr,
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
         auto aa =  reinterpret_cast<value*>(args);
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
+        auto fa = reinterpret_cast<func_args_type*>(sqlite3_user_data(ctx));
+        auto c = static_cast<func_type*>(sqlite3_aggregate_context(ctx, 0));
 
         execute_context_function(
             ctx,
@@ -51,34 +63,34 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int 
             {
               if (c == nullptr)
               {
-                auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
+                auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
                   return error(SQLITE_NOMEM);
-                c = new (p) context_type();
+                c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
-              f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
+              c->step(span_type{aa, static_cast<std::size_t>(len)});
               return {};
             });
       },
       [](sqlite3_context* ctx)
       {
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
+        auto fa = reinterpret_cast<func_args_type*>(sqlite3_user_data(ctx));
+        auto c = static_cast<func_type*>(sqlite3_aggregate_context(ctx, 0));
 
         execute_context_function(
             ctx,
-            [&]() -> result<decltype(f->final(*c))>
+            [&]() -> result<decltype(c->final())>
             {
               if (c == nullptr)
               {
-                auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
+                auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
                   return error(SQLITE_NOMEM);
-                c = new (p) context_type();
+                c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
-              struct reaper {void operator()(context_type * c) { c->~context_type();}};
-              std::unique_ptr<context_type, reaper> cl{c};
-              return f->final(*c);
+              struct reaper {void operator()(func_type * c) { c->~func_type();}};
+              std::unique_ptr<func_type, reaper> cl{c};
+              return c->final();
             });
       },
       [](void * ptr) noexcept { delete_(static_cast<func_type*>(ptr));}
@@ -86,26 +98,26 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int 
 }
 
 
-template<typename Func>
-int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int flags,
+template<typename Func, typename Args>
+int create_aggregate_function(sqlite3 * db, cstring_ref name, Args && args, int flags,
                               std::false_type /* void return */)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
-  using context_type = typename std::remove_reference<typename std::tuple_element<1u, args_type>::type>::type;
-  using span_type    = typename std::tuple_element<2U, args_type>::type;
+  using span_type    = typename std::tuple_element<1U, args_type>::type;
   using func_type    = typename std::decay<Func>::type;
+  using func_args_type    = typename std::decay<Args>::type;
 
   return sqlite3_create_function_v2(
       db, name.c_str(),
       span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
       SQLITE_UTF8 | flags,
-      new (memory_tag{}) func_type(std::forward<Func>(func)),
+      new (memory_tag{}) func_args_type(std::forward<Args>(args)),
       nullptr,
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
         auto aa =  reinterpret_cast<value*>(args);
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
+        auto fa = reinterpret_cast<func_args_type*>(sqlite3_user_data(ctx));
+        auto c = static_cast<func_type*>(sqlite3_aggregate_context(ctx, 0));
 
         execute_context_function(
             ctx,
@@ -113,34 +125,34 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int 
             {
               if (c == nullptr)
               {
-                auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
+                auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
                   return error(SQLITE_NOMEM);
-                c = new (p) context_type();
+                c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
-              f->step(*c, span_type{aa, static_cast<std::size_t>(len)});
+              c->step(*c, span_type{aa, static_cast<std::size_t>(len)});
               return {};
             });
       },
       [](sqlite3_context* ctx)
       {
-        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
-        auto c = static_cast<context_type*>(sqlite3_aggregate_context(ctx, 0));
+        auto fa = reinterpret_cast<func_args_type*>(sqlite3_user_data(ctx));
+        auto c = static_cast<func_type*>(sqlite3_aggregate_context(ctx, 0));
 
         execute_context_function(
             ctx,
-            [&]() -> result<decltype(f->final(*c))>
+            [&]() -> result<decltype(c->final(*c))>
             {
               if (c == nullptr)
               {
-                auto p = sqlite3_aggregate_context(ctx, sizeof(context_type));
+                auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
                   return error(SQLITE_NOMEM);
-                c = new (p) context_type();
+                c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
-              struct reaper {void operator()(context_type * c) { c->~context_type();}};
-              std::unique_ptr<context_type, reaper> cl{c};
-              return f->final(*c);
+              struct reaper {void operator()(func_type * c) { c->~func_type();}};
+              std::unique_ptr<func_type, reaper> cl{c};
+              return c->final();
             });
       },
       [](void * ptr) noexcept { delete_(static_cast<func_type*>(ptr));}
