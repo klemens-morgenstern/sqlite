@@ -22,7 +22,6 @@ set(BOOST_SQLITE_SOURCES
     src/connection.cpp
     src/error.cpp
     src/field.cpp
-    src/json.cpp
     src/meta_data.cpp
     src/resultset.cpp
     src/row.cpp
@@ -51,12 +50,12 @@ endif()
 
 add_library(boost_sqlite ${BOOST_SQLITE_SOURCES})
 target_include_directories(boost_sqlite PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(boost_sqlite PUBLIC Boost::system Boost::json SQLite::SQLite3)
+target_link_libraries(boost_sqlite PUBLIC Boost::headers SQLite::SQLite3)
 add_library(Boost::sqlite ALIAS boost_sqlite)
 
 add_library(boost_sqlite_ext ${BOOST_SQLITE_SOURCES} src/ext.cpp)
 target_include_directories(boost_sqlite_ext PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(boost_sqlite_ext PUBLIC Boost::system Boost::json SQLite::SQLite3)
+target_link_libraries(boost_sqlite_ext PUBLIC Boost::headers SQLite::SQLite3)
 target_compile_definitions(boost_sqlite_ext PUBLIC BOOST_SQLITE_COMPILE_EXTENSION=1)
 set_property(TARGET boost_sqlite_ext PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_library(Boost::sqlite_ext ALIAS boost_sqlite_ext)
