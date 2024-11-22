@@ -35,64 +35,76 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 namespace detail
 {
 
-template<typename T>
-struct value_to_tag {};
+inline void convert_field(sqlite_int64 & target, const field & f) {target = f.get_int();}
 
-inline int           tag_invoke(value_to_tag<int>,          const field & f) {return f.get_int();}
-inline sqlite_int64  tag_invoke(value_to_tag<sqlite_int64>, const field & f) {return f.get_int64();}
-inline std::int64_t  tag_invoke(value_to_tag<std::int64_t>, const field & f,
-                                std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value> * = nullptr)
+template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value>>
+inline void convert_field(std::int64_t & target, const field & f)
 {
-  return static_cast<std::int64_t>(f.get_int64());
+  target = static_cast<std::int64_t>(f.get_int());
 }
 
-inline double        tag_invoke(value_to_tag<double>,        const field & f) {return f.get_double();}
+inline void convert_field(double & target, const field & f) {target = f.get_double();}
+
 
 template<typename Allocator, typename Traits>
-inline std::basic_string<char, Allocator, Traits>
-                    tag_invoke(value_to_tag<std::basic_string<char, Allocator, Traits>>, const field & f)
+inline void convert_field(std::basic_string<char, Allocator, Traits> & target, const field & f)
 {
-  return f.get_text();
+  auto t = f.get_text();
+  target.assign(t.begin(), t.end());
 }
 
-inline string_view  tag_invoke(value_to_tag<string_view>, const field & f) {return f.get_text();}
-inline blob         tag_invoke(value_to_tag<blob>,        const field & f) {return blob(f.get_blob());}
-inline blob_view    tag_invoke(value_to_tag<blob_view>,   const field & f) {return f.get_blob();}
+inline void convert_field(string_view & target, const field & f) {target = f.get_text();}
+inline void convert_field(blob & target,        const field & f) {target = blob(f.get_blob());}
+inline void convert_field(blob_view & target,   const field & f) {target = f.get_blob();}
 
+#if __cplusplus >= 201702L
 template<typename T>
-inline auto tag_invoke(value_to_tag<std::optional<T>>, const field & f)
-    -> std::optional<decltype(tag_invoke(value_to_tag<T>{}, f))>
+inline void convert_field(std::optional<T> & target, const field & f)
 {
   if (f.is_null())
-    return {};
+    target.reset();
   else
-    return tag_invoke(value_to_tag<T>{}, f);
+    convert_field(target.emplace(), f);
+}
+#endif
+
+template<typename T>
+inline void convert_field(boost::optional<T> & target, const field & f)
+{
+  if (f.is_null())
+    target.reset();
+  else
+    return convert_field(target.emplace_back(), f);
 }
 
 template<typename T>
-inline auto tag_invoke(value_to_tag<boost::optional<T>>, const field & f)
-    -> boost::optional<decltype(tag_invoke(value_to_tag<T>{}, f))>
+inline constexpr bool field_type_is_nullable(const T& ) {return false;}
+#if __cplusplus >= 201702L
+template<typename T>
+inline bool field_type_is_nullable(const std::optional<T> &) { return true; }
+#endif
+template<typename T>
+inline bool field_type_is_nullable(const boost::optional<T> &) { return true; }
+
+inline value_type required_field_type(const sqlite3_int64 &) {return value_type::integer;}
+
+template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value>>
+inline value_type required_field_type(const std::int64_t &) {return value_type::integer;}
+
+template<typename Allocator, typename Traits>
+inline value_type required_field_type(const std::basic_string<char, Allocator, Traits> & )
 {
-  if (f.is_null())
-    return {};
-  else
-    return tag_invoke(value_to_tag<T>{}, f);
+  return value_type::text;
 }
 
+inline value_type required_field_type(const string_view &) {return value_type::text;}
+inline value_type required_field_type(const blob &)        {return value_type::blob;}
+inline value_type required_field_type(const blob_view &)   {return value_type::blob;}
 
-
-
-
-template<typename>
-struct check_columns_tag {};
-
-
-template<typename>
-struct convert_row_tag {};
 
 template<typename ... Args>
-void tag_invoke(check_columns_tag<std::tuple<Args...>>, const resultset & r,
-                system::error_code &ec, error_info & ei)
+void check_columns(const std::tuple<Args...> *, const resultset & r,
+                   system::error_code &ec, error_info & ei)
 {
   if (r.column_count() != sizeof...(Args))
   {
@@ -101,25 +113,45 @@ void tag_invoke(check_columns_tag<std::tuple<Args...>>, const resultset & r,
   }
 }
 
-template<typename Tuple, std::size_t ... Ns>
-Tuple convert_row_to_tuple_impl(convert_row_tag<Tuple>, const row & r,
-                                              mp11::index_sequence<Ns...>)
+template<bool Strict, typename ... Args>
+void convert_row(std::tuple<Args...> & res, const row & r, system::error_code ec, error_info & ei)
 {
-  return Tuple{ tag_invoke(value_to_tag<typename std::tuple_element<Ns, Tuple>::type>{}, r[Ns])... };
+  std::size_t idx = 0u;
 
-}
+  mp11::tuple_for_each(
+    res,
+    [&](auto & v)
+    {
+      const auto i = idx++;
+      const auto & f = r[i];
+      BOOST_IF_CONSTEXPR (Strict)
+      {
+        if (!ec) // only check if we don't have an error yet.
+        {
+          if (f.is_null() && !field_type_is_nullable(v))
+          {
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_NOTNULL);
+            ei.format("unexpected null in column %d", i);
+          }
+          else if (f.type() != required_field_type(v))
+          {
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+            ei.format("unexpected type [%s] in column %d, expected [%s]",
+                      value_type_name(f.type()), i, value_type_name(required_field_type(v)));
+          }
+        }
+      }
+      else
+        boost::ignore_unused(ec, ei);
 
-
-template<typename ... Args>
-std::tuple<Args...> tag_invoke(convert_row_tag<std::tuple<Args...>> tag, const row & r)
-{
-  return convert_row_to_tuple_impl(tag, r, mp11::make_index_sequence<sizeof...(Args)>{});
+      detail::convert_field(v, f);
+    });
 }
 
 #if defined(BOOST_DESCRIBE_CXX14)
 
 template<typename T, typename = typename std::enable_if<describe::has_describe_members<T>::value>::type>
-void tag_invoke(check_columns_tag<T>, const resultset & r,
+void check_columns(const T *, const resultset & r,
                 system::error_code &ec, error_info & ei)
 {
   using mems = boost::describe::describe_members<T, describe::mod_public>;
@@ -174,23 +206,40 @@ void tag_invoke(check_columns_tag<T>, const resultset & r,
   }
 }
 
-template<typename T, typename = typename std::enable_if<describe::has_describe_members<T>::value>::type>
-T tag_invoke(convert_row_tag<T> tag, const row & r)
+template<bool Strict, typename T,
+         typename = typename std::enable_if<describe::has_describe_members<T>::value>::type>
+void convert_row(const T & res, const row & r, system::error_code ec, error_info & ei)
 {
-  T res;
-  for (auto && c: r)
+  for (auto && f: r)
   {
     boost::mp11::mp_for_each<boost::describe::describe_members<T, describe::mod_public> >(
         [&](auto D)
         {
-          if (D.name == c.column_name())
+          if (D.name == f.column_name())
           {
             auto & r = res.*D.pointer;
-            r = tag_invoke(value_to_tag<typename std::decay<decltype(r)>::type>{}, c);
+            BOOST_IF_CONSTEXPR(Strict)
+            {
+              if (!ec)
+              {
+                if (f.is_null() && !field_type_is_nullable(r))
+                {
+                  BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_NOTNULL);
+                  ei.format("unexpected null in column %s", D.name);
+                }
+                else if (f.type() != required_field_type(r))
+                {
+                  BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+                  ei.format("unexpected type [%s] in column %s, expected [%s]",
+                            value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
+                }
+              }
+            }
+
+            detail::convert_field(r, f);
           }
         });
   }
-  return res;
 }
 
 #endif
@@ -199,8 +248,8 @@ T tag_invoke(convert_row_tag<T> tag, const row & r)
 
 template<typename T>
   requires (std::is_aggregate_v<T> && !describe::has_describe_members<T>::value)
-void tag_invoke(check_columns_tag<T>, const resultset & r,
-                system::error_code &ec, error_info & ei)
+void check_columns(const T *, const resultset & r,
+                  system::error_code &ec, error_info & ei)
 {
   constexpr std::size_t sz = pfr::tuple_size_v<T>;
   if (r.column_count() != sz)
@@ -251,25 +300,39 @@ void tag_invoke(check_columns_tag<T>, const resultset & r,
   }
 }
 
-template<typename T>
+template<bool Strict, typename T>
     requires (std::is_aggregate_v<T> && !describe::has_describe_members<T>::value)
-T tag_invoke(convert_row_tag<T> tag, const row & r)
+void convert_row(T & res, const row & r, system::error_code ec, error_info & ei)
 {
-  T res;
-  for (auto && c: r)
+  for (auto && f: r)
   {
     boost::mp11::mp_for_each<mp11::mp_iota_c<pfr::tuple_size_v<T>>>(
         [&](auto D)
         {
-
-          if (pfr::get_name<D, T>() == c.column_name().c_str())
+          if (pfr::get_name<D, T>() == f.column_name().c_str())
           {
             auto & r = pfr::get<D()>(res);
-            r = tag_invoke(value_to_tag<std::decay_t<decltype(r)>>{}, c);
-          }
+            BOOST_IF_CONSTEXPR(Strict)
+            {
+              if (!ec)
+              {
+                if (f.is_null() && !field_type_is_nullable(r))
+                {
+                  BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_NOTNULL);
+                  ei.format("unexpected null in column %s", D.name);
+                }
+                else if (f.type() != required_field_type(r))
+                {
+                  BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+                  ei.format("unexpected type [%s] in column %s, expected [%s]",
+                            value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
+                }
+              }
+            }
+            detail::convert_field(r, f);
+           }
         });
   }
-  return res;
 }
 
 #endif
@@ -280,7 +343,7 @@ T tag_invoke(convert_row_tag<T> tag, const row & r)
   @brief A typed resultset using a tuple or a described struct.
   @ingroup reference
   @tparam T The static type of the query.
-
+  @tparam Strict Disables implicit conversions.
 
   If is a forward-range with output iterators.
 
@@ -304,20 +367,33 @@ T tag_invoke(convert_row_tag<T> tag, const row & r)
   @endcode
 
 */
-template<typename T>
+template<typename T, bool Strict >
 struct static_resultset
 {
   /// Returns the current row.
   T current() const &
   {
-    return detail::tag_invoke(detail::convert_row_tag<T>{}, result_.current());
+    system::error_code ec;
+    error_info ei;
+    auto tmp = current(ec, ei);
+    if (ec)
+      throw_exception(system::system_error(ec, ei.message()));
+    return tmp;
   }
+
+  /// Returns the current row.
+  T current(system::error_code & ec, error_info & ei) const &
+  {
+    T res;
+    return detail::convert_row<Strict>(res, result_.current(), ec, ei);
+  }
+
   /// Checks if the last row has been reached.
   bool done() const {return result_.done();}
 
   ///@{
   /// Read the next row. Returns false if there's nothing more to read.
-  BOOST_SQLITE_DECL bool read_next(system::error_code & ec, error_info & ei) { return result_.read_next(); }
+  BOOST_SQLITE_DECL bool read_next(system::error_code & ec, error_info & ei) { return result_.read_next(ec, ei); }
   BOOST_SQLITE_DECL bool read_next()                                         { return result_.read_next(); }
   ///@}
 
@@ -332,10 +408,10 @@ struct static_resultset
   core::string_view column_origin_name(std::size_t idx) const  { return result_.column_origin_name(idx);}
 
   static_resultset() = default;
-  static_resultset(resultset && result) : result_(std::move(result))
-  {
-  }
+  static_resultset(resultset && result) : result_(std::move(result)) { }
 
+
+  static_resultset(static_resultset<T, false> && rhs) : result_(std::move(rhs.result_)) {}
 
   /// The input iterator can be used to read every row in a for-loop
   struct iterator
@@ -351,8 +427,12 @@ struct static_resultset
     }
     explicit iterator(resultset::iterator itr) : itr_(itr)
     {
+      system::error_code ec;
+      error_info ei;
       if (itr->size() > 0ul)
-        value_ = detail::tag_invoke(detail::convert_row_tag<T>{}, *itr);
+        detail::convert_row<Strict>(value_, *itr, ec, ei);
+      if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
     }
 
     bool operator!=(iterator rhs) const
@@ -366,8 +446,14 @@ struct static_resultset
     iterator& operator++()
     {
       ++itr_;
+
+      system::error_code ec;
+      error_info ei;
       if (itr_->size() > 0ul)
-        value_ = detail::tag_invoke(detail::convert_row_tag<T>{}, *itr_);
+        detail::convert_row<Strict>(value_, *itr_, ec, ei);
+      if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+
       return *this;
     }
     iterator operator++(int)
@@ -387,13 +473,20 @@ struct static_resultset
   iterator   end() { return iterator(result_.end()); }
 
 
+
+  static_resultset<T, true> strict() &&
+  {
+    return {result_};
+  }
  private:
+
+  friend struct static_resultset<T, true>;
   friend struct connection;
   friend struct statement;
   resultset result_;
   void check_columns_( system::error_code & ec, error_info & ei)
   {
-    detail::tag_invoke(detail::check_columns_tag<T>{}, result_, ec, ei);
+    detail::check_columns(static_cast<T*>(nullptr), result_, ec, ei);
   }
 };
 
