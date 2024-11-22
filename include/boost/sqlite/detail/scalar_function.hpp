@@ -29,6 +29,7 @@ template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
                                  cstring_ref name,
                                  Func && func,
+                                 int flags,
                                  std::tuple<context<Args...>, boost::span<value, Extent>> * ,
                                  std::false_type /* void return */,
                                  std::false_type /* is pointer */) -> int
@@ -37,7 +38,7 @@ auto create_scalar_function_impl(sqlite3 * db,
   return sqlite3_create_function_v2(
       db, name.c_str(),
       Extent == boost::dynamic_extent ? -1 : static_cast<int>(Extent),
-      SQLITE_UTF8,
+      SQLITE_UTF8 | flags,
       new (memory_tag{}) func_type(std::forward<Func>(func)),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
@@ -55,7 +56,7 @@ auto create_scalar_function_impl(sqlite3 * db,
 template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
                                  cstring_ref name,
-                                 Func && func,
+                                 Func && func, int flags,
                                  std::tuple<context<Args...>, boost::span<value, Extent>> * ,
                                  std::true_type /* void return */,
                                  std::false_type /* is pointer */) -> int
@@ -65,7 +66,7 @@ auto create_scalar_function_impl(sqlite3 * db,
       db,
       name.c_str(),
       (Extent == boost::dynamic_extent) ? -1 : static_cast<int>(Extent),
-      SQLITE_UTF8,
+      SQLITE_UTF8 | flags,
       new (memory_tag{}) func_type(std::forward<Func>(func)),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
@@ -91,7 +92,7 @@ auto create_scalar_function_impl(sqlite3 * db,
 template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
                                  cstring_ref name,
-                                 Func && func,
+                                 Func && func, int flags,
                                  std::tuple<context<Args...>, boost::span<value, Extent>> * ,
                                  std::false_type /* void return */,
                                  std::true_type /* is pointer */) -> int
@@ -99,7 +100,7 @@ auto create_scalar_function_impl(sqlite3 * db,
   return sqlite3_create_function_v2(
       db, name.c_str(),
       Extent == boost::dynamic_extent ? -1 : static_cast<int>(Extent),
-      SQLITE_UTF8,
+      SQLITE_UTF8 | flags,
       reinterpret_cast<void*>(func),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
@@ -117,7 +118,7 @@ auto create_scalar_function_impl(sqlite3 * db,
 template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
                                  cstring_ref name,
-                                 Func && func,
+                                 Func && func, int flags,
                                  std::tuple<context<Args...>, boost::span<value, Extent>> * ,
                                  std::true_type /* void return */,
                                  std::true_type /* is pointer */) -> int
@@ -126,7 +127,7 @@ auto create_scalar_function_impl(sqlite3 * db,
       db,
       name.c_str(),
       (Extent == boost::dynamic_extent) ? -1 : static_cast<int>(Extent),
-      SQLITE_UTF8,
+      SQLITE_UTF8 | flags,
       reinterpret_cast<void*>(func),
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
@@ -148,15 +149,16 @@ auto create_scalar_function_impl(sqlite3 * db,
 template<typename Func>
 auto create_scalar_function(sqlite3 * db,
                      cstring_ref name,
-                     Func && func)
+                     Func && func,
+                     int flags)
                      -> decltype(create_scalar_function_impl(
-                         db, name, std::forward<Func>(func),
+                         db, name, std::forward<Func>(func), flags,
                          static_cast<callable_traits::args_t<Func>*>(nullptr),
                          callable_traits::has_void_return<Func>{},
                          std::is_pointer<typename std::decay<Func>::type>{}
                          ))
 {
-  return create_scalar_function_impl(db, name, std::forward<Func>(func),
+  return create_scalar_function_impl(db, name, std::forward<Func>(func), flags,
                                      static_cast<callable_traits::args_t<Func>*>(nullptr),
                                      callable_traits::has_void_return<Func>{},
                                      std::is_pointer<typename std::decay<Func>::type>{});

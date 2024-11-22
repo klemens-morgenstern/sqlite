@@ -25,7 +25,7 @@ namespace detail
 {
 
 template<typename Func>
-int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
+int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int flags,
                               std::true_type /* void return */)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
@@ -36,7 +36,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
   return sqlite3_create_function_v2(
       db, name.c_str(),
       span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
-      SQLITE_UTF8,
+      SQLITE_UTF8 | flags,
       new (memory_tag{}) func_type(std::forward<Func>(func)),
       nullptr,
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
@@ -87,7 +87,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
 
 
 template<typename Func>
-int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
+int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func, int flags,
                               std::false_type /* void return */)
 {
   using args_type    = callable_traits::args_t<decltype(&Func::step)>;
@@ -98,7 +98,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Func && func,
   return sqlite3_create_function_v2(
       db, name.c_str(),
       span_type::extent == boost::dynamic_extent ? -1 : static_cast<int>(span_type::extent),
-      SQLITE_UTF8,
+      SQLITE_UTF8 | flags,
       new (memory_tag{}) func_type(std::forward<Func>(func)),
       nullptr,
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)

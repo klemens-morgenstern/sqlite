@@ -25,6 +25,20 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
+enum function_flags
+{
+  deterministic  = SQLITE_DETERMINISTIC,
+  directonly     = SQLITE_DIRECTONLY,
+  subtype        = SQLITE_SUBTYPE,
+  innocuous      = SQLITE_INNOCUOUS,
+  result_subtype = SQLITE_RESULT_SUBTYPE,
+#if defined(SQLITE_SELFORDER1)
+  selforder1     = SQLITE_SELFORDER1,
+#else
+  selforder1     = 0
+#endif
+};
+
 
 /** @brief A context that can be passed into scalar functions.
   @ingroup reference
@@ -156,6 +170,7 @@ auto create_scalar_function(
     connection & conn,
     cstring_ref name,
     Func && func,
+    function_flags flags,
     system::error_code & ec)
 #if !defined(BOOST_SQLITE_GENERATING_DOCS)
     -> typename std::enable_if<
@@ -163,11 +178,12 @@ auto create_scalar_function(
           decltype(
               detail::create_scalar_function(
                   static_cast<sqlite3*>(nullptr), name,
-                  std::declval<Func>())
+                  std::declval<Func>(), flags)
               ), int>::value>::type
 #endif
 {
-    auto res = detail::create_scalar_function(conn.handle(), name, std::forward<Func>(func));
+    auto res = detail::create_scalar_function(conn.handle(), name,
+                                              std::forward<Func>(func), static_cast<int>(flags));
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
 }
@@ -210,17 +226,18 @@ template<typename Func>
 auto create_scalar_function(
     connection & conn,
     cstring_ref name,
-    Func && func)
+    Func && func,
+    function_flags flags = {})
     -> typename std::enable_if<
         std::is_same<
           decltype(
               detail::create_scalar_function(
                   static_cast<sqlite3*>(nullptr), name,
-                  std::declval<Func>())
+                  std::declval<Func>(), flags)
               ), int>::value>::type
 {
     system::error_code ec;
-    create_scalar_function(conn, name, std::forward<Func>(func), ec);
+    create_scalar_function(conn, name, std::forward<Func>(func), flags, ec);
     if (ec)
         detail::throw_error_code(ec,
                         BOOST_CURRENT_LOCATION);
@@ -258,20 +275,20 @@ auto create_scalar_function(
 
   struct aggregate_func
   {
-      void step(std::size_t & counter, boost::span<sqlite::value, 1u> val)
+      std::size_t counter;
+      void step(, boost::span<sqlite::value, 1u> val)
       {
         counter += val[0].get_text().size();
       }
 
-      std::size_t final(std::size_t & counter)
+      std::size_t final()
       {
         return counter;
       }
   };
 
-  sqlite::create_function(
-    conn, "char_counter",
-    aggregate_func{});
+  sqlite::create_function<aggregate_func>(
+    conn, "char_counter");
 
   @endcode
 
@@ -281,12 +298,13 @@ void create_aggregate_function(
     connection & conn,
     cstring_ref name,
     Func && func,
+    function_flags flags,
     system::error_code & ec,
     error_info & ei)
 {
     using func_type = typename std::decay<Func>::type;
     auto res = detail::create_aggregate_function(
-        conn.handle(), name, std::forward<Func>(func),
+        conn.handle(), name, std::forward<Func>(func), static_cast<int>(flags),
         callable_traits::has_void_return<decltype(&func_type::step)>{}
         );
     if (res != 0)
@@ -300,11 +318,12 @@ template<typename Func>
 void create_aggregate_function(
     connection & conn,
     cstring_ref name,
-    Func && func)
+    Func && func,
+    function_flags flags = {})
 {
     system::error_code ec;
     error_info ei;
-    create_aggregate_function(conn, name, std::forward<Func>(func), ec, ei);
+    create_aggregate_function(conn, name, std::forward<Func>(func), flags, ec, ei);
     if (ec)
         detail::throw_error_code(ec, ei);
 }
@@ -369,11 +388,12 @@ void create_window_function(
     connection & conn,
     cstring_ref name,
     Func && func,
+    function_flags flags,
     system::error_code & ec)
 {
     using func_type = typename std::decay<Func>::type;
     auto res = detail::create_window_function(
-            conn.handle(), name, std::forward<Func>(func),
+            conn.handle(), name, std::forward<Func>(func), static_cast<int>(flags),
             callable_traits::has_void_return<decltype(&func_type::step)>{});
     if (res != 0)
         BOOST_SQLITE_ASSIGN_EC(ec, res);
@@ -383,10 +403,11 @@ template<typename Func>
 void create_window_function(
     connection & conn,
     cstring_ref name,
-    Func && func)
+    Func && func,
+    function_flags flags = {})
 {
     system::error_code ec;
-    create_window_function(conn, name, std::forward<Func>(func), ec);
+    create_window_function(conn, name, std::forward<Func>(func), flags, ec);
     if (ec)
         detail::throw_error_code(ec);
 }
