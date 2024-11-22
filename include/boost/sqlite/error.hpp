@@ -37,14 +37,14 @@ struct error_info
     /// Initialization constructor.
     error_info(core::string_view msg) noexcept : msg_(new (memory_tag{}) char[msg.size() + 1u])
     {
-      std::memcpy(msg_.get(), msg.data(), msg.size() + 1);
+      std::memcpy(msg_.get(), msg.data(), (std::min)(msg.size() + 1, capacity()));
     }
 
     /// set the message by copy
     void set_message(core::string_view msg)
     {
       reserve(msg.size() + 1u);
-      std::memcpy(msg_.get(), msg.data(), msg.size() + 1);
+      std::memcpy(msg_.get(), msg.data(), (std::min)(msg.size() + 1, capacity()));
     }
     /// transfer ownership into the message
     void reset(char * c = nullptr)
@@ -53,6 +53,17 @@ struct error_info
     }
 
     /// use sqlite_mprintf to generate a message
+#if defined(__GNUC__)
+    cstring_ref format(const char * fmt, ...) __attribute__((format (printf, 2, 3)))
+    {
+      va_list args;
+      va_start(args, fmt);
+      msg_.reset(sqlite3_vmprintf(fmt, args));
+      va_end(args);
+      return msg_.get();
+    }
+
+#endif
     cstring_ref format(cstring_ref fmt, ...)
     {
       va_list args;
@@ -63,13 +74,26 @@ struct error_info
     }
 
     /// use sqlite_snprintf to generate a message
+#if defined(__GNUC__)
+    cstring_ref snformat(const char * fmt, ...)   __attribute__((format (printf, 2, 3)))
+    {
+      if (capacity() == 0)
+        return "";
+      va_list args;
+      va_start(args, fmt);
+      sqlite3_vsnprintf(static_cast<int>(capacity()), msg_.get(), fmt, args);
+      va_end(args);
+      return msg_.get();
+    }
+
+#endif
     cstring_ref snformat(cstring_ref fmt, ...)
     {
       if (capacity() == 0)
         return "";
       va_list args;
       va_start(args, fmt);
-      sqlite3_vsnprintf(capacity(), msg_.get(), fmt.c_str(), args);
+      sqlite3_vsnprintf(static_cast<int>(capacity()), msg_.get(), fmt.c_str(), args);
       va_end(args);
       return msg_.get();
     }
