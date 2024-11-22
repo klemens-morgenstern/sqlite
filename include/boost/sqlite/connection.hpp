@@ -17,6 +17,8 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 template<typename T, bool Strict>
 struct static_resultset;
 
+constexpr static cstring_ref in_memory = ":memory:";
+
 /** @brief main object for a connection to a database.
   @ingroup reference
 
@@ -50,12 +52,42 @@ struct connection
     connection(cstring_ref filename,
                int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) { connect(filename, flags); }
 
-
+#if defined(BOOST_WINDOWS_API)
+    template<typename Path,
+             typename = std::enable_if_t<
+                 std::is_same<typename Path::string_type, std::wstring>::value &&
+                 std::is_constructible<cstring_ref, decltype(std::declval<Path>().string())>::value
+             >>
+    explicit connection(const Path & pth) : connection(pth.string()) {}
+#endif
     ///@{
     /// Connect the database to `filename`.  `flags` is set by `SQLITE_OPEN_*` flags.
     BOOST_SQLITE_DECL void connect(cstring_ref filename, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
     BOOST_SQLITE_DECL void connect(cstring_ref filename, int flags, system::error_code & ec);
     ///@}
+
+#if defined(BOOST_WINDOWS_API)
+    template<typename Path,
+             typename = std::enable_if_t<
+                 std::is_same<typename Path::string_type, std::wstring>::value &&
+                 std::is_constructible<cstring_ref, decltype(std::declval<Path>().string())>::value
+             >>
+    void connect(const Path & pth, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE)
+    {
+        connect(pth.string(), flags);
+    }
+
+
+    template<typename Path,
+             typename = std::enable_if_t<
+                 std::is_same<typename Path::string_type, std::wstring>::value &&
+                 std::is_constructible<cstring_ref, decltype(std::declval<Path>().string())>::value
+             >>
+    void connect(const Path & pth, int flags, system::error_code & ec)
+    {
+        connect(pth.string(), flags, ec);
+    }
+#endif
 
     ///@{
     /// Close the database connection.
