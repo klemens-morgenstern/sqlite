@@ -55,7 +55,7 @@ void tag_invoke( const json::value_from_tag &, json::value& val, const value & f
   switch (f.type())
   {
     case value_type::integer:
-      val.emplace_int64() = f.get_int64();
+      val.emplace_int64() = f.get_int();
       break;
     case value_type::floating:
       val.emplace_double() = f.get_double();
@@ -82,7 +82,7 @@ void tag_invoke( const json::value_from_tag &, json::value& val, const field & f
   switch (f.type())
   {
     case value_type::integer:
-      val.emplace_int64() = f.get_int64();
+      val.emplace_int64() = f.get_int();
       break;
     case value_type::floating:
       val.emplace_double() = f.get_double();

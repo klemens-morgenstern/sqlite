@@ -87,7 +87,7 @@ struct describe_table final :
 
   sqlite::result<void> delete_(sqlite::value key)
   {
-    data.erase(key.get_int64());
+    data.erase(key.get_int());
     return {};
   }
   sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values, int /*on_conflict*/)
@@ -110,8 +110,8 @@ struct describe_table final :
                       span<sqlite::value> values, int /*on_conflict*/)
   {
     if (new_key.get_int() != old_key.get_int())
-      data.erase(old_key.get_int64());
-    auto & res = data[new_key.get_int64()];
+      data.erase(old_key.get_int());
+    auto & res = data[new_key.get_int()];
 
     auto vtr = values.begin();
     mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(

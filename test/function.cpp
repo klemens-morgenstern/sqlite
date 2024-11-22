@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(aggregate)
 
   // language=sqlite
   for (auto r : conn.query("select char_counter(first_name) from author;"))
-    lens.emplace_back(r.at(0).get_int64());
+    lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 1u);
   BOOST_CHECK(lens[0]  == (5 + 6 + 7 + 5));
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(window)
 select win_counter(first_name) over (
   order by last_name rows between 1 preceding and 1 following ) as subrows
     from author order by last_name asc;)"))
-    lens.emplace_back(r.at(0).get_int64());
+    lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 4u);
   BOOST_CHECK(lens[0] == 11);

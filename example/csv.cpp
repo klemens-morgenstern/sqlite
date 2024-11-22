@@ -148,7 +148,7 @@ struct csv_table final
 
   sqlite::result<void> delete_(sqlite::value key)
   {
-    data.rows.erase(key.get_int64());
+    data.rows.erase(key.get_int());
     return {};
   }
   sqlite::result<sqlite_int64> insert(

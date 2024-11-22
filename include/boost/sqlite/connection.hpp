@@ -107,7 +107,7 @@ struct connection
     ///@{
     /// Perform a query without parametert, It execute a multiple statement.
     BOOST_SQLITE_DECL void execute(
-      cstring_ref q,
+        cstring_ref q,
         system::error_code & ec,
         error_info & ei);
 

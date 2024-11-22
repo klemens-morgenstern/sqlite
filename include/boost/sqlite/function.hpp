@@ -35,11 +35,11 @@ BOOST_SQLITE_BEGIN_NAMESPACE
   extern sqlite::connection conn;
 
   sqlite::create_function(
-    conn, "my_sum,,
+    conn, "my_sum",
     [](sqlite::context<std::size_t> ctx,
        boost::span<sqlite::value, 1u> args) -> std::size_t
     {
-        auto value = args[0].get_int64();
+        auto value = args[0].get_int();
         auto p = ctx.get_if<0>();
         if (p != nullptr) // increment the counter
             return (*p) += value;
@@ -136,11 +136,11 @@ struct context
   extern sqlite::connection conn;
 
   sqlite::create_function(
-    conn, "my_sum",,
+    conn, "my_sum",
     [](sqlite::context<std::size_t> ctx,
        boost::span<sqlite::value, 1u> args) -> std::size_t
     {
-        auto value = args[0].get_int64();
+        auto value = args[0].get_int();
         auto p = ctx.get_if<0>();
         if (p != nullptr) // increment the counter
             return (*p) += value;

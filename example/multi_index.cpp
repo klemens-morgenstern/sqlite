@@ -264,7 +264,7 @@ struct map_impl final
     if (new_key.get_int() != old_key.get_int())
     {
 
-      auto node = reinterpret_cast<my_container::value_type *>(old_key.get_int64());
+      auto node = reinterpret_cast<my_container::value_type *>(old_key.get_int());
       data.erase(data.iterator_to(*node));
     }
 
