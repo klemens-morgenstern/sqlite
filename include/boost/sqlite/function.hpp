@@ -414,6 +414,26 @@ void create_window_function(
 
 ///@}
 
+///@{
+/// Delete function
+
+inline void delete_function(connection & conn, cstring_ref name, int argc, system::error_code &ec)
+{
+  auto res = sqlite3_create_function_v2(conn.handle(), name.c_str(), argc, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+  if (res != 0)
+    BOOST_SQLITE_ASSIGN_EC(ec, res);
+
+}
+
+inline void delete_function(connection & conn, cstring_ref name, int argc = -1)
+{
+  system::error_code ec;
+  delete_function(conn, name, argc, ec);
+  if (ec)
+    detail::throw_error_code(ec);
+}
+
+///@}
 #endif
 
 BOOST_SQLITE_END_NAMESPACE
