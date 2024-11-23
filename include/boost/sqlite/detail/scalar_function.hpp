@@ -92,7 +92,7 @@ auto create_scalar_function_impl(sqlite3 * db,
 template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
                                  cstring_ref name,
-                                 Func && func, int flags,
+                                 Func * func, int flags,
                                  std::tuple<context<Args...>, boost::span<value, Extent>> * ,
                                  std::false_type /* void return */,
                                  std::true_type /* is pointer */) -> int
@@ -105,8 +105,8 @@ auto create_scalar_function_impl(sqlite3 * db,
       +[](sqlite3_context* ctx, int len, sqlite3_value** args)
       {
         auto cc = context<Args...>(ctx);
-        auto aa =  reinterpret_cast<value*>(args);
-        auto &f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
+        auto aa = reinterpret_cast<value*>(args);
+        auto  f = reinterpret_cast<Func*>(sqlite3_user_data(ctx));
 
         boost::span<value, Extent> vals{aa, static_cast<std::size_t>(len)};
 
@@ -118,7 +118,7 @@ auto create_scalar_function_impl(sqlite3 * db,
 template<typename Func, typename ... Args, std::size_t Extent>
 auto create_scalar_function_impl(sqlite3 * db,
                                  cstring_ref name,
-                                 Func && func, int flags,
+                                 Func * func, int flags,
                                  std::tuple<context<Args...>, boost::span<value, Extent>> * ,
                                  std::true_type /* void return */,
                                  std::true_type /* is pointer */) -> int
@@ -133,7 +133,7 @@ auto create_scalar_function_impl(sqlite3 * db,
       {
         auto cc = context<Args...>(ctx);
         auto aa =  reinterpret_cast<value*>(args);
-        auto &f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
+        auto  f = *reinterpret_cast<Func*>(sqlite3_user_data(ctx));
         boost::span<value, Extent> vals{aa, static_cast<std::size_t>(len)};
         execute_context_function(
             ctx,

@@ -127,7 +127,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Args && args, int 
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
-                  return error(SQLITE_NOMEM);
+                  return {system::in_place_error, error(SQLITE_NOMEM)};
                 c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
               return c->step(span_type{aa, static_cast<std::size_t>(len)});
@@ -146,7 +146,7 @@ int create_aggregate_function(sqlite3 * db, cstring_ref name, Args && args, int 
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
-                  return error(SQLITE_NOMEM);
+                  return {system::in_place_error, error(SQLITE_NOMEM)};
                 c = mp11::tuple_apply(aggregate_function_maker<func_type>{p}, *fa);
               }
               struct reaper {void operator()(func_type * c) { c->~func_type();}};

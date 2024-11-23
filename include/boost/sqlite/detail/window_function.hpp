@@ -159,7 +159,7 @@ int create_window_function(sqlite3 * db, cstring_ref name, Args && args, int fla
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
-                  return error(SQLITE_NOMEM);
+                  return {system::in_place_error, error(SQLITE_NOMEM)};
                 c = mp11::tuple_apply(window_function_maker<func_type>{p}, *fa);
               }
               return c->step(span_type{aa, static_cast<std::size_t>(len)});
@@ -178,7 +178,7 @@ int create_window_function(sqlite3 * db, cstring_ref name, Args && args, int fla
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
-                  return error(SQLITE_NOMEM);
+                  return {system::in_place_error, error(SQLITE_NOMEM)};
                 c = mp11::tuple_apply(window_function_maker<func_type>{p}, *fa);
               }
 
@@ -199,7 +199,7 @@ int create_window_function(sqlite3 * db, cstring_ref name, Args && args, int fla
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
-                  return error(SQLITE_NOMEM);
+                  return {system::in_place_error, error(SQLITE_NOMEM)};
                 c = mp11::tuple_apply(window_function_maker<func_type>{p}, *fa);
               }
               return c->value();
@@ -219,7 +219,7 @@ int create_window_function(sqlite3 * db, cstring_ref name, Args && args, int fla
               {
                 auto p = sqlite3_aggregate_context(ctx, sizeof(func_type));
                 if (!p)
-                  return error(SQLITE_NOMEM);
+                  return {system::in_place_error, error(SQLITE_NOMEM)};
                 c = mp11::tuple_apply(window_function_maker<func_type>{p}, *fa);
               }
               return c->inverse(span_type{aa, static_cast<std::size_t>(len)});
