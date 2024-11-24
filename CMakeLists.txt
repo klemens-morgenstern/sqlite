@@ -75,16 +75,12 @@ else()
 
     find_package(Doxygen REQUIRED doxygen)
 
-    set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/doc")
-    configure_file(doc/Doxyfile.in doc/Doxyfile @ONLY)
+    file(GLOB_RECURSE ADOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.adoc)
+    add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html
+            COMMAND asciidoctor ${CMAKE_CURRENT_SOURCE_DIR}/doc/index.adoc -b html5 -a generate-diagram -o ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html
+            DEPENDS ${ADOC_FILES})
 
-    add_custom_target(
-            boost_sqlite_doc
-            COMMAND ${DOXYGEN_EXECUTABLE} "${PROJECT_BINARY_DIR}/doc/Doxyfile"
-            COMMENT "Building documentation using Doxygen"
-            WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-            VERBATIM
-    )
+    add_custom_target(boost_cobalt_doc DEPENDS  ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html)
 
 endif()
 
