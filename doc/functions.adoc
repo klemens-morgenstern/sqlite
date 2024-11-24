@@ -1,0 +1,87 @@
+= Adding functions
+
+== Scalar Functions
+
+Scalar functions are data transformers.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=to_upper]
+----
+<1> The context is optional, and can be used to share between invocations, within the same query or to set errors/return values.
+<2> Let this function take 1 parameter. If this is `span::extent` it will be any size. Functions can be overloaded by the number of parameters.
+<3> Any exception will be turned into an sqlite-error code.
+<4> The function is determistic, i.e. it has no side effects (see https://www.sqlite.org/c3ref/c_deterministic.html[Function Flags])
+
+The return type `T` of the function gets transformed into an sqlite value by using a `tag_invoke` overload.
+This interface is public and meant to be extended.
+
+[source,cpp]
+----
+void tag_invoke(set_result_tag, sqlite3_context * ctx, T);
+----
+
+The builtin types are:
+
+- `blob`
+- `zero_blob`
+- `double`
+- `std::int64_t`
+- `nullptr`
+- `string_view`
+- `std::string`
+- `sqlite::value`
+- `variant2::monostate`
+- `error`
+- `std::unique_ptr<T>` (see the https://www.sqlite.org/bindptr.html[pointer passing interface])
+- `variant2::variant<Ts...>` if all `Ts` are supported
+- `result<T>`
+- `boost::json::value` //when including boost/sqlite/json.hpp
+
+The translation of the exceptions happens as follows:
+
+[cols="1,1"]
+|===
+| Type | Sqlite error code
+
+| `boost::system::system_error` | `.code()`
+| `std::bad_alloc`              | SQLITE_NOMEM
+| `std::length_error`           | SQLITE_TOOBIG
+| `std::out_of_range`           | SQLITE_RANGE
+| `std::logic_error`            | SQLITE_MISUSE
+| `...`                         | SQLITE_ERROR
+
+|===
+
+NOTE: You can also return an <<`result`,sqlite::result>> type instead of throwing exceptions.
+
+== A ggregate functions
+
+An aggregate function builds a value from multiple values of the same column, e.g:
+
+[source,sqlite]
+----
+select avg(age) from users ;
+----
+
+`avg` is a built-in function, but
+Below is a toy example. We count how many retirees are among the users, based on a retirement age.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=oldest]
+----
+
+The `retirees` object will be constructed for every query it's used in, and the parameters passed witht he `make_tuple`
+will be passed to the constructor.
+The `step` will be called for every value and `final` at the end when the query has ended and a value is required.
+
+The value types & exceptions are the same as for the scalar function.
+
+== Window functions
+
+Window functions look similar to aggregate functions, they only need an `inverse` function, that shares the signature with `step`.
+
+It is recommended to consult the https://www.sqlite.org/windowfunctions.html[sqlite window function documentation].
+
+NOTE: Window functions are only available for sqlite 3.25.0 and higher.

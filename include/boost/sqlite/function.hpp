@@ -48,7 +48,7 @@ enum function_flags
   @code{.cpp}
   extern sqlite::connection conn;
 
-  sqlite::create_function(
+  sqlite::create_scalar_function(
     conn, "my_sum",
     [](sqlite::context<std::size_t> ctx,
        boost::span<sqlite::value, 1u> args) -> std::size_t
@@ -172,7 +172,8 @@ auto create_scalar_function(
     cstring_ref name,
     Func && func,
     function_flags flags,
-    system::error_code & ec)
+    system::error_code & ec,
+    error_info & ei)
 #if !defined(BOOST_SQLITE_GENERATING_DOCS)
     -> typename std::enable_if<
         std::is_same<
@@ -186,7 +187,10 @@ auto create_scalar_function(
     auto res = detail::create_scalar_function(conn.handle(), name,
                                               std::forward<Func>(func), static_cast<int>(flags));
     if (res != 0)
-        BOOST_SQLITE_ASSIGN_EC(ec, res);
+    {
+      BOOST_SQLITE_ASSIGN_EC(ec, res);
+      ei.set_message(sqlite3_errmsg(conn.handle()));
+    }
 }
 
 ///@{
@@ -238,10 +242,10 @@ auto create_scalar_function(
               ), int>::value>::type
 {
     system::error_code ec;
-    create_scalar_function(conn, name, std::forward<Func>(func), flags, ec);
+    error_info ei;
+    create_scalar_function(conn, name, std::forward<Func>(func), flags, ec, ei);
     if (ec)
-        detail::throw_error_code(ec,
-                        BOOST_CURRENT_LOCATION);
+        detail::throw_error_code(ec, ei);
 }
 ///@}
 

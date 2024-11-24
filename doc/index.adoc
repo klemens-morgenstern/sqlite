@@ -1,0 +1,25 @@
+= Documentation boost.sqlite
+Klemens Morgenstern <klemens.morgenstern@gmx.net>
+Version 1.0, 23.11.2024
+:source-highlighter: rouge
+:toc: left
+:toclevels: 4
+:icons: font
+:idprefix:
+:docinfo: private-footer
+:source-highlighter: rouge
+:source-language: c++
+:example-caption: Example
+:coderay-linenums-mode: inline
+
+:leveloffset: +1
+
+= Introduction
+
+This library is a small library, extending the excellent sqlite API for C++.
+It sticks as close as possible to the sqlite API, but adopts thing like errors or ranges.
+
+It is therefore highly recommended to study the https://www.sqlite.org/docs.html[sqlite documentation].
+
+include::tutorial.adoc[]
+include::functions.adoc[]

@@ -1,0 +1,139 @@
+= Accessing a database
+
+== Connecting to a database
+
+The `sqlite::connection` holds a https://www.sqlite.org/c3ref/sqlite3.html[connection handle],
+which is automatically closes on destruction.
+
+[source,cpp]
+.examples/tutorial.cpp
+----
+include::../example/tutorial.cpp[tag=conn_path]
+----
+
+Sqlite supports https://www.sqlite.org/inmemorydb.html[in memory databases],
+which are created with the special path `":memory:"`. This is provided as a constant,
+called `in_memory`.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=conn_mem]
+----
+
+== Executing SQL
+
+Once the `conn` is created, the common first step is to create a database schema.
+This can be done with the `execute` command, which allows the execution of multiple statements with one function invocation.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=execute]
+----
+
+Like most functions in sqlite, the `execute` function comes overloaded to allow two modes of error handling:
+- errors as exception
+- errors assigned to a `boost::system::error_code` and <<error_info>>
+
+The second version takes both types by reference after the main arguments, i.e.:
+
+.examples/tutorial_ec.cpp
+[source,cpp]
+----
+include::../example/tutorial_ec.cpp[tag=execute]
+----
+
+The `boost::system::error_code` holds the https://www.sqlite.org/rescode.html[actual integer representing the error],
+while `boost::sqlite::error_info` is a string-like type holding the https://www.sqlite.org/c3ref/errcode.html[error message].
+
+For brevity, the tutorial section will use the exception overloads. See the <<reference>> for details on the overloads.
+
+== Querying data
+
+Once the database provides data it can be queried like this:
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=query1]
+----
+
+The <<resultset>> is a forward range of the data queried from the database.
+The first row of the result is already read.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=query2]
+----
+
+NOTE: The `resultset` has `begin()`/`end()` member functions, so that it can be used in a ranged for loop.
+
+The <<row>> type is a range of <<field>>s,
+which has all the information for the field requested.
+
+In many use-cases this is however superfluous because the structure of the table is known.
+
+To make this easy, you can call query with a type parameter (`query<T>`) which will yield a
+`static_resultset<T>`. `T` can either be a tuple of a struct.
+
+A tuple will assign the query results by order.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=query3]
+----
+
+Using a struct will assign the query results by name, i.e. it will reorder results accordingly.
+If you're using a standard lower than C++20, the `struct` needs to be https://www.boost.org/doc/libs/develop/libs/describe/doc/html/describe.html#ref_boost_describe_struct::[described].
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=query_t]
+include::../example/tutorial.cpp[tag=query4]
+----
+
+The types allowed in the `static_resultset` are:
+
+- `std::int64_t`
+- `double`
+- <<blob, 'blob'>>, <<blob_view, `blob_view`>>
+- <<string>>, <<string_view>>
+- `std::optional<T>`/`boost::optional<T>` with any of the types above.
+
+WARNING: `blob_view` and `string_view` have a limited lifetime. They might be invalidated when the next row is read!
+
+By default, the `static_result` does not check types, following https://www.sqlite.org/datatype3.html[sqlite's general dynamic type system].
+You can eat type checks, by using strict mode:
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=query_strict]
+----
+
+== Statements
+
+To avoid https://xkcd.com/327/[sql injection], querys and execution should not be build dynamically, but be done with parameters.
+
+This is done by creating a statement and then executing it with parameters.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=statement_insert]
+----
+
+The syntax in the sqlite provides multiple versions.
+`?` is a positional parameter, that can have an explicit index at the end (e.g. `?3`) as in the above example.
+`:`, `@`, `$` are named parameters, e.g. `$age`. Named parameters can make queries more readable and provide more checks.
+
+NOTE: See the https://www.sqlite.org/c3ref/bind_blob.html[sqlite syntax] for more details.
+
+A prepared statement can be used multiple times.
+
+[source,cpp]
+----
+include::../example/tutorial.cpp[tag=statement_multi_insert]
+----
+
+WARNING: Calling `.execute` on an lvalue of `statement` will transfer ownership to the `resultset`,
+while calling `.execute` on an rvalue will produce a `resultset` that points to the statement.
+
+NOTE: The result of an `.execute` can also be turned into a static_resultset<T> by using `.execute<T>`.
+
