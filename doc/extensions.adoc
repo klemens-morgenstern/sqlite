@@ -1,0 +1,40 @@
+= Extension Modules
+
+This library can also be used to https://www.sqlite.org/loadext.html::[run-time loadable extensions]
+that can be used by other applications, e.g. the `sqlite3` CLI.
+
+In order to write this, you'll need to include `boost/sqlite/extension.hpp`,
+and write a named module like so:
+
+[source,cpp]
+----
+BOOST_SQLITE_EXTENSION(testlibrary, conn)
+{
+  // create a function that can be used in the plugin
+  create_scalar_function(
+    conn, "assert",
+    [](boost::sqlite::context<>, boost::span<boost::sqlite::value, 1u> sp)
+    {
+        if (sp.front().get_int() == 0)
+          throw std::logic_error("assertion failed");
+    });
+}
+----
+
+[source,sqlite]
+----
+SELECT load_extension('./test_library');
+
+select assert((3 * 4) = 12);
+----
+
+In order to build this, you'll to link against `Boost::sqlite_ext`
+instead of `Boost::sqlite`.
+
+Including the `extension.hpp` header will also define
+`BOOST_SQLITE_COMPILE_EXTENSION`, which will include `sqlite3ext.h`
+instead of `sqlite3.h` and create an inline namespace `ext` inside
+`boost::sqlite`.
+
+This prevents linker issues, but will not allow you to mix extension
+and non-extension code in one translation unit.

@@ -85,3 +85,4 @@ Window functions look similar to aggregate functions, they only need an `inverse
 It is recommended to consult the https://www.sqlite.org/windowfunctions.html[sqlite window function documentation].
 
 NOTE: Window functions are only available for sqlite 3.25.0 and higher.
+
