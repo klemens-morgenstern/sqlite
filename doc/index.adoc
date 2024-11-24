@@ -24,4 +24,4 @@ It is therefore highly recommended to study the https://www.sqlite.org/docs.html
 include::tutorial.adoc[]
 include::functions.adoc[]
 include::extensions.adoc[]
-
+include::vtable.adoc[]

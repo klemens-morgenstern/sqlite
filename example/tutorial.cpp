@@ -95,14 +95,14 @@ int main(int /*argc*/, char */*argv*/[])
              ) -> std::string
       {
         if (val[0].type() != sqlite::value_type::text)
-          throw std::logic_error("Value must be string"); // <2>
+          throw std::logic_error("Value must be string"); // <3>
         auto txt = val[0].get_text();
         std::string res;
         res.resize(txt.size());
         std::transform(txt.begin(), txt.end(), res.begin(), [](char c){return std::toupper(c);});
         return res;
       },
-      sqlite::deterministic // <3>
+      sqlite::deterministic // <4>
       );
 
   auto qu = conn.query("SELECT to_upper(name) FROM users WHERE name == 'Alice';");

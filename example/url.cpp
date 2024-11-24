@@ -12,7 +12,7 @@
 
 using namespace boost;
 
-
+// tag::subtype[]
 constexpr int pct_subtype = static_cast<int>('U');
 
 void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, urls::pct_string_view value)
@@ -31,6 +31,7 @@ void tag_invoke(sqlite::set_result_tag, sqlite3_context * ctx, const urls::segme
   sqlite3_result_text(ctx, value.buffer().data(), value.buffer().size(), nullptr);
   sqlite3_result_subtype(ctx, pct_subtype);
 }
+// end::subtype[]
 
 struct url_cursor final
     : sqlite::vtab::cursor<
@@ -97,7 +98,7 @@ struct url_wrapper final : sqlite::vtab::table<url_cursor>
 
   sqlite::result<void> best_index(sqlite::vtab::index_info & info) override
   {
-    for (const auto constraint : info.constraints())
+    for (const auto & constraint : info.constraints())
     {
       if (constraint.iColumn == 8 && constraint.usable)
       {
@@ -124,7 +125,7 @@ struct url_module final : sqlite::vtab::eponymous_module<url_wrapper>
 };
 
 struct segements_cursor final : sqlite::vtab::cursor<
-    variant2::variant<variant2::monostate, int, core::string_view, urls::segments_encoded_view>>
+    variant2::variant<variant2::monostate, std::int64_t, core::string_view, urls::segments_encoded_view>>
 {
   segements_cursor(urls::segments_encoded_view view) : view(view) {}
   urls::segments_encoded_view view;
@@ -203,8 +204,9 @@ struct segments_module final : sqlite::vtab::eponymous_module<segment_wrapper>
   }
 };
 
+// tag::query_cursor[]
 struct query_cursor final : sqlite::vtab::cursor<
-    variant2::variant<variant2::monostate, int, core::string_view, urls::pct_string_view>
+    variant2::variant<variant2::monostate, std::int64_t, core::string_view, urls::pct_string_view>
     >
 {
   urls::params_encoded_view view;
@@ -213,7 +215,7 @@ struct query_cursor final : sqlite::vtab::cursor<
   sqlite::result<void> next() override { itr++; return {};}
 
   sqlite::result<sqlite3_int64> row_id() override {return std::distance(view.begin(), itr);}
-  sqlite::result<column_type> column(int i, bool /*nochange*/) override
+  sqlite::result<column_type> column(int i, bool /*nochange*/) override // <1>
   {
     //nochange = true;
     switch (i)
@@ -233,7 +235,7 @@ struct query_cursor final : sqlite::vtab::cursor<
   sqlite::result<void> filter(int /*idx*/, const char * /*idxStr*/,
                               span<sqlite::value> values) override
   {
-    if (values.size() > 0u)
+    if (values.size() > 0u) // <2>
       view = urls::params_encoded_view(values[0].get_text());
     itr = view.begin();
 
@@ -241,7 +243,9 @@ struct query_cursor final : sqlite::vtab::cursor<
   }
   bool eof() noexcept override {return itr == view.end();}
 };
+// end::query_cursor[]
 
+// tag::query_boiler_plate[]
 struct query_wrapper final : sqlite::vtab::table<query_cursor>
 {
   const char * declaration() override
@@ -251,7 +255,7 @@ struct query_wrapper final : sqlite::vtab::table<query_cursor>
               idx integer,
               name text,
               value text,
-              query_string text hidden);)";
+              query_string text hidden);)"; // <1>
   }
 
   sqlite::result<query_cursor> open() override
@@ -266,7 +270,7 @@ struct query_wrapper final : sqlite::vtab::table<query_cursor>
       if (constraint.iColumn == 3
           && constraint.usable)
       {
-        if (constraint.op != SQLITE_INDEX_CONSTRAINT_EQ)
+        if (constraint.op != SQLITE_INDEX_CONSTRAINT_EQ) // <2>
           return sqlite::error{SQLITE_OK, "query only support equality constraints"};
 
         info.usage_of(constraint).argvIndex = 1;
@@ -285,12 +289,16 @@ struct query_module final : sqlite::vtab::eponymous_module<query_wrapper>
     return query_wrapper{};
   }
 };
+// end::query_boiler_plate[]
 
 BOOST_SQLITE_EXTENSION(url, conn)
 {
   sqlite::create_module(conn, "url", url_module{});
   sqlite::create_module(conn, "segments", segments_module());
+
+  // tag::query_boiler_plate[]
   sqlite::create_module(conn, "query", query_module());
+  // end::query_boiler_plate[]
   sqlite::create_scalar_function(
       conn, "pct_decode",
       +[](boost::sqlite::context<> , boost::span<boost::sqlite::value, 1u> s)

@@ -1,0 +1,165 @@
+= Virtual tables
+
+https://www.sqlite.org/vtab.html[A Virtual Table] is an object that is registered with a <<connection>>.
+It looks like a regular table, but is actually invoking virtual methods internally.
+This allows users to expose functionality from C++ to sqlite through a table interface.
+
+NOTE: The implementation uses abstract base classes to make interfaces easy to implement.
+You can disable the use of virtual by defining `BOOST_SQLITE_VIRTUAL` which will yield linker errors instead.
+
+== Eponymous
+
+And eponymous table is a virtual table the exists without needing to be created from sqlite.
+
+Such a table can either expose global values or can be used to build https://www.sqlite.org/vtab.html#tabfunc2[table-valued functions].
+
+=== Eponymous value table
+
+The easiest example of a data structure to expose to sql, is a simple ordered map:
+
+[source,cpp]
+----
+container::flat_map<std::string, std::string> data;
+----
+
+To create a virtual table it needs to have a cursor first. The cursor is what runs over the table, akin to an iterator.
+
+[source,cpp]
+----
+include::../example/ordered_map.cpp[tag=cursor]
+----
+<1> Declare the value the cursor produces
+<2> The data the cursor operates on
+<3> Advance the cursor by one
+<4> The module is declared without ROW id, see below
+<5> Get the actual column value
+<6> Tell sqlite when the cursor reached its end
+
+The cursor above just runs over the ordered map, returning values.
+However, the map is always ordered, so the cursor can optimize the built-in filter for sqlite.
+That is, sqlite will filter values on its own, but it's more efficient to do that before returning them.
+
+This can be done in the `filter` function, which can be written as follows:
+
+[source,cpp]
+----
+include::../example/ordered_map.cpp[tag=filter]
+----
+<1> If the first idx is not null, it means the order is reversed (see best_index below)
+<2> The equal constraint can be fulfilled by setting the range to enclose the value.
+<3> A greater than/equal constraint can be fulfilled by moving the beginning of the range.
+<4> A lesser than/equal constraint can be fulfilled by moving the end of the range.
+
+NOTE: Constraints of the same can appear multiple times, so the filter must only narrow the range.
+
+After the cursor, the actual table needs to be implemented:
+
+[source,cpp]
+----
+include::../example/ordered_map.cpp[tag=table]
+----
+<1> Declare the table to not be read-only, which adds functions 4-6.
+<2> The declaration is a literal that tells sqlite the shape of the table. It includes `WITHOUT ROWID` as `cursor.row_id()` mustn't be used.
+<3> This function gets called when the table gets scanned, i.e. a cursor gets created.
+<4> Delete value from the table, inherited from `modifiable`.
+<5> Insert a value into the table, inherited from `modifiable`.
+<6> Update a value in the table, inherited from `modifiable`.
+
+Next, there also should be a `best_index` function. This function informs sqlite about the available
+filter features so that sqlite can omit the operations.
+
+[source,cpp]
+----
+include::../example/ordered_map.cpp[tag=best_index]
+----
+<1> The data being passed on as idxStr to `cursor.filter`.
+<2> These are the constraints handled by filter, so only those get encoded.
+<3> filter assumes idx != 0 means descending, i.e. inverted
+<4> Tell sqlite the data is ordered already.
+<5> Set the index information to be passed to filter.
+
+With that all defined, the only thing left is to declare the module & create it.
+
+[source,cpp]
+----
+include::../example/ordered_map.cpp[tag=module]
+----
+
+=== Function table
+
+An eponymous function can be used as a function. For this example, a `query` vtable will be used to
+parse the query part of a url and return it as a table:
+
+[source,sqlite]
+----
+include::../example/url.sql[tag=query]
+----
+
+[cols="1,1,1"]
+|===
+|0|name|boost
+|1|thingy|foo
+|2|name|sqlite
+|3|foo|
+|===
+
+To achieve this a cursor is needed:
+
+[source,cpp]
+----
+include::../example/url.cpp[tag=query_cursor]
+----
+<1> Return the parts of the query view as columns
+<2> Pick the input value here.
+
+This is the module & table declaration;
+
+[source,cpp]
+----
+include::../example/url.cpp[tag=query_boiler_plate]
+----
+<1> The hidden colum to use for the input value.
+<2> Assert only equal is used for input data.
+
+NOTE: See the https://www.sqlite.org/vtab.html#tabfunc2[sqlite documentation here].
+
+== Non-eponymous Tables
+
+A non-eponymous table is a table backed by an actual resource.
+
+The module needs to provide a `create` function in the module,
+in addition to the `connect` one.
+The table is required to have a `destroy` function that removes the resource.
+
+
+[source,cpp]
+----
+struct csv_module final : sqlite::vtab::module<csv_table>
+{
+    // create the csv file
+    sqlite::result<table_type> create(sqlite::connection /*db*/,
+                                      int argc, const char * const  argv[]);
+
+    // connect to an existing csv file.
+    sqlite::result<table_type> connect(sqlite::connection /*db*/,
+                                       int argc, const char * const  argv[]);
+
+};
+----
+
+The virtual table can be created with the special syntax:
+
+[source,cpp]
+----
+CREATE VIRTUAL TABLE csv_example USING csv_file(./csv-example.csv, username, first_name, last_name);
+----
+
+When the above query is executed `csv_module.create()` will be executed with `"./csv-example.csv", "username", "first_name", "last_name".
+
+If the database gets opened with a previously created virtual table,
+`csv_module.connect()` will be called with the same parameters.
+
+Executing `DROP TABLE csv_example` will call `destroy()` on the `csv_table`.
+
+NOTE: The `destroy` function will be invoked when the virtual table gets dropped,
+not when the connection gets closed.
