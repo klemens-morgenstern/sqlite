@@ -46,8 +46,8 @@ inline void convert_field(std::int64_t & target, const field & f)
 inline void convert_field(double & target, const field & f) {target = f.get_double();}
 
 
-template<typename Allocator, typename Traits>
-inline void convert_field(std::basic_string<char, Allocator, Traits> & target, const field & f)
+template<typename Traits = std::char_traits<char>, typename Allocator = std::allocator<char>>
+inline void convert_field(std::basic_string<char, Traits, Allocator> & target, const field & f)
 {
   auto t = f.get_text();
   target.assign(t.begin(), t.end());
@@ -208,7 +208,7 @@ void check_columns(const T *, const resultset & r,
 
 template<bool Strict, typename T,
          typename = typename std::enable_if<describe::has_describe_members<T>::value>::type>
-void convert_row(const T & res, const row & r, system::error_code ec, error_info & ei)
+void convert_row(T & res, const row & r, system::error_code ec, error_info & ei)
 {
   for (auto && f: r)
   {
@@ -385,7 +385,8 @@ struct static_resultset
   T current(system::error_code & ec, error_info & ei) const &
   {
     T res;
-    return detail::convert_row<Strict>(res, result_.current(), ec, ei);
+    detail::convert_row<Strict>(res, result_.current(), ec, ei);
+    return res;
   }
 
   /// Checks if the last row has been reached.
@@ -476,7 +477,7 @@ struct static_resultset
 
   static_resultset<T, true> strict() &&
   {
-    return {result_};
+    return {std::move(result_)};
   }
  private:
 
