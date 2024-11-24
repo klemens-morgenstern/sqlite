@@ -13,25 +13,24 @@ using namespace boost;
 
 // this examples shows how to expose an ordered map as a vtable.
 
-struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
+// tag::cursor[]
+struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view> // <1>
 {
   container::flat_map<std::string, std::string> &data;
   ordered_map_cursor(container::flat_map<std::string, std::string> &data) : data(data) {}
   bool inverse = false;
 
-  using reverse_iterator = typename container::flat_map<std::string, std::string>::reverse_iterator;
   using const_iterator = typename container::flat_map<std::string, std::string>::const_iterator;
+  const_iterator begin{data.begin()}, end{data.end()}; // <2>
 
-  const_iterator begin{data.begin()}, end{data.end()};
-
-  sqlite::result<void> next() override { if (inverse) end--; else begin++; return {};}
+  sqlite::result<void> next() override { if (inverse) end--; else begin++; return {};} // <3>
 
   sqlite::result<sqlite3_int64> row_id() override
   {
-    return {system::in_place_error, SQLITE_MISUSE,
+    return {system::in_place_error, SQLITE_MISUSE, // <4>
             "this shouldn't be called, we're omitting the row id"};
   }
-  sqlite::result<sqlite::string_view> column(int i, bool /*nochange*/) override
+  sqlite::result<sqlite::string_view> column(int i, bool /*nochange*/) override // <5>
   {
     auto & elem = inverse ? *std::prev(end) : *begin;
 
@@ -40,9 +39,11 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
     else
       return elem.second;
   }
+  // end::cursor[]
+  //tag::filter[]
   sqlite::result<void> filter(int idx, const char * idxStr, span<sqlite::value> values) override
   {
-    if (idx != 0)
+    if (idx != 0) // <1>
       inverse = true;
 
     for (auto i = 0u; i < values.size(); i ++)
@@ -50,7 +51,7 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
       auto txt = values[i].get_text();
       switch (idxStr[i])
       {
-        case SQLITE_INDEX_CONSTRAINT_EQ:
+        case SQLITE_INDEX_CONSTRAINT_EQ: // <2>
         {
           auto nw = data.equal_range(txt);
           if (nw.first > begin)
@@ -60,7 +61,7 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
         }
 
           break;
-        case SQLITE_INDEX_CONSTRAINT_GT:
+        case SQLITE_INDEX_CONSTRAINT_GT: // <3>
         {
           auto new_begin = data.find(txt);
           new_begin ++;
@@ -68,14 +69,14 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
             begin = new_begin;
         }
           break;
-        case SQLITE_INDEX_CONSTRAINT_GE:
+        case SQLITE_INDEX_CONSTRAINT_GE: // <3>
         {
           auto new_begin = data.find(txt);
           if (new_begin > begin)
             begin = new_begin;
         }
           break;
-        case SQLITE_INDEX_CONSTRAINT_LE:
+        case SQLITE_INDEX_CONSTRAINT_LE: // <4>
         {
           auto new_end = data.find(txt);
           new_end++;
@@ -84,7 +85,7 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
 
         }
           break;
-        case SQLITE_INDEX_CONSTRAINT_LT:
+        case SQLITE_INDEX_CONSTRAINT_LT: // <4>
         {
           auto new_end = data.find(txt);
           if (new_end < end)
@@ -96,52 +97,46 @@ struct ordered_map_cursor final : sqlite::vtab::cursor<sqlite::string_view>
     }
     return {};
   }
-
-  bool eof() noexcept override
+  //end::filter[]
+  // tag::cursor[]
+  bool eof() noexcept override // <6>
   {
     return begin == end;
   }
 };
+// end::cursor[]
 
 
+// tag::table[]
 struct map_impl final
     : sqlite::vtab::table<ordered_map_cursor>,
-      sqlite::vtab::modifiable
+      sqlite::vtab::modifiable // <1>
 
 {
-  container::flat_map<std::string, std::string> data;
-  const char * declaration() override
+  container::flat_map<std::string, std::string> &data;
+  map_impl(container::flat_map<std::string, std::string> &data) : data(data) {}
+
+  const char * declaration() override // <2>
   {
     return R"(
           create table my_map(
               name text primary key unique not null,
               data text) WITHOUT ROWID;)";
   }
-  enum indices // 32
-  {
-    no_index   = 0b00000000,
-    equal      = 0b00000001,
-    gt         = 0b00000100,
-    ge         = 0b00001100,
-    lt         = 0000010000,
-    le         = 0b00110000,
-    order_asc  = 0b01000000,
-    order_desc = 0b10000000,
-  };
 
 
-  sqlite::result<cursor_type> open() override
+  sqlite::result<cursor_type> open() override // <3>
   {
     return cursor_type{data};
   }
 
-  sqlite::result<void> delete_(sqlite::value key) override
+  sqlite::result<void> delete_(sqlite::value key) override // <4>
   {
     data.erase(key.get_text());
     return {};
   }
   sqlite::result<sqlite_int64> insert(sqlite::value /*key*/, span<sqlite::value> values,
-                                      int /*on_conflict*/) override
+                                      int /*on_conflict*/) override // <5>
   {
     data.emplace(values[0].get_text(), values[1].get_text());
     return 0;
@@ -149,7 +144,7 @@ struct map_impl final
 
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
                                       span<sqlite::value> values,
-                                      int /*on_conflict*/) override
+                                      int /*on_conflict*/) override // <6>
   {
     if (new_key.get_int() != old_key.get_int())
       data.erase(old_key.get_text());
@@ -157,14 +152,15 @@ struct map_impl final
     return 0;
   }
 
-
+  // end::table[]
+  // tag::best_index[]
   sqlite::result<void> best_index(sqlite::vtab::index_info & info) override
   {
     // we're using the index to encode the mode, because it's simple enough.
     // more complex application should use it as an index like intended
 
     int idx = 0;
-    sqlite::unique_ptr<char[]> str;
+    sqlite::unique_ptr<char[]> str; // <1>
     if (info.constraints().size() > 0)
     {
       const auto sz = info.constraints().size()+1;
@@ -176,13 +172,13 @@ struct map_impl final
 
     for (auto i = 0u; i < info.constraints().size(); i++)
     {
-      if ((idx & equal) != 0)
+      if ((idx & SQLITE_INDEX_CONSTRAINT_EQ) != 0)
         break;
       auto ct = info.constraints()[i];
       if (ct.iColumn == 0
           && ct.usable != 0) // aye, that's us
       {
-        switch (ct.op)
+        switch (ct.op) //<2>
         {
           // we'll stick to these
           case SQLITE_INDEX_CONSTRAINT_EQ: BOOST_FALLTHROUGH;
@@ -203,30 +199,41 @@ struct map_impl final
 
     if (info.order_by().size() == 1 && info.order_by()[0].iColumn == 0)
     {
-      idx |= info.order_by()[0].desc != 0 ? order_desc : order_asc;
-      info.set_already_ordered();
+      idx |= info.order_by()[0].desc; // <3>
+      info.set_already_ordered(); // <4>
     }
 
+    // <5>
     info.set_index(idx);
     if (str)
       info.set_index_string(str.release(), true);
 
     return {};
   }
+  // end::best_index[]
+  // tag::table[]
 };
 
+// end::table[]
+
+// tag::module[]
 struct ordered_map_module final : sqlite::vtab::eponymous_module<map_impl>
 {
+  container::flat_map<std::string, std::string> data;
+  template<typename ... Args>
+  ordered_map_module(Args && ...args) : data(std::forward<Args>(args)...) {}
 
   sqlite::result<map_impl> connect(
       sqlite::connection /*conn*/, int /*argc*/, const char * const */*argv*/)
   {
-    return map_impl{};
+    return map_impl{data};
   }
 };
+// end::module[]
 
 
-std::initializer_list<std::tuple<std::string, std::string>> raw_data = {
+
+std::initializer_list<std::pair<std::string, std::string>> init_data = {
     {"atomic",                    "1.53.0"},
     {"chrono",                    "1.47.0"},
     {"container",                 "1.48.0"},
@@ -273,14 +280,11 @@ void print(std::ostream & os, sqlite::resultset rw)
 int main (int /*argc*/, char * /*argv*/[])
 {
   sqlite::connection conn{":memory:"};
-  auto & m = sqlite::create_module(conn, "my_map", ordered_map_module());
-  boost::ignore_unused(m);
 
-  {
-    auto p = conn.prepare("insert into my_map (name, data) values (?, ?);");
-    for (const auto & d : raw_data)
-      p.execute(d);
-  }
+  // tag::module[]
+  ordered_map_module & m = sqlite::create_module(conn, "my_map", ordered_map_module(init_data));
+  // end::module[]
+  boost::ignore_unused(m);
 
   print(std::cout, conn.query("select * from my_map order by name desc;"));
   print(std::cout, conn.query("select * from my_map where name = 'url';"));

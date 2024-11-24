@@ -18,7 +18,7 @@
 using namespace boost;
 
 // add more conversions here if you need more types in the described struct
-void assign_value(int & res, sqlite::value val) { res = val.get_int();}
+void assign_value(std::int64_t & res, sqlite::value val) { res = val.get_int();}
 void assign_value(std::string & res, sqlite::value val) { res = val.get_text();}
 
 template<typename T>
@@ -162,8 +162,8 @@ void print_table(std::ostream & str, sqlite::resultset res)
 struct boost_library
 {
   std::string name;
-  int first_released;
-  int standard;
+  std::int64_t first_released;
+  std::int64_t standard;
 };
 
 BOOST_DESCRIBE_STRUCT(boost_library, (), (name, first_released, standard));

@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(aggregate)
         counter += val[0].get_text().size();
       }
 
-      std::size_t final()
+      std::int64_t final()
       {
         return counter;
       }
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(aggregate_result)
       return {};
     }
 
-    sqlite::result<std::size_t> final()
+    sqlite::result<std::int64_t> final()
     {
       return counter;
     }
@@ -229,7 +229,7 @@ BOOST_AUTO_TEST_CASE(window)
     }
 
 
-    std::size_t value()
+    std::int64_t value()
     {
       return counter;
     }
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(window_result)
     }
 
 
-    sqlite::result<std::size_t> value()
+    sqlite::result<std::int64_t> value()
     {
       return counter;
     }

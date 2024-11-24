@@ -14,6 +14,8 @@
 
 #include <boost/variant2/variant.hpp>
 
+#include <type_traits>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -35,7 +37,14 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, zero_blob zb)
 
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
 
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, sqlite3_int64 value)
+{
+  sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
+}
+
+template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite3_int64>::value>>
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::int64_t value)
+
 {
   sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
 }

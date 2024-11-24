@@ -27,6 +27,7 @@ BOOST_AUTO_TEST_CASE(collation)
   conn.execute(
 #include "test-db.sql"
   );
+
   sqlite::create_collation(conn, "length", collate_length{});
 
   std::vector<std::string> names;
@@ -37,4 +38,8 @@ BOOST_AUTO_TEST_CASE(collation)
 
   std::vector<std::string> cmp = {"peter", "ruben"};
   BOOST_CHECK(names == cmp);
+
+  sqlite::delete_collation(conn, "length");
+
+  BOOST_CHECK_THROW(conn.query("select first_name from author where first_name = 5 collate length order by last_name asc;"), system::system_error);
 }

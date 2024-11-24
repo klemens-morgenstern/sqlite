@@ -27,7 +27,7 @@ void connection::connect(cstring_ref filename, int flags, system::error_code & e
     auto r = sqlite3_open_v2(filename.c_str(), &res, flags,
                              nullptr);
     if (r != SQLITE_OK)
-        BOOST_SQLITE_ASSIGN_EC(ec, r)
+        BOOST_SQLITE_ASSIGN_EC(ec, r);
     else
     {
       impl_.reset(res);
@@ -55,7 +55,7 @@ void connection::close(system::error_code & ec,
         if (SQLITE_OK != cc)
         {
             impl_.reset(tmp);
-            BOOST_SQLITE_ASSIGN_EC(ec, cc)
+            BOOST_SQLITE_ASSIGN_EC(ec, cc);
             ei.set_message(sqlite3_errmsg(impl_.get()));
         }
     }
@@ -75,7 +75,7 @@ resultset connection::query(
 
     if (cc != SQLITE_OK)
     {
-        BOOST_SQLITE_ASSIGN_EC(ec, cc)
+        BOOST_SQLITE_ASSIGN_EC(ec, cc);
         ei.set_message(sqlite3_errmsg(impl_.get()));
     }
     else
@@ -110,7 +110,7 @@ statement connection::prepare(
 
     if (cc != SQLITE_OK)
     {
-        BOOST_SQLITE_ASSIGN_EC(ec, cc)
+        BOOST_SQLITE_ASSIGN_EC(ec, cc);
         ei.set_message(sqlite3_errmsg(impl_.get()));
     }
     else

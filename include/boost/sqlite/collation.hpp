@@ -57,7 +57,7 @@ void create_collation(
         system::error_code>::type & ec)
 {
     using func_type = typename std::decay<Func>::type;
-    auto f = new (memory_tag{}) func_type(std::forward<Func>(func));
+    unique_ptr<func_type> f{new (memory_tag{}) func_type(std::forward<Func>(func))};
     if (f == nullptr)
     {
       BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_NOMEM);
@@ -67,7 +67,7 @@ void create_collation(
         conn.handle(),
         name.c_str(),
         SQLITE_UTF8,
-        f,
+        f.get(),
         +[](void * data, int len_l, const void * str_l, int len_r, const void * str_r) -> int
         {
           string_view l(static_cast<const char*>(str_l), len_l);
@@ -79,8 +79,11 @@ void create_collation(
         },
         +[](void * p) { delete_(static_cast<func_type*>(p)); }
       );
+    printf(sqlite3_errmsg(conn.handle()));
     if (res != SQLITE_OK)
       BOOST_SQLITE_ASSIGN_EC(ec, res);
+    else
+      f.release();
 }
 
 
@@ -101,6 +104,35 @@ auto create_collation(
     if (ec)
         detail::throw_error_code(ec, BOOST_CURRENT_LOCATION);
 }
+
+
+inline void delete_collation(
+    connection & conn,
+    cstring_ref name,
+    system::error_code & ec)
+{
+    auto res = sqlite3_create_collation_v2(
+        conn.handle(),
+        name.c_str(),
+        SQLITE_UTF8,
+        nullptr, nullptr, nullptr);
+    if (res != SQLITE_OK)
+    {
+        BOOST_SQLITE_ASSIGN_EC(ec, res);
+    }
+}
+
+
+inline auto delete_collation(
+    connection & conn,
+    cstring_ref name)
+{
+    system::error_code ec;
+    delete_collation(conn, name, ec);
+    if (ec)
+        detail::throw_error_code(ec, BOOST_CURRENT_LOCATION);
+}
+
 /// @}
 
 BOOST_SQLITE_END_NAMESPACE
