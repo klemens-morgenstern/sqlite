@@ -1,0 +1,43 @@
+== `sqlite/backup.hpp`
+[#backup]
+
+Backup is a small wrapper function to create a backup of one database into another.
+This can be useful to write an in memory database to disk et vice versa.
+
+[source,cpp]
+----
+void
+backup(connection & source,
+       connection & target,
+       cstring_ref source_name = "main",
+       cstring_ref target_name = "main");
+
+void
+backup(connection & source,
+       connection & target,
+       cstring_ref source_name,
+       cstring_ref target_name,
+       system::error_code & ec,
+       error_info & ei);
+----
+
+
+source:: The source database to backup
+
+target:: The target of the backup
+
+source_name:: The source database to read the backup from. Default is 'main'.
+target_name:: The target database to write the backup to.  Default is 'main'.
+
+
+.Example
+[source,cpp]
+----
+sqlite::connection conn{sqlite::in_memory};
+{
+    sqlite::connection read{"./read_only_db.db", SQLITE_READONLY};
+    // read peristed data into memory.
+    backup(read, target);
+}
+----
+

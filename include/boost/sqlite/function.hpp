@@ -227,7 +227,7 @@ auto create_scalar_function(
   @endcode
 
  */
-template<typename Func, typename Args = std::tuple<>>
+template<typename Func>
 auto create_scalar_function(
     connection & conn,
     cstring_ref name,
@@ -356,9 +356,9 @@ void create_aggregate_function(
  `func` needs to be an object with three functions:
 
  @code{.cpp}
- void step(State &, boost::span<sqlite::value, N> args);
- void inverse(State & , boost::span<sqlite::value, N> args);
- T final(State &);
+ void step(boost::span<sqlite::value, N> args);
+ void inverse(boost::span<sqlite::value, N> args);
+ T final();
  @endcode
 
  `State` can be any type and will get deduced together with `N`.

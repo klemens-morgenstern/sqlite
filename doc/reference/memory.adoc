@@ -1,0 +1,29 @@
+== `sqlite/memory.hpp`
+
+The memory header provides C++-y access to the memory facilities of sqlite.
+
+[source,cpp,subs=+quotes]
+----
+// A tag to allow `operator new`
+struct memory_tag {};
+
+// new operators <1>
+void *operator new  ( std::size_t size, boost::sqlite::memory_tag) noexcept;
+void *operator new[]( std::size_t size, boost::sqlite::memory_tag) noexcept;
+void operator delete  ( void* ptr, boost::sqlite::memory_tag) noexcept;
+
+// A unique ptr that uses sqlite3_malloc / sqlite3_free
+template<typename T>
+using unique_ptr = std::unique_ptr<T, __implementation_detail__>;
+template<typename T, typename ... Args>
+unique_ptr<T> make_unique(Args && ... args);
+
+// Get the size of the allocated memory.
+template<typename T>
+std::size_t msize(const unique_ptr<T> & ptr);
+
+
+---
+<1> `new (sqlite::memory_tag{}) T()` uses sqlite3_malloc
+
+

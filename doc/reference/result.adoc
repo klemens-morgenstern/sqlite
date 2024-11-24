@@ -1,0 +1,40 @@
+== `sqlite/result.hpp`
+
+The result header is used by functions and vtables to turn resulting values into
+sqlite values. The `tag_invoke` interface is public and meant to extended.
+
+That is, implementing `tag_invoke(sqlite::set_result_tag, sqlite3_context, T);`
+will enable `T` to be used as a result by sqlite.
+
+[source,cpp]
+----
+// The tag
+struct set_result_tag {};
+
+// built-in result type
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, blob b);
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, zero_blob zb);
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, sqlite3_int64 value);inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::int64_t value);
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::nullptr_t);
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, string_view str);
+template<typename String>
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, String && str);
+inline void tag_invoke(set_result_tag, sqlite3_context * , variant2::monostate);
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const value & val);
+template<typename ... Args>
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const variant2::variant<Args...> & var);
+
+template<typename T>
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T> ptr);
+template<typename T>
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T, void(*)(T*)> ptr);
+template<typename T, typename Deleter>
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T> ptr);
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, error err);
+template<typename T>
+inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, result<T> res);
+inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, result<void> res):
+----
+
+

@@ -38,3 +38,4 @@ instead of `sqlite3.h` and create an inline namespace `ext` inside
 
 This prevents linker issues, but will not allow you to mix extension
 and non-extension code in one translation unit.
+

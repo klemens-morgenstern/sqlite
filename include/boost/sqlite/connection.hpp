@@ -48,7 +48,7 @@ struct connection
     /// Move assign operator.
     connection& operator=(connection && ) = default;
 
-    /// Construct a connection and connect it to `filename`.. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
+    /// Construct a connection and connect it to `filename`. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
     connection(cstring_ref filename,
                int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) { connect(filename, flags); }
 

@@ -1,0 +1,104 @@
+== `sqlite/transaction.hpp`
+
+=== `transaction`
+
+A simple transaction guard implementing RAAI for transactions
+
+.Definition
+[source,cpp]
+----
+struct transaction
+{
+  // The mode of the transaction
+  enum behaviour {deferred, immediate, exclusive};
+  // A tag to use, to adopt an already initiated transaction.
+  constexpr static struct adopt_transaction_t {} adopt_transaction{};
+
+  // Create transaction guard on an existing transaction
+  transaction(connection & conn, adopt_transaction_t);
+
+
+  // Create transaction guard and initiate a transaction
+  transaction(connection & conn);
+
+  // Create transaction guard and initiate a transaction with the defined behaviour
+  transaction(connection & conn, behaviour b) ;
+
+  // see https://www.sqlite.org/lang_transaction.html re noexcept
+  // rollback the transaction if not committed.
+  ~transaction() noexcept(SQLITE_VERSION_NUMBER >= 3007011);
+
+
+  // Commit the transaction.
+  void commit();
+  void commit(system::error_code & ec, error_info & ei);
+  // Rollback the transaction explicitly.
+  void rollback();
+  void rollback(system::error_code & ec, error_info & ei);
+
+};
+----
+
+
+
+.Example
+[source,cpp]
+----
+sqlite::connection conn;
+conn.connect("./my-database.db");
+
+sqlite::transaction t{conn};
+conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
+t.commit();
+----
+
+=== `savepoint`
+
+A simple transaction guard implementing RAAI for savepoints. Savepoints can be used recursively.
+
+.Definition
+[source,cpp]
+----
+
+struct savepoint
+{
+  // A tag to use, to adopt an already initiated transaction.
+  constexpr static transaction::adopt_transaction_t adopt_transaction{};
+
+  // Create savepoint guard on an existing savepoint
+  savepoint(connection & conn, std::string name, transaction::adopt_transaction_t);
+
+  // Create transaction guard and initiate it
+  savepoint(connection & conn, std::string name);
+
+  // rollback to the savepoint if not committed.
+  ~savepoint() noexcept(SQLITE_VERSION_NUMBER >= 3007011);
+
+  // Commit/Release the transaction.
+  void commit();
+  void commit(system::error_code & ec, error_info & ei);
+
+  void release();
+  void release(system::error_code & ec, error_info & ei);
+
+  // Rollback the transaction explicitly.
+  void rollback();
+  void rollback(system::error_code & ec, error_info & ei);
+  // The name of the savepoint.
+
+  const std::string & name() const;
+};
+----
+
+
+.Example
+[source,cpp]
+----
+sqlite::connection conn;
+conn.connect("./my-database.db");
+
+sqlite::savepoint t{conn, "my-savepoint};
+conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
+t.commit();
+----
+

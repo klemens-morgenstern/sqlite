@@ -1,0 +1,16 @@
+== `sqlite/mutex.hpp`
+
+The mutex header provides to std::mutex compatible classes using the sqlite mutex implementation.
+
+This will allow C++ code to use mutex code matching the configuration of sqlite.
+This may include the mutex being a noop.
+
+[source,cpp,subs=+quotes]
+----
+// similar to std::mutex
+struct mutex;
+// similar to std::recursive_mutexx
+struct recursive_mutex;
+----
+
+

@@ -1,0 +1,91 @@
+== `sqlite/error.hpp`
+
+=== `sqlite_category`
+
+The sqlite_category is a `boost::system::error_category` to be used with sqlite errors.
+
+=== `error_info`
+
+The `error_info` class hold additional information about error conditions stored in an sqlite-allocate string.
+
+Contains an error message describing what happened. Not all error conditions are able to generate this extended information - those that
+can't will have an empty error message.
+
+The `error_info` allocates memory from the sqlite pool and holds it.
+
+[source,cpp]
+----
+struct error_info
+{
+    // Default constructor.
+    error_info() = default;
+
+    // Initialization constructor. Copies the message into a newly create buffer.
+    error_info(core::string_view msg) noexcept;
+    // set the message by copy
+    void set_message(core::string_view msg);
+
+    // Reset the buffer. If `c` is not null, its ownership is transferred into the error_info object.
+    void reset(char * c = nullptr);
+
+    // Format a message into a newly allocated buffer.
+    cstring_ref format(cstring_ref fmt, ...);
+    // Format a message into the existing buffer.
+    cstring_ref snformat(cstring_ref fmt, ...);
+    /// reserve data in the buffer i.e. allocate
+    void reserve(std::size_t sz);
+
+    // Get the allocated memory
+    std::size_t capacity() const;
+
+    // Gets the error message.
+    cstring_ref message() const noexcept;
+
+    // Release the underlying memory. It must be freed using `sqlite_free` later.
+    char * release();
+    // Restores the message to its initial state. Does not release memory.
+    void clear() noexcept;
+
+};
+----
+
+=== `error`
+
+The `error` class holds `error_info` and a `code` and can be used with https://www.boost.org/doc/libs/master/libs/system/doc/html/system.html#ref_boostsystemresult_hpp[`boost::system::result`].
+
+[source,cpp]
+----
+/**
+ * \brief An error containing both a code & optional message.
+ * \ingroup reference
+ * \details Contains an error .
+ */
+struct error
+{
+  // The code of the error.
+  int code;
+  // The additional information of the error
+  error_info info;
+
+  // Create an error with code & message
+  error(int code, error_info info) ;
+  error(int code, core::string_view info);
+  error(system::error_code code, error_info info)  // <1>
+  // Create an error with only a code.
+  explicit error(int code);
+
+  error(system::error_code code);
+  // Create an empty error;
+  error() = default;
+  error(error && ) noexcept = default;
+};
+
+// For compatability with system::result;
+void throw_exception_from_error( error const & e, boost::source_location const & loc );
+
+template<typename T = void>
+using result = system::result<T, error>;
+----
+<1> If code.category() is not `sqlite_category`, the code will be set to `SQLITE_FAIL`.
+
+

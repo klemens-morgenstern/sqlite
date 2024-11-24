@@ -1,0 +1,18 @@
+== `sqlite/string.hpp`
+
+This string header exposes some sqlite utility functions in a C++y way.
+
+
+[source,cpp]
+----
+bool like(cstring_ref lhs, cstring_ref rhs, char escape = '\0'); // <1>
+bool glob(cstring_ref lhs, cstring_ref rhs); // <2>
+int icmp(cstring_ref lhs, cstring_ref rhs); // <3>
+int icmp(string_view lhs, string_view rhs, std::size_t n); // <4>
+----
+<1> uses https://www.sqlite.org/c3ref/strlike.html[strlike]
+<2> uses https://www.sqlite.org/c3ref/strglob.html[strglob]
+<3> used https://www.sqlite.org/c3ref/stricmp.html[stricmp]
+<4> used https://www.sqlite.org/c3ref/stricmp.html[strnicmp]
+
+

@@ -1,4 +1,5 @@
 = Virtual tables
+[#vtables]
 
 https://www.sqlite.org/vtab.html[A Virtual Table] is an object that is registered with a <<connection>>.
 It looks like a regular table, but is actually invoking virtual methods internally.
@@ -163,3 +164,4 @@ Executing `DROP TABLE csv_example` will call `destroy()` on the `csv_table`.
 
 NOTE: The `destroy` function will be invoked when the virtual table gets dropped,
 not when the connection gets closed.
+

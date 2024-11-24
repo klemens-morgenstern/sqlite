@@ -1,0 +1,85 @@
+== `sqlite/value.hpp`
+
+=== `value_type`
+
+The https://www.sqlite.org/datatype3.html)[type of a value].
+
+[source,cpp]
+----
+enum class value_type
+{
+    // An integral value
+    integer = SQLITE_INTEGER,
+    // A floating piont value
+    floating = SQLITE_FLOAT,
+    // A textual value
+    text = SQLITE_TEXT,
+    // A binary value
+    blob = SQLITE_BLOB,
+    // No value
+    null = SQLITE_NULL,
+};
+
+// Get the name as a string
+const char * value_type_name(value_type vt);
+----
+
+=== `value`
+
+A holder for a sqlite values used for internal APIs.
+
+[source,cpp]
+----
+
+struct value
+{
+    // The value for integers in the database
+    typedef sqlite3_int64 int64 ;
+
+    // The type of the value
+    value_type type() const;
+    // The subtype of the value.
+    int subtype() const;
+
+    // Is the held value null
+    bool is_null() const;
+    // Is the held value is not null
+    explicit operator bool () const;
+    // Returns the value as an `integer`.
+    int64 get_int() const;
+    // Returns the value as an `double`.
+    double get_double() const;
+    // Returns the value as text, i.e. a string_view. Note that this value may be invalidated`.
+    cstring_ref get_text() const;
+    // Returns the value as blob, i.e. raw memory. Note that this value may be invalidated`.
+    blob_view get_blob() const;
+
+    // Best numeric datatype of the value
+    value_type numeric_type() const;
+
+    // True if the column is unchanged in an UPDATE against a virtual table.
+    // requires sqlite 3.32
+    bool nochange() const;
+    // True if value originated from a bound parameter
+    // requires sqlite 3.31
+    bool from_bind() const;
+
+
+    // Construct value from a handle.
+    explicit value(sqlite3_value * value_) noexcept : value_(value_) {}
+
+    // The handle of the value.
+    using handle_type = sqlite3_value *;
+    // Returns the handle.
+    handle_type handle() const;
+    handle_type & handle();
+
+    // Get a value that was passed through the pointer interface.
+    // A value can be set as a pointer by binding/returning a unique_ptr.
+    // Rquires sqlite 3.20
+    template<typename T>
+    T * get_pointer();
+
+};
+----
+

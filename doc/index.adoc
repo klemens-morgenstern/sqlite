@@ -16,7 +16,7 @@ Version 1.0, 23.11.2024
 
 = Introduction
 
-This library is a small library, extending the excellent sqlite API for C++.
+This small C+\+-14 library, extending the excellent sqlite API for C++.
 It sticks as close as possible to the sqlite API, but adopts thing like errors or ranges.
 
 It is therefore highly recommended to study the https://www.sqlite.org/docs.html[sqlite documentation].
@@ -25,3 +25,4 @@ include::tutorial.adoc[]
 include::functions.adoc[]
 include::extensions.adoc[]
 include::vtable.adoc[]
+include::reference.adoc[]

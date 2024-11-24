@@ -1,0 +1,28 @@
+== `sqlite/json.hpp`
+
+The json header provides integration with boost/json.
+
+[source,cpp]
+----
+
+// The subtype value used by the sqlite json extension. See the [sqlite reference](https://www.sqlite.org/json1.html)
+constexpr int json_subtype = static_cast<int>('J');
+
+// Allow json to be used as a result from functions or vtables
+void tag_invoke(const struct set_result_tag &, sqlite3_context * ctx, const json::value & value);
+
+// Check if the value or field is a json.
+bool is_json(const value & v);
+bool is_json(const field & f);
+
+//Convert the value or field to a json.
+json::value as_json(const value & v, json::storage_ptr ptr = {});
+json::value as_json(const field & f, json::storage_ptr ptr = {});
+
+// Allow conversions to boost::json::value
+void tag_invoke( const json::value_from_tag &, json::value& val, const value & f);
+void tag_invoke( const json::value_from_tag &, json::value& val, const field & f);
+void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs);
+----
+
+

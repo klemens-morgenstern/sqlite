@@ -1,0 +1,100 @@
+== `sqlite/connection.hpp`
+[#connection]
+
+The `connection` object is the main object to access a database.
+
+.Definition
+[source,cpp]
+----
+// Utility constant for in-memory databases
+constexpr static cstring_ref in_memory = ":memory:";
+
+struct connection
+{
+    // The handle of the connection
+    using handle_type = sqlite3*;
+    // Returns the handle
+    handle_type handle() const;
+    // Release the owned handle.
+    handle_type release() &&;
+
+    //Default constructor
+    connection() = default;
+    // Construct the connection from a handle.
+    explicit connection(handle_type handle, bool take_ownership = true); // <1>
+    // Move constructor.
+    connection(connection && ) = default;
+    // Move assign operator.
+    connection& operator=(connection && ) = default;
+
+    // Construct a connection and connect it to `filename`. `flags` is set by `SQLITE_OPEN_*` flags.
+    connection(cstring_ref filename,
+               int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); // <2>
+    template<typename Path>
+    explicit connection(const Path & pth);
+
+
+    // Connect the database to `filename`.  `flags` is set by `SQLITE_OPEN_*` flags.
+    void connect(cstring_ref filename, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE); // <2>
+    void connect(cstring_ref filename, int flags, system::error_code & ec);
+
+    template<typename Path>
+    void connect(const Path & pth, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
+    template<typename Path>
+    void connect(const Path & pth, int flags, system::error_code & ec);
+
+    // Close the database connection.
+    void close();
+    void close(system::error_code & ec, error_info & ei);
+
+    // Check if the database holds a valid handle.
+    bool valid() const;
+
+    // Perform a query without parameters. Can only execute a single statement.
+    resultset query(
+            core::string_view q,
+            system::error_code & ec,
+            error_info & ei);
+    resultset query(core::string_view q);
+
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> query(core::string_view q, system::error_code & ec, error_info & ei);
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> query(core::string_view q);
+
+    // Perform a query without parametert, It execute a multiple statement.
+    void execute(cstring_ref q, system::error_code & ec, error_info & ei);
+    void execute(cstring_ref q);
+
+
+    // Preparse a a statement.
+    statement prepare(
+            core::string_view q,
+            system::error_code & ec,
+            error_info & ei);
+    statement prepare(core::string_view q);
+
+
+    // Check if the database has the table
+    bool has_table(
+        cstring_ref table,
+        cstring_ref db_name = "main") const;
+
+    // Check if the database has the table
+    bool has_column(
+        cstring_ref table,
+        cstring_ref column,
+        cstring_ref db_name = "main") const;
+};
+
+----
+<1> The `take_ownership` is usually only false when used from <<extension_modules, extension modules>>.
+<2> See https://www.sqlite.org/c3ref/c_open_autoproxy.html[the sqlite documentation for the available flags].
+
+.Example
+[source,cpp]
+----
+sqlite::connection conn;
+conn.connect("./my-database.db");
+conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
+----

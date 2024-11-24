@@ -1,0 +1,275 @@
+== `sqlite/vtable.hpp`
+
+Please read the <<vtables, virtual tables section>> for a more detailed explanation.
+
+[source,cpp]
+----
+namespace vtab
+{
+
+
+// Helper type to set a function through the xFindFunction callback
+struct function_setter
+{
+    /** Set the function
+     *
+     * The function can either take a single argument, a `span<sqlite::value, N>`
+     * for scalar functions,
+     * or a `context<Args...>` as first, and the span as second for aggegrate functions.
+     *
+     */
+    template<typename Func>
+    void set(Func & func);
+    template<typename ... Args, std::size_t Extent>
+    void set(void(* ptr)(context<Args...>, span<value, Extent>)) noexcept;
+    template<typename T, typename ... Args,  std::size_t Extent>
+    void set(T(* ptr)(context<Args...>, span<value, Extent>));
+
+    template<std::size_t Extent>
+    void set(void(* ptr)(span<value, Extent>));
+    template<typename T, std::size_t Extent>
+    void set(T(* ptr)(span<value, Extent>));
+};
+
+
+// requires Sqlite 3.38
+// Utility function that can be used in `xFilter` for the `in` operator. <1>
+
+struct in
+{
+    struct iterator
+    {
+        iterator() = default;
+
+        iterator & operator++();
+        iterator operator++(int);
+
+        const value & operator*() const;
+
+        const value * operator->() const;
+
+        bool operator==(const iterator& other) const;
+        bool operator!=(const iterator& other) const;
+    };
+
+    // Returns a forward iterator to the `in` sequence for an `in` constraint pointing to the begin.
+    iterator begin();
+    // Returns a forward iterator to the `in` sequence for an `in` constraint pointing to the end.
+    iterator end();
+explicit in(sqlite::value   out);
+};
+
+
+
+// index info used by the find_index function <2>
+struct index_info
+{
+  // Returns constraints of the index.
+  span<const sqlite3_index_info::sqlite3_index_constraint> constraints() const;
+
+  // Returns ordering of the index.
+  span<const sqlite3_index_info::sqlite3_index_orderby> order_by() const;
+
+  span<sqlite3_index_info::sqlite3_index_constraint_usage> usage();
+
+
+  sqlite3_index_info::sqlite3_index_constraint_usage & usage_of(
+      const sqlite3_index_info::sqlite3_index_constraint & info);
+
+  // Receive the collation for the contrainst of the position. requires 3.22
+  const char * collation(std::size_t idx) const;
+
+  int on_conflict() const;
+
+  // Returns true if the constraint is distinct. requires sqlite 3.38
+  bool   distinct() const;
+
+  // Requires sqlite 3.38
+  value * rhs_value(std::size_t idx) const;
+
+  void set_already_ordered();
+  void set_estimated_cost(double cost);
+  // requires sqlite 3.8.2
+  void set_estimated_rows(sqlite3_int64 rows);
+  // requires sqlite 3.9
+  void set_index_scan_flags(int flags);
+  // requires sqlite 3.10
+  std::bitset<64u> columns_used();
+
+  void set_index(int value);
+  void set_index_string(char * str, bool take_ownership = true);
+
+  sqlite3_index_info * info() const;
+  sqlite3 * db() const;
+};
+
+
+struct module_config
+{
+  // Can be used to set SQLITE_VTAB_INNOCUOUS. Requires sqlite 3.31
+  void set_innocuous();
+  // Can be used to set SQLITE_VTAB_DIRECTONLY. Requires sqlite 3.31
+  void set_directonly() {sqlite3_vtab_config(db_, SQLITE_VTAB_DIRECTONLY);}
+
+
+  // Can be used to set SQLITE_VTAB_CONSTRAINT_SUPPORT
+  void set_constraint_support(bool enabled = false);
+};
+
+template<typename Table>
+struct module
+{
+  using table_type = Table;
+
+  // Creates the instance
+  // The instance_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
+  // instance_type must have a member `declaration` that returns a `const char *` for the declaration.
+  virtual result<table_type> create(sqlite::connection db, int argc, const char * const argv[]) = 0;
+
+  // Create a table
+  // The table_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
+  // table_type must have a member `declaration` that returns a `const char *` for the declaration.
+  virtual result<table_type> connect(sqlite::connection db, int argc, const char * const argv[]) = 0;
+};
+
+template<typename Table>
+struct eponymous_module
+{
+  using table_type = Table;
+
+  // Creates the instance
+  // The instance_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
+  // instance_type must have a member `declaration` that returns a `const char *` for the declaration.
+  virtual result<table_type> connect(sqlite::connection db, int argc, const char * const argv[]) = 0;
+
+  eponymous_module(bool eponymous_only = false);
+
+  bool eponymous_only() const;'
+ protected:
+  bool eponymous_only_{false};
+
+};
+
+
+// The basis for vtable
+template<typename Cursor>
+struct table : protected sqlite3_vtab
+{
+  using cursor_type = Cursor;
+
+  virtual result<void> config(module_config &);
+
+  // The Table declaration to be used with  sqlite3_declare_vtab
+  virtual const char *declaration() = 0;
+
+  // Destroy the storage = this function needs to be present for non eponymous tables
+  virtual result<void> destroy();
+
+  // Tell sqlite how to communicate with the table.
+  // Optional, this library will fill in a default function that leaves comparisons to sqlite.
+  virtual result<void> best_index(index_info & /*info*/);
+
+  // Start a search on the table.
+  // The cursor_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab_cursor.
+  virtual result<cursor_type> open() = 0;
+
+  // Get the connection of the vtable
+  sqlite::connection connection() const;
+
+  table(const sqlite::connection & conn);
+};
+
+
+// Cursor needs the following member.
+template<typename ColumnType = void>
+struct cursor : protected sqlite3_vtab_cursor
+{
+  using column_type = ColumnType;
+
+  // Apply a filter to the cursor. Required when best_index is implemented.
+  virtual result<void> filter(
+        int /*index*/, const char * /*index_data*/,
+        boost::span<sqlite::value> /*values*/)
+  {
+    return {system::in_place_error, SQLITE_OK};
+  }
+
+  // Returns the next row.
+  virtual result<void> next() = 0;
+
+  // Check if the cursor is and the end
+  virtual bool eof() = 0;
+
+  // Returns the result of a value. It will use the set_result functionality to create a an sqlite function. <3>
+  virtual result<column_type> column(int idx, bool no_change) = 0;
+  // Returns the id of the current row
+  virtual result<sqlite3_int64> row_id() = 0;
+
+  // Get the table the cursor is pointing to.
+        vtab::table<cursor> & table();
+  const vtab::table<cursor> & table() const;
+};
+
+
+// Group of functions for modifications. The table must inherit this to be modifiable.
+struct modifiable
+{
+  virtual result<void> delete_(sqlite::value key) = 0;
+  // Insert a new row
+  virtual result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values, int on_conflict) = 0;
+  // Update the row
+  virtual result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key, span<sqlite::value> values, int on_conflict) = 0;
+};
+
+// Group of functions to support transactions. The table must inherit this to support transactions.
+struct transaction
+{
+  // Begin a tranasction
+  virtual result<void> begin()    = 0;
+  // synchronize the state
+  virtual result<void> sync()     = 0;
+  // commit the transaction
+  virtual result<void> commit()   = 0;
+  // rollback the transaction
+  virtual result<void> rollback() = 0;
+};
+
+// Base class to enable function overriding See `xFindFunction`.
+struct overload_functions
+{
+  virtual result<void> find_function(
+          function_setter fs,
+          int arg, const char * name) = 0; // <4>
+};
+
+// Support for recursive transactions. Requires sqlite 3.7.7
+struct recursive_transaction
+{
+  // Save the current state with to `i`
+  virtual result<void> savepoint(int i)   = 0;
+  // Release all saves states down to `i`
+  virtual result<void> release(int i)     = 0;
+  // Roll the transaction back to `i`.
+  virtual result<void> rollback_to(int i) = 0;
+};
+
+/** Register a vtable  <5>
+ Returns a reference to the module as stored in the database. It's lifetime is managed by the database.
+*/
+template<typename T>
+auto create_module(connection & conn,
+                   cstring_ref name,
+                   T && module,
+                   system::error_code & ec,
+                   error_info & ei) -> typename std::decay<T>::type &;
+template<typename T>
+auto create_module(connection & conn,
+                   const char * name,
+                   T && module)  -> typename std::decay<T>::type &;
+----
+<1> See https://www.sqlite.org/capi3ref.html#sqlite3_vtab_in_first[vtab_in_first]
+<2> See https://www.sqlite.org/vtab.html#xbestindex[best_index]
+<3> See https://www.sqlite.org/c3ref/vtab_nochange.html[vtab_no_change]
+<4> See https://www.sqlite.org/vtab.html#xfindfunction[find_function]
+<5> See https://www.sqlite.org/vtab.html[vtab]
+

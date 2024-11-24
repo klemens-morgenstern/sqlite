@@ -97,7 +97,7 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T,
 }
 
 template<typename T, typename Deleter>
-inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T> ptr)
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T, Deleter> ptr)
     -> typename std::enable_if<std::is_empty<Deleter>::value &&
                                std::is_default_constructible<Deleter>::value>::type
 {
