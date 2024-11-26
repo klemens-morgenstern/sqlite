@@ -80,7 +80,7 @@ else()
             COMMAND asciidoctor ${CMAKE_CURRENT_SOURCE_DIR}/doc/index.adoc -b html5 -a generate-diagram -o ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html
             DEPENDS ${ADOC_FILES})
 
-    add_custom_target(boost_cobalt_doc DEPENDS  ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html)
+    add_custom_target(boost_sqlite_doc DEPENDS  ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html)
 
 endif()
 
