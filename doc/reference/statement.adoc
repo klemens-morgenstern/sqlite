@@ -1,0 +1,165 @@
+== `sqlite/statement.hpp`
+
+=== `param_ref`
+
+A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
+
+[source,cpp]
+----
+struct param_ref
+{
+    // Default construct a parameter, gives `null`.
+    param_ref() = default;
+    // Bind null
+    param_ref(variant2::monostate);
+    // Bind null
+    param_ref(std::nullptr_t);
+    // Bind an integer.
+    template<typename I>
+    param_ref(I value);
+    // Bind a blob.
+    param_ref(blob_view blob);
+    // Bind a string.
+    param_ref(string_view text);
+
+    template<typename StringLike>
+    param_ref(StringLike && text);
+    template<typename BlobLike>
+    param_ref(BlobLike && text);
+
+    // Bind a floating point value.
+    param_ref(double value) : impl_(value) { }
+    // Bind a zero_blob value, i.e. a blob that initialized by zero.
+    param_ref(zero_blob zb) : impl_(zb) { }
+
+    // Bind pointer value to the parameter. @see https://www.sqlite.org/bindptr.html
+    // Requires sqlite 3.20
+    // Deleter must a function pointer or trivially constructible.
+    template<typename T, typename Deleter>
+    param_ref(std::unique_ptr<T, Deleter> ptr);
+
+
+
+    // Apply the param_ref to a statement.
+    int apply(sqlite3_stmt * stmt, int c) const;
+
+    // Construct param_ref from a variant
+    template<typename T>
+    param_ref(T && t);
+
+----
+
+
+=== `statement`
+
+A statement used for a prepared-statement.
+
+
+
+[source,cpp]
+----
+struct statement
+{
+    // execute the prepared statement once. This transfers ownership to the resultset
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    resultset execute(ArgRange && params, system::error_code& ec, error_info& info) &&; // <1>
+    template <typename ArgRange = std::initializer_list<param_ref>
+    resultset execute(ArgRange && params) &&; // <1>
+    resultset execute(
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        system::error_code& ec,
+        error_info& info) &&; // <2>
+
+    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&;
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(
+        ArgRange && params,
+        system::error_code & ec,
+        error_info & ei) &&; // <1>
+
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(ArgRange && params) &&; // <1>
+
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        system::error_code & ec,
+        error_info & ei) &&; // <2>
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&; // <2>
+
+
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    resultset execute(
+            ArgRange && params,
+            system::error_code& ec,
+            error_info& info) &; // <1>
+
+
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    resultset execute(ArgRange && params) &; // <1>
+
+
+    resultset execute(
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        system::error_code& ec,
+        error_info& info) &; // <2>
+
+    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &; // <2>
+
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(
+        ArgRange && params,
+        system::error_code & ec,
+        error_info & ei) &; // <1>
+
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(ArgRange && params) &; // <1>
+
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        system::error_code & ec,
+        error_info & ei) &; // <2>
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &; // <2>
+
+
+
+    // Returns the sql used to construct the prepared statement.
+    stringe_view sql();
+
+    // Returns the expanded sql used to construct the prepared statement. Requires sqlite 3.14
+    stringe_view expanded_sql();
+
+    // Returns the expanded sql used to construct the prepared statement. requiers sqlite to be compiles with SQLITE_ENABLE_NORMALIZE.
+    stringe_view normalized_sql();
+
+    // Returns the declared type of the column
+    string_view declared_type(int id) const;
+};
+----
+<1> Executes a query with positional arguments
+<2> Executes a query with named arguments (from a map-like object)
+
+
+
+
+
+WARNING: The `&&` overloads transfer ownership to the resultset, while the `&` keep them in the statement.
+That is, this is UB:
+[source,cpp]
+----
+resultset get_users(sqlite::connection & conn)
+{
+  auto s = conn.prepare("SELECT * from users where name = ?");
+  return s.execute({"allen"}); // UB, because result set points into s
+}
+
+resultset get_users(sqlite::connection & conn)
+{
+  // correct, because resultset takes ownershipo
+  return conn.prepare("SELECT * from users where name = ?").execute({"allen"});
+}
+----
+

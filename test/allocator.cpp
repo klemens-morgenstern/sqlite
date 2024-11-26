@@ -16,5 +16,8 @@ BOOST_AUTO_TEST_CASE(allocator)
   sqlite::allocator<int> alloc;
 
   auto p = alloc.allocate(32);
+  BOOST_CHECK(p != nullptr);
   alloc.deallocate(p, 32);
+
+  BOOST_CHECK_THROW(boost::ignore_unused(alloc.allocate((std::numeric_limits<std::size_t>::max)())), std::bad_alloc);
 }

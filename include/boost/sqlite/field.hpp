@@ -20,7 +20,9 @@ BOOST_SQLITE_BEGIN_NAMESPACE
  */
 struct field
 {
-      /// The type of the value
+    typedef sqlite_int64 int64;
+
+    /// The type of the value
     value_type type() const
     {
         return static_cast<value_type>( sqlite3_column_type(stm_, col_));
@@ -35,13 +37,8 @@ struct field
     {
         return type() != value_type::null;
     }
-    /// Returns the value as regular `int`.
-    int get_int() const
-    {
-        return  sqlite3_column_int(stm_, col_);
-    }
     /// Returns the value as an `int64`.
-    sqlite3_int64 get_int64() const
+    int64 get_int() const
     {
         return  sqlite3_column_int64(stm_, col_);
     }

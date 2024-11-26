@@ -26,7 +26,7 @@ auto table_column_meta_data(connection& conn,
 
     if (res != SQLITE_OK)
     {
-      BOOST_SQLITE_ASSIGN_EC(ec, res)
+      BOOST_SQLITE_ASSIGN_EC(ec, res);
       ei.set_message(sqlite3_errmsg(conn.handle()));
     }
 
@@ -47,7 +47,7 @@ auto table_column_meta_data(connection& conn,
 
   if (res != SQLITE_OK)
   {
-    BOOST_SQLITE_ASSIGN_EC(ec, res)
+    BOOST_SQLITE_ASSIGN_EC(ec, res);
     ei.set_message(sqlite3_errmsg(conn.handle()));
   }
 

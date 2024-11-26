@@ -1,0 +1,36 @@
+== `sqlite/meta_data.hpp`
+
+The meta_data header provides some meta_data for columns.
+
+[source,cpp,subs=+quotes]
+----
+// The metadata of a column
+struct column_meta_data
+{
+    // Data type fo the column
+    cstring_ref data_type;
+    // Name of default collation sequence
+    cstring_ref collation;
+    // true if column has a NOT NULL constraint
+    bool not_null;
+    // true if column is part of the PRIMARY KEY
+    bool primary_key;
+    // true if column is AUTOINCREMENT
+    bool auto_increment;
+};
+
+// get the meta-data of one colum
+
+column_meta_data table_column_meta_data(connection  & conn,
+                                        cstring_ref db_name, cstring_ref table_name, cstring_ref column_name,
+                                        system::error_code & ec, error_info &ei);
+column_meta_data table_column_meta_data(connection  & conn,
+                                        cstring_ref table_name, cstring_ref column_name,
+                                        system::error_code & ec, error_info &ei);
+
+column_meta_data table_column_meta_data(connection  & conn,
+                                        cstring_ref db_name, cstring_ref table_name, cstring_ref column_name);
+column_meta_data table_column_meta_data(connection  & conn,
+                                        cstring_ref table_name, cstring_ref column_name);
+---
+

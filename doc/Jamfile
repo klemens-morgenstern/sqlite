@@ -1,35 +1,18 @@
-project sqlite/doc ;
+import asciidoctor ;
 
-import doxygen ;
-import path ;
-import sequence ;
+html index.html : index.adoc  ;
 
-doxygen doc.html
-    :
-    [ path.glob-tree ../include : *.hpp ]
-    :
-    <doxygen:param>PROJECT_NAME=Boost.sqlite
-    <doxygen:param>PROJECT_NUMBER=1.0
-    <doxygen:param>PROJECT_BRIEF="A sqlite C++ library"
-    <doxygen:param>"HTML_EXTRA_STYLESHEET= doxygen-awesome.css doxygen-awesome-sidebar-only.css"
-    ;
-
-explicit doc.html ;
+install html_ : index.html : <location>html ;
 
 
-# copied from redis
-make copyhtml.tag : doc.html : @copy_html_dir ;
-explicit copyhtml.tag ;
-actions copy_html_dir
-{
-    rm -rf $(target_dir)
-    mkdir -p $(target_dir)
-    cp -r $(<:D)/html/doc/* $(target_dir)/
-    echo "Stamped" > "$(<)"
-}
+pdf sqlite.pdf : index.adoc ;
+explicit sqlite.pdf ;
+
+install pdf_ : sqlite.pdf : <location>pdf ;
+explicit pdf_ ;
 
 alias boostdoc ;
 explicit boostdoc ;
-
-alias boostrelease : copyhtml.tag ;
+alias boostrelease : html_ ;
 explicit boostrelease ;
+

@@ -14,8 +14,10 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-template<typename T>
+template<typename T, bool Strict>
 struct static_resultset;
+
+constexpr static cstring_ref in_memory = ":memory:";
 
 /** @brief main object for a connection to a database.
   @ingroup reference
@@ -46,16 +48,46 @@ struct connection
     /// Move assign operator.
     connection& operator=(connection && ) = default;
 
-    /// Construct a connection and connect it to `filename`.. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
+    /// Construct a connection and connect it to `filename`. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
     connection(cstring_ref filename,
                int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) { connect(filename, flags); }
 
-
+#if defined(BOOST_WINDOWS_API)
+    template<typename Path,
+             typename = std::enable_if_t<
+                 std::is_same<typename Path::string_type, std::wstring>::value &&
+                 std::is_constructible<cstring_ref, decltype(std::declval<Path>().string())>::value
+             >>
+    explicit connection(const Path & pth) : connection(pth.string()) {}
+#endif
     ///@{
     /// Connect the database to `filename`.  `flags` is set by `SQLITE_OPEN_*` flags.
     BOOST_SQLITE_DECL void connect(cstring_ref filename, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE);
     BOOST_SQLITE_DECL void connect(cstring_ref filename, int flags, system::error_code & ec);
     ///@}
+
+#if defined(BOOST_WINDOWS_API)
+    template<typename Path,
+             typename = std::enable_if_t<
+                 std::is_same<typename Path::string_type, std::wstring>::value &&
+                 std::is_constructible<cstring_ref, decltype(std::declval<Path>().string())>::value
+             >>
+    void connect(const Path & pth, int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE)
+    {
+        connect(pth.string(), flags);
+    }
+
+
+    template<typename Path,
+             typename = std::enable_if_t<
+                 std::is_same<typename Path::string_type, std::wstring>::value &&
+                 std::is_constructible<cstring_ref, decltype(std::declval<Path>().string())>::value
+             >>
+    void connect(const Path & pth, int flags, system::error_code & ec)
+    {
+        connect(pth.string(), flags, ec);
+    }
+#endif
 
     ///@{
     /// Close the database connection.
@@ -76,13 +108,13 @@ struct connection
 
     BOOST_SQLITE_DECL resultset query(core::string_view q);
 
-    template<typename T>
-    static_resultset<T> query(
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> query(
         core::string_view q,
         system::error_code & ec,
         error_info & ei)
     {
-        static_resultset<T> tmp = query(q, ec, ei);
+        static_resultset<T, Strict> tmp = query(q, ec, ei);
         if (ec)
             return {};
         tmp.check_columns_(ec, ei);
@@ -92,12 +124,12 @@ struct connection
         return tmp;
     }
 
-    template<typename T>
-    static_resultset<T> query(core::string_view q)
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> query(core::string_view q)
     {
         system::error_code ec;
         error_info ei;
-        auto tmp = query<T>(q, ec, ei);
+        auto tmp = query<T, Strict>(q, ec, ei);
         if (ec)
             throw_exception(system::system_error(ec, ei.message()));
         return tmp;
@@ -107,7 +139,7 @@ struct connection
     ///@{
     /// Perform a query without parametert, It execute a multiple statement.
     BOOST_SQLITE_DECL void execute(
-      cstring_ref q,
+        cstring_ref q,
         system::error_code & ec,
         error_info & ei);
 

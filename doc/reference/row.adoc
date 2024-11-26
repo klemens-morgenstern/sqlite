@@ -1,0 +1,56 @@
+== `sqlite/row.hpp`
+
+This type represents one row of data from a query.  Is a random-access range.
+
+WARNING: This type is a pure view type, and will be invalidated when the next row is read.
+
+
+
+[source,cpp]
+----
+
+struct row
+{
+    // The size of the row, i.e. number of colums
+    std::size_t size() const;
+
+    // Returns the field at `idx`, @throws std::out_of_range
+        field at(std::size_t idx) const;
+    // Returns the field at `idx`.
+    field operator[](std::size_t idx) const;
+
+    // Random access iterator used to iterate over the columns.
+    struct const_iterator
+    {
+        using difference_type   = int;
+        using reference         = field&;
+        using iterator_category = std::random_access_iterator_tag;
+
+        const_iterator & operator++();
+        const_iterator operator++(int);
+        const_iterator & operator--();
+        const_iterator operator--(int);
+
+        field operator[](int i) const;
+
+        const_iterator operator+(int i) const;
+        const_iterator operator-(int i) const;
+        const_iterator & operator+=(int i);
+        const_iterator & operator-=(int i);
+        const field & operator*() const;
+        const field * operator->() const;
+
+        bool operator==(const const_iterator& other) const;
+        bool operator!=(const const_iterator& other) const;
+        bool operator<(const const_iterator& other) const;
+        bool operator>(const const_iterator& other) const;
+
+        const_iterator() = default;
+    };
+    // Returns the begin of the column-range.
+    const_iterator begin() const;
+
+    // Returns the end of the column-range.
+    const_iterator end() const
+};
+----

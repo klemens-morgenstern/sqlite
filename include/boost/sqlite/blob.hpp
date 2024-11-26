@@ -26,6 +26,8 @@ struct blob_view
     /// Construct a blob
     blob_view(const void * data, std::size_t size) : data_(data), size_(size) {}
 
+    /// Construct an empty blob
+    blob_view() = default;
     /// Construct a blob from some other blob-like structure.
     template<typename T>
     explicit blob_view(const T & value,
@@ -60,6 +62,9 @@ struct blob
     }
     /// Create an empty blob with size `n`.
     explicit blob(std::size_t n) : impl_(sqlite3_malloc(n)), size_(n) {}
+
+    /// Construct an empty blob
+    constexpr blob() = default;
     /// Release & take ownership of the blob.
     void * release() && {return std::move(impl_).release(); }
    private:

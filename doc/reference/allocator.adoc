@@ -1,0 +1,31 @@
+== `sqlite/allocator.hpp`
+[#allocator]
+
+The sqlite allocator wraps sqlite's malloc & free functions in a similar way that std::allocator wraps `new`/`delete`.
+
+This can be used for sqlite-related code (e.g. vtables or custom functions) that should use memory from the sqlite3 pool.
+
+[source,cpp,subs=+quotes]
+----
+template<typename T>
+struct allocator
+{
+  constexpr allocator() noexcept {}
+  constexpr allocator( const allocator& other ) noexcept {}
+  template< class U >
+  constexpr allocator( const allocator<U>& other ) noexcept {}
+
+  constexpr static std::size_t alignment = __implementation_defined__;
+
+
+  static_assert(alignof(T) <= alignment, "T alignment can't be fulfilled by sqlite");
+
+  [[nodiscard]] T* allocate( std::size_t n ); // <1>
+  void deallocate( T* p, std::size_t); // <2>
+};
+----
+<1> Invokes `sqlite3_malloc64` and throws `std::bad_alloc` if it fails.
+<2> Invokes `sqlite3_free`
+
+NOTE: Sqlite provides extensive https://www.sqlite.org/malloc.html[customizability for its dynamic memory allocation].
+

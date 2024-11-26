@@ -31,12 +31,30 @@ enum class value_type
     null = SQLITE_NULL,
 };
 
+inline
+const char * value_type_name(value_type vt)
+{
+    switch (vt)
+    {
+        case value_type::text:      return "text";
+        case value_type::blob:      return "blob";
+        case value_type::floating:  return "floating";
+        case value_type::integer:   return "integer";
+        case value_type::null:      return "null";
+        default: return "unknown";
+    }
+}
+
+
 /** @brief A holder for a sqlite values used for internal APIs
     @ingroup reference
 
  */
 struct value
 {
+    // The value for integers in the database
+    typedef sqlite3_int64 int64 ;
+
     /// The type of the value
     value_type type() const
     {
@@ -57,13 +75,8 @@ struct value
     {
         return type() != value_type::null;
     }
-    /// Returns the value as regular `int`.
-    int get_int() const
-    {
-        return sqlite3_value_int(value_);
-    }
-    /// Returns the value as an `int64`.
-    sqlite3_int64 get_int64() const
+    /// Returns the value as an `integer`.
+    int64 get_int() const
     {
         return sqlite3_value_int64(value_);
     }

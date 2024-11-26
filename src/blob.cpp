@@ -27,7 +27,7 @@ blob_handle open_blob(connection & conn,
                               row, read_only ? 0 : 1, &bb);
   if (res != 0)
   {
-      BOOST_SQLITE_ASSIGN_EC(ec, sqlite3_errcode(conn.handle()))
+      BOOST_SQLITE_ASSIGN_EC(ec, sqlite3_errcode(conn.handle()));
       ei.set_message(sqlite3_errmsg(conn.handle()));
   }
   else

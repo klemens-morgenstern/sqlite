@@ -18,7 +18,7 @@
 using namespace boost;
 
 // add more conversions here if you need more types in the described struct
-void assign_value(int & res, sqlite::value val) { res = val.get_int();}
+void assign_value(std::int64_t & res, sqlite::value val) { res = val.get_int();}
 void assign_value(std::string & res, sqlite::value val) { res = val.get_text();}
 
 template<typename T>
@@ -87,11 +87,10 @@ struct describe_table final :
 
   sqlite::result<void> delete_(sqlite::value key)
   {
-    data.erase(key.get_int64());
+    data.erase(key.get_int());
     return {};
   }
-  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                      int on_conflict)
+  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values, int /*on_conflict*/)
   {
     T res;
     sqlite_int64 id = key.is_null() ? last_index++ : key.get_int();
@@ -108,11 +107,11 @@ struct describe_table final :
 
   }
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
-                      span<sqlite::value> values, int on_conflict)
+                      span<sqlite::value> values, int /*on_conflict*/)
   {
     if (new_key.get_int() != old_key.get_int())
-      data.erase(old_key.get_int64());
-    auto & res = data[new_key.get_int64()];
+      data.erase(old_key.get_int());
+    auto & res = data[new_key.get_int()];
 
     auto vtr = values.begin();
     mp11::mp_for_each<describe::describe_members<T, describe::mod_public>>(
@@ -130,8 +129,8 @@ struct describe_module final : sqlite::vtab::eponymous_module<describe_table<T>>
 {
   boost::unordered_map<sqlite3_int64, T> data;
   constexpr static std::size_t column_count = mp11::mp_size<describe::describe_members<T, describe::mod_any_access>>::value;
-  sqlite::result<describe_table<T>> connect(sqlite::connection conn,
-                                            int argc, const char * const  argv[])
+  sqlite::result<describe_table<T>> connect(sqlite::connection ,
+                                            int, const char * const [])
   {
     return describe_table<T>{data};
   }
@@ -163,14 +162,14 @@ void print_table(std::ostream & str, sqlite::resultset res)
 struct boost_library
 {
   std::string name;
-  int first_released;
-  int standard;
+  std::int64_t first_released;
+  std::int64_t standard;
 };
 
 BOOST_DESCRIBE_STRUCT(boost_library, (), (name, first_released, standard));
 
 
-int main (int argc, char * argv[])
+int main (int /*argc*/, char * /*argv*/[])
 {
   sqlite::connection conn{":memory:"};
   auto & md = sqlite::create_module(conn, "boost_libraries", describe_module<boost_library>());

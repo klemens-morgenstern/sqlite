@@ -1,0 +1,141 @@
+== `sqlite/blob.hpp`
+
+=== `blob_view`
+
+A `blob_view` is a view type referring to https://www.sqlite.org/datatype3.html[Binary Large OBject],
+i.e. a non-owning type.
+
+.Definition
+[source,cpp]
+----
+//A view to a binary large object
+struct blob_view
+{
+    // The data in the blob
+    const void * data() const;
+    // The size of the data in the blob, in bytes
+    std::size_t size() const
+    // Construct a blob from existing data
+    blob_view(const void * data, std::size_t size);
+
+    // Construct an empty blob
+    blob_view() = default;
+    // Construct a blob from some other blob-like structure (data() is a pointer & size() returns size_t)
+    template<typename T>
+    explicit blob_view(const T & value);
+
+    // Create a blob from the
+    blob_view(const struct blob & b);
+};
+----
+
+The `blob_view` can be used to access binary data from the database without copying.
+
+=== `zero_blob`
+
+The `zero_blob` is a special type that denotes blobs full of zeros without requiring any allocations.
+It can be used as a result from a <<function>> or as a parameter for a <<statement>>.
+
+.Definition
+[source,cpp]
+----
+enum class zero_blob : sqlite3_uint64 {};
+----
+
+.Example
+[source,cpp]
+----
+extern sqlite::connection conn;
+conn.prepare("INSERT INTO example(bdata) VALUES(?)")
+    .execute(sqlite::zero_blob(1024)); // <1>
+----
+<1> Insert a blob of zeros with the size 1024
+
+=== `blob`
+
+The `blob` object owns a binary large object.
+
+[source,cpp]
+----
+// @brief An object that owns a binary large object. @ingroup reference
+struct blob
+{
+    // The data in the blob
+    void * data() const;
+    // The size of the data int he blob, in bytes
+    std::size_t size() const;
+
+    // Create a blob from a blob_view
+    explicit blob(blob_view bv);
+    // Create an empty blob with size `n`.
+    explicit blob(std::size_t n);
+
+    // Construct an empty blob
+    constexpr blob() = default;
+    // Release & take ownership of the blob.
+    void * release() &&
+};
+----
+
+
+=== `blob_handle`
+
+A `blob_handle` is readable & writable handle to a `blob` in the database.
+It allows incremental reading/writing of the raw data.
+
+[source,cpp]
+----
+// Open a blob
+blob_handle open_blob(connection & conn,
+                      cstring_ref db,
+                      cstring_ref table,
+                      cstring_ref column,
+                      sqlite3_int64 row,
+                      bool read_only,
+                      system::error_code &ec,
+                      error_info &ei);
+blob_handle open_blob(connection & conn,
+                      cstring_ref db,
+                      cstring_ref table,
+                      cstring_ref column,
+                      sqlite3_int64 row,
+                      bool read_only = false);
+
+// An object that holds a binary large object. Can be obtained by using @ref blob_handle. @ingroup reference
+struct blob_handle
+{
+    // Default constructor
+    blob_handle() = default;
+
+    // Construct from a handle. This takesowner ship of the `sqlite3_blob` handle.
+    explicit blob_handle(sqlite3_blob * blob);
+
+    // Reopen the blob on another row (i.e. the same column of the same table)
+    void reopen(sqlite3_int64 row_id);
+    void reopen(sqlite3_int64 row_id, system::error_code & ec);
+
+    // Read data from the blob
+    void read_at(void *data, int len, int offset);
+    void read_at(void *data, int len, int offset, system::error_code &ec);
+
+    // Write data to the blob
+    void write_at(const void *data, int len, int offset);
+    void write_at(const void *data, int len, int offset, system::error_code &ec);
+
+    // The size of the blob
+    std::size_t size() const;
+
+    // The handle of the blob
+    using handle_type = sqlite3_blob*;
+    // Returns the handle of the blob
+    handle_type handle();
+    // Release the owned handle.
+    handle_type release() &&;
+};
+----
+
+
+
+
+
+

@@ -56,17 +56,21 @@ using string_view = boost::core::string_view;
 
 BOOST_SQLITE_END_NAMESPACE
 
-#define BOOST_SQLITE_RETURN_EC(ev)                                              \
-{                                                                               \
-  static constexpr auto loc##__LINE__((BOOST_CURRENT_LOCATION));                \
+#define BOOST_SQLITE_RETURN_EC(ev)                                                            \
+do                                                                                            \
+{                                                                                             \
+  static constexpr auto loc##__LINE__((BOOST_CURRENT_LOCATION));                              \
   return ::boost::system::error_code(ev, boost::sqlite::sqlite_category(), &loc##__LINE__);   \
-}
+}                                                                                             \
+while (false)
 
 #define BOOST_SQLITE_ASSIGN_EC(ec, ev)                              \
+do                                                                  \
 {                                                                   \
   static constexpr auto loc##__LINE__((BOOST_CURRENT_LOCATION));    \
-  ec.assign(ev, boost::sqlite::sqlite_category(), &loc##__LINE__); \
-}
+  ec.assign(ev, boost::sqlite::sqlite_category(), &loc##__LINE__);  \
+}                                                                   \
+while (false)
 
 #if defined(BOOST_SQLITE_NO_VIRTUAL)
 #define BOOST_SQLITE_VIRTUAL

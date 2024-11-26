@@ -1,0 +1,105 @@
+== `sqlite/hooks.hpp`
+
+WARNING: This API might be subject change, if a better solution for ownership is found.
+
+=== `commit_hook` & `rollback_commit`
+
+The https://www.sqlite.org/c3ref/commit_hook.html[commit hook]
+gets called before a commit gets performed.
+Likewise the rollback hook gets invoked before a rollback.
+If `func` returns true, the commit goes, otherwise it gets rolled back.
+
+NOTE: If the function is not a free function pointer, this function will *NOT* take ownership.
+
+NOTE: If `func` is a `nullptr` the hook gets reset.
+
+
+[source,cpp]
+----
+template<typename Func>
+bool commit_hook(connection & conn, Func && func);
+
+template<typename Func>
+bool rollback_hook(connection & conn, Func && func);
+----
+
+return:: `true` if a hook has been replaced.
+conn:: The database connection to install the hook in
+func:: The hook function. It must be callable without any parameter, return a `bool` and be `noexcept`.
+
+
+=== `update_hook`
+
+The https://www.sqlite.org/c3ref/update_hook.html[update hook]
+The update hook gets called when an update was performed.
+
+
+NOTE: If the function is not a free function pointer, this function will *NOT* take ownership.
+
+NOTE: If `func` is a `nullptr` the hook gets reset.
+
+
+[source,cpp]
+----
+template<typename Func>
+bool update_hook(connection & conn, Func && func);
+----
+
+return:: `true` if a hook has been replaced.
+conn:: The database connection to install the hook in
+func:: The signature of the function is `void(int op, core::string_view db, core::string_view table, sqlite3_int64 id)`.
+`op` is either `SQLITE_INSERT`, `SQLITE_DELETE` and `SQLITE_UPDATE`. The function must be noexcept.
+
+=== `preupdate_hook`
+
+NOTE: The https://www.sqlite.org/c3ref/preupdate_blobwrite.html[preupdate hook] requires
+sqlite to be required with `SQLITE_ENABLE_PREUPDATE_HOOK` true.
+
+This hook gets called before an update.
+
+[source,cpp]
+----
+struct preupdate_context
+{
+  // Returns the old value, i.e. the value before the update.
+  system::result<value> old(int column) const;
+  // The count of colums to be updated
+  int count() const;
+  // The nesting depth of the update.
+  int depth() const;
+  // The new value to be written to column
+  system::result<value> new_(int column) const;
+
+  // Query the status of blob access, e.g. when using blob_handle <1>
+  int blob_write() const;
+
+  explicit preupdate_context(sqlite3 * db) noexcept;
+};
+
+
+template<typename Func>
+bool preupdate_hook(connection & conn, Func && func);
+----
+<1> See https://www.sqlite.org/c3ref/preupdate_blobwrite.html[sqlite/preupdate_blobwrite]
+
+
+
+return:: `true` if a hook has been replaced.
+conn:: The database connection to install the hook in
+func:: The signature of the function is below:
+[source,cpp]
+----
+ void preupdate_hook(sqlite::preupdate_context ctx,
+                     int op,
+                     const char * db_name,
+                     const char * table_name,
+                     sqlite3_int64 current_key,
+                     sqlite3_int64 new_key);
+----
+
+
+
+
+
+
+

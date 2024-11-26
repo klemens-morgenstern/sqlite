@@ -14,6 +14,8 @@
 
 #include <boost/variant2/variant.hpp>
 
+#include <type_traits>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -35,14 +37,16 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, zero_blob zb)
 
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, double dbl) { sqlite3_result_double(ctx, dbl); }
 
-template<typename I,
-         typename = typename std::enable_if<std::is_integral<I>::value>::type>
-inline void tag_invoke(set_result_tag, sqlite3_context * ctx, I value)
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, sqlite3_int64 value)
 {
-  BOOST_IF_CONSTEXPR ((sizeof(I) == sizeof(int) && std::is_unsigned<I>::value)  || (sizeof(I) > sizeof(int)))
-    sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
-  else
-    sqlite3_result_int(ctx, static_cast<int>(value));
+  sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
+}
+
+template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite3_int64>::value>>
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::int64_t value)
+
+{
+  sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
 }
 
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::nullptr_t) { sqlite3_result_null(ctx); }
@@ -58,7 +62,7 @@ inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, String && str)
 }
 
 
-inline void tag_invoke(set_result_tag, sqlite3_context * ctx, variant2::monostate) { }
+inline void tag_invoke(set_result_tag, sqlite3_context * , variant2::monostate) { }
 inline void tag_invoke(set_result_tag, sqlite3_context * ctx, const value & val)
 {
   sqlite3_result_value(ctx, val.handle());
@@ -93,18 +97,18 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T,
 }
 
 template<typename T, typename Deleter>
-inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T> ptr)
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, std::unique_ptr<T, Deleter> ptr)
     -> typename std::enable_if<std::is_empty<Deleter>::value &&
                                std::is_default_constructible<Deleter>::value>::type
 {
   sqlite3_result_pointer(ctx, ptr.release(), typeid(T).name(), +[](void * ptr){Deleter()(static_cast<T*>(ptr));});
 }
 
-inline void tag_invoke(set_result_tag tag, sqlite3_context * ctx, error err)
+inline void tag_invoke(set_result_tag, sqlite3_context * ctx, error err)
 {
-  sqlite3_result_error_code(ctx, err.code);
   if (err.info)
     sqlite3_result_error(ctx, err.info.message().c_str(), -1);
+  sqlite3_result_error_code(ctx, err.code);
 }
 
 

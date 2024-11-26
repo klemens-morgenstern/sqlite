@@ -19,7 +19,7 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 struct connection;
-template<typename>
+template<typename, bool>
 struct static_resultset;
 
 /// @brief A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
@@ -260,13 +260,13 @@ struct statement
       return tmp;
     }
 
-    template<typename T, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T> execute(
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(
         ArgRange && params,
         system::error_code & ec,
         error_info & ei) &&
     {
-      static_resultset<T> tmp = std::move(*this).execute(std::forward<ArgRange>(params), ec, ei);
+      static_resultset<T, Strict> tmp = std::move(*this).execute(std::forward<ArgRange>(params), ec, ei);
       if (ec)
         return {};
       tmp.check_columns_(ec, ei);
@@ -276,8 +276,8 @@ struct statement
       return tmp;
     }
 
-    template<typename T, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T> execute(ArgRange && params) &&
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(ArgRange && params) &&
     {
       system::error_code ec;
       error_info ei;
@@ -287,13 +287,13 @@ struct statement
       return tmp;
     }
 
-    template<typename T>
-    static_resultset<T> execute(
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(
         std::initializer_list<std::pair<string_view, param_ref>> params,
         system::error_code & ec,
         error_info & ei) &&
     {
-      static_resultset<T> tmp = std::move(*this).execute(std::move(params), ec, ei);
+      static_resultset<T, Strict> tmp = std::move(*this).execute(std::move(params), ec, ei);
       if (ec)
         return {};
       tmp.check_columns_(ec, ei);
@@ -303,12 +303,12 @@ struct statement
       return tmp;
     }
 
-    template<typename T>
-    static_resultset<T> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&
     {
       system::error_code ec;
       error_info ei;
-      auto tmp = std::move(*this).execute<T>(std::move(params), ec, ei);
+      auto tmp = std::move(*this).execute<T, Strict>(std::move(params), ec, ei);
       if (ec)
         throw_exception(system::system_error(ec, ei.message()));
       return tmp;
@@ -387,13 +387,13 @@ struct statement
       return tmp;
     }
 
-    template<typename T, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T> execute(
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(
         ArgRange && params,
         system::error_code & ec,
         error_info & ei) &
     {
-      static_resultset<T> tmp = execute(std::forward<ArgRange>(params), ec, ei);
+      static_resultset<T, Strict> tmp = execute(std::forward<ArgRange>(params), ec, ei);
       if (ec)
         return {};
       tmp.check_columns_(ec, ei);
@@ -403,24 +403,24 @@ struct statement
       return tmp;
     }
 
-    template<typename T, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T> execute(ArgRange && params) &
+    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
+    static_resultset<T, Strict> execute(ArgRange && params) &
     {
       system::error_code ec;
       error_info ei;
-      auto tmp = execute<T>(std::forward<ArgRange>(params), ec, ei);
+      auto tmp = execute<T, Strict>(std::forward<ArgRange>(params), ec, ei);
       if (ec)
         throw_exception(system::system_error(ec, ei.message()));
       return tmp;
     }
 
-    template<typename T>
-    static_resultset<T> execute(
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(
         std::initializer_list<std::pair<string_view, param_ref>> params,
         system::error_code & ec,
         error_info & ei) &
     {
-      static_resultset<T> tmp = execute(std::move(params), ec, ei);
+      static_resultset<T, Strict> tmp = execute(std::move(params), ec, ei);
       if (ec)
         return {};
       tmp.check_columns_(ec, ei);
@@ -430,12 +430,12 @@ struct statement
       return tmp;
     }
 
-    template<typename T>
-    static_resultset<T> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &
+    template<typename T, bool Strict = false>
+    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &
     {
       system::error_code ec;
       error_info ei;
-      auto tmp = execute<T>(std::move(params), ec, ei);
+      auto tmp = execute<T, Strict>(std::move(params), ec, ei);
       if (ec)
         throw_exception(system::system_error(ec, ei.message()));
       return tmp;

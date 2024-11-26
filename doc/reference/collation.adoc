@@ -1,0 +1,45 @@
+== `sqlite/collation.hpp`
+[#collation]
+
+A https://www.sqlite.org/datatype3.html#collation[collation] is a comparison operator between two string-like values,
+that allows ordering with a custom algorithm.
+
+.Definition
+[source,cpp]
+----
+
+// Create a collation
+template<typename Func>
+void create_collation(connection & conn, cstring_ref name, Func && func);
+template<typename Func>
+void create_collation(connection & conn, cstring_ref name, Func && func, system::error_code &ec);
+
+// Delete an existing collation.
+void delete_collation(connection & conn, cstring_ref name, system::error_code & ec);
+void delete_collation(connection & conn, cstring_ref name);
+----
+
+ conn:: A connection to the database in which to install the collation.
+ name:: The name of the collation.
+ func:: The function
+
+The function must be callable with two `string_view` and return an int, indicating the comparison results.
+
+.Example
+[source,cpp]
+----
+// a case insensitive string omparison, e.g. from boost.urls
+int ci_compare(string_view s0, string_view s1) noexcept;
+
+extern sqlite::connection conn;
+
+// Register the collation
+sqlite::create_collation(conn, "iequal", &ci_compare);
+
+// use the collation to get by name, case insensitively
+conn.query("select first_name, last_name from people where first_name = 'Klemens' collate iequal;");
+
+// order by names case insensitively
+conn.query("select * from people order by last_name collate iequal asc;");
+----
+

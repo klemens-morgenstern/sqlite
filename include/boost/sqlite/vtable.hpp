@@ -393,7 +393,7 @@ struct table : protected sqlite3_vtab
 
   /// Tell sqlite how to communicate with the table.
   /// Optional, this library will fill in a default function that leaves comparisons to sqlite.
-  BOOST_SQLITE_VIRTUAL result<void> best_index(index_info & info) {return {system::in_place_error, SQLITE_OK};}
+  BOOST_SQLITE_VIRTUAL result<void> best_index(index_info & /*info*/) {return {system::in_place_error, SQLITE_OK};}
 
   /// @brief Start a search on the table.
   /// The cursor_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab_cursor.
@@ -420,8 +420,8 @@ struct cursor : protected sqlite3_vtab_cursor
 
   /// @brief Apply a filter to the cursor. Required when best_index is implemented.
   BOOST_SQLITE_VIRTUAL result<void> filter(
-        int index, const char * index_data,
-        boost::span<sqlite::value> values)
+        int /*index*/, const char * /*index_data*/,
+        boost::span<sqlite::value> /*values*/)
   {
     return {system::in_place_error, SQLITE_OK};
   }
@@ -453,8 +453,8 @@ struct cursor<void> : protected sqlite3_vtab_cursor
 
   /// @brief Apply a filter to the cursor. Required when best_index is implemented.
   BOOST_SQLITE_VIRTUAL result<void> filter(
-      int index, const char * index_data,
-      boost::span<sqlite::value> values)
+      int /*index*/, const char * /*index_data*/,
+      boost::span<sqlite::value> /*values*/)
   {
     return {system::in_place_error, SQLITE_OK};
   }

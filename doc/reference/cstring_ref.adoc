@@ -1,0 +1,16 @@
+== `sqlite/cstring_ref.hpp`
+
+[#string_view]
+
+The `sqlite::string_view` class is a https://en.cppreference.com/w/cpp/string/basic_string_view[std::string_view]
+compatible class.
+
+[#cstring_ref]
+
+The `cstring_ref` class is a view type similar to a `string_view`, but with a guarantee that it is null-terminated.
+
+It can be constructed from a raw `const char *` or any class that has a `c_str()` function returning a `const char *`.
+
+Otherwise it is similar to a `string_view`, except that `substr(std::size_t())` will return a `cstring_ref`,
+whereas a `substr(std::size_t(), std::size_t())` returns a `string_view`.
+

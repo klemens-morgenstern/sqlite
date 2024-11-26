@@ -122,9 +122,9 @@ BOOST_AUTO_TEST_CASE(simple_reader)
 
 struct modifyable_table;
 
-struct modifyable_cursor final : sqlite::vtab::cursor<variant2::variant<int, core::string_view>>
+struct modifyable_cursor final : sqlite::vtab::cursor<variant2::variant<std::int64_t, core::string_view>>
 {
-  using iterator = boost::unordered_map<int, std::string>::const_iterator;
+  using iterator = boost::unordered_map<std::int64_t, std::string>::const_iterator;
 
   modifyable_cursor(iterator itr, iterator end) : itr(itr), end(end) {}
 
@@ -159,7 +159,7 @@ struct modifyable_table final :
   }
 
   std::string name;
-  boost::unordered_map<int, std::string> names;
+  boost::unordered_map<std::int64_t, std::string> names;
 
   int last_index = 0;
 

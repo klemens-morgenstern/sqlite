@@ -59,8 +59,9 @@ struct transaction
     completed_ = false;
   }
 
+  // see https://www.sqlite.org/lang_transaction.html re noexcept
   /// rollback the transaction if not committed.
-  ~transaction() noexcept(false)
+  ~transaction() noexcept(SQLITE_VERSION_NUMBER >= 3007011)
   {
     if (!completed_)
       conn_.execute("ROLLBACK");
@@ -135,7 +136,7 @@ struct savepoint
 
 
   /// rollback to the savepoint if not committed.
-  ~savepoint() noexcept(false)
+  ~savepoint() noexcept(SQLITE_VERSION_NUMBER >= 3007011)
   {
     if (!completed_)
       conn_.execute("ROLLBACK TO " + name_);

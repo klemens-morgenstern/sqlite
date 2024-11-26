@@ -1,0 +1,42 @@
+== `sqlite/field.hpp`
+
+A `field` is a type representing a <<value>> in a database. or as a result from a query.
+
+.Definition
+[source,cpp]
+----
+
+struct field
+{
+    typedef sqlite_int64 int64;
+
+    // The type of the value
+    value_type type() const;
+    // Is the held value null
+    bool is_null() const;
+    // Is the held value is not null
+    explicit operator bool () const;
+    // Returns the value as an `int64`.
+    int64 get_int() const;
+    // Returns the value as an `double`.
+    double get_double() const;
+    // Returns the value as text, i.e. a string_view. Note that this value may be invalidated 
+    cstring_ref get_text() const;
+    // Returns the value as blob, i.e. raw memory. Note that this value may be invalidated
+    blob_view get_blob() const;
+    // Returns the field as a value.
+    value get_value() const;
+    // Returns the name of the column.
+    cstring_ref column_name() const;
+    // Returns the name of the table.
+    cstring_ref table_name() const;
+    // Returns the name of the original data source.
+    cstring_ref column_origin_name() const;
+}
+----
+
+NOTE: The view types can be invalidated when the database changes or the next row is read by the query.
+
+WARNING: The `field` type does not own the statement/query it was produced by. It is a merely a view into the `resultset`.
+Reading the next row will change the values returned.
+

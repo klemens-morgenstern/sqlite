@@ -20,7 +20,7 @@ BOOST_SQLITE_EXTENSION(simplescalar, conn)
 
     create_scalar_function(
         conn, "my_add",
-        [](boost::sqlite::context<>, boost::span<boost::sqlite::value, 2u> sp)
+        [](boost::sqlite::context<>, boost::span<boost::sqlite::value, 2u> sp)-> sqlite3_int64
         {
           return sp[0].get_int() + sp[1].get_int();
         });

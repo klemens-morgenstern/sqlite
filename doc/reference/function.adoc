@@ -1,0 +1,263 @@
+== `sqlite/function.hpp`
+
+=== `function_flags`
+
+[source, cpp]
+----
+enum function_flags
+{
+  deterministic  = SQLITE_DETERMINISTIC,
+  directonly     = SQLITE_DIRECTONLY,
+  subtype        = SQLITE_SUBTYPE,
+  innocuous      = SQLITE_INNOCUOUS,
+  result_subtype = SQLITE_RESULT_SUBTYPE,
+  selforder1     = SQLITE_SELFORDER1,
+  selforder1     = SQLITE_SELFORDER1
+};
+----
+
+These function flags can be used in accordance to the
+https://www.sqlite.org/c3ref/c_deterministic.html[sqlite documentation].
+
+=== `context`
+
+A context is an object share values between invocations of a scalar function.
+
+.Definition
+[source,cpp]
+----
+
+template<typename ... Args>
+struct context
+{
+  template<std::size_t N>
+  using element = mp11::mp_take_c<mp11::mp_list<Args...>, N>;
+
+  // Set the value in the context at position `Idx`
+  template<std::size_t Idx>
+  void set(element<Idx> value);
+
+  // Returns the value in the context at position `Idx`. Throws if the value isn't set.
+  template<std::size_t Idx>
+  auto get() -> element<Idx>  &;
+
+  // Returns the value in the context at position `Idx`. Returns nullptr .value isn't set.
+  template<std::size_t Idx>
+  auto get_if() -> element<Idx>  *;
+
+  explicit context(sqlite3_context * ctx) noexcept;
+
+  // Set the result through the context, instead of returning it.
+  template<typename T>
+  auto set_result(T && val);
+
+  // Set the an error through the context, instead of throwing it.
+  void set_error(cstring_ref message, int code = SQLITE_ERROR);
+
+  // Returns the connection of the context.
+  connection get_connection() const;
+};
+----
+
+
+.Example
+[source,cpp]
+----
+extern sqlite::connection conn;
+
+sqlite::create_scalar_function(
+conn, "my_sum",
+[](sqlite::context<std::size_t> ctx,
+   boost::span<sqlite::value, 1u> args) -> std::size_t
+{
+    auto value = args[0].get_int();
+    auto p = ctx.get_if<0>();
+    if (p != nullptr) // increment the counter
+        return (*p) += value;
+    else // set the initial value
+        ctx.set<0>(value);
+    return value;
+});
+----
+
+
+=== `create_scalar_function`
+
+
+Creates a https://www.sqlite.org/appfunc.html[scalar function].
+
+.Definition
+[source,cpp]
+----
+
+template<typename Func>
+auto create_scalar_function(
+    connection & conn,
+    cstring_ref name,
+    Func && func,
+    function_flags flags = {});
+
+template<typename Func>
+auto create_scalar_function(
+    connection & conn,
+    cstring_ref name,
+    Func && func,
+    function_flags flags,
+    system::error_code & ec,
+    error_info & ei);
+----
+
+conn:: The connection to add the function to.
+name:: The name of the function
+func:: The function to be added
+
+`func` must take `context<Args...>` as the first and a `span<value, N>` as the second value.
+If `N` is not `dynamic_extent` it will be used to deduce the number of arguments for the function.
+
+
+.Example
+[source,cpp]
+----
+extern sqlite::connection conn;
+
+sqlite::create_function(
+    conn, "to_upper",
+    [](sqlite::context<> ctx,
+       boost::span<sqlite::value, 1u> args) -> std::string
+    {
+        std::string res;
+        auto txt = val[0].get_text();
+        res.resize(txt.size());
+        std::transform(txt.begin(), txt.end(), res.begin(),
+                       [](char c){return std::toupper(c);});
+        return value;
+    });
+----
+
+
+=== `create_aggregate_function`
+
+An aggregrate function will create a new `Func` for a new `aggregate` from the args tuple and call `step` for every step.
+When the aggregation is done `final` is called and the result is returned to sqlite.
+
+[source,cpp]
+----
+template<typename Func, typename Args = std::tuple<>>
+void create_aggregate_function(
+connection & conn,
+cstring_ref name,
+Args && args= {},
+function_flags flags = {});
+
+template<typename Func, typename Args = std::tuple<>>
+void create_aggregate_function(
+connection & conn,
+cstring_ref name,
+Args && args,
+function_flags flags,
+system::error_code & ec,
+error_info & ei);
+----
+
+
+conn:: The connection to add the function to.
+name:: The name of the function
+
+args:: The argument tuple to construct `Func` from.
+Func:: The function to be added. It needs to be an object with two functions:
+[source,cpp]
+----
+void step(boost::span<sqlite::value, N> args);
+T final();
+----
+
+.Example
+[source,cpp]
+----
+  extern sqlite::connection conn;
+
+struct aggregate_func
+{
+  aggregate_func(std::size_t init) : counter(init) {}
+  std::int64_t counter;
+  void step(, boost::span<sqlite::value, 1u> val)
+  {
+    counter += val[0].get_text().size();
+  }
+
+  std::int64_t final()
+  {
+    return counter;
+  }
+};
+
+sqlite::create_function<aggregate_func>(conn, "char_counter", std::make_tuple(42));
+----
+
+
+=== `create_window_function`
+
+NOTE: This is only available starting with sqlite 3.25.0.
+
+An window function will create a new `Func` for a new `aggregate` and call `step` for every step.
+When an element is removed from the window `inverse` is called.
+When the aggregation is done `final` is called and the result is returned to sqlite.
+
+[source,cpp]
+----
+template<typename Func, typename Args = std::tuple<>>
+void create_window_function(
+    connection & conn,
+    cstring_ref name,
+    Args && args = {},
+    function_flags flags = {});
+
+template<typename Func, typename Args = std::tuple<>>
+void create_window_function(
+    connection & conn,
+    cstring_ref name,
+    Args && args,
+    function_flags flags,
+    system::error_code & ec);
+----
+
+
+conn:: The connection to add the function to.
+name:: The name of the function
+args:: The arguments to construct Func from.
+Func:: The function to be added. It needs to be an object with three functions:
+[source,cpp]
+----
+void step(boost::span<sqlite::value, N> args);
+void inverse(boost::span<sqlite::value, N> args);
+T final();
+----
+
+
+.Example
+[source,cpp]
+----
+extern sqlite::connection conn;
+
+struct window_func
+{
+  std::int64_t counter;
+  void step(boost::span<sqlite::value, 1u> val)
+  {
+    counter += val[0].get_text().size();
+  }
+  void inverse(boost::span<sqlite::value, 1u> val)
+  {
+    counter -= val[0].get_text().size();
+  }
+
+  std::int64_t final()
+  {
+    return counter;
+  }
+};
+
+sqlite::create_function(conn, "win_char_counter", aggregate_func{});
+----
+
+

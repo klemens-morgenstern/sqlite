@@ -32,7 +32,10 @@ struct allocator
   static_assert(alignof(T) <= alignment, "T alignment can't be fulfilled by sqlite");
   [[nodiscard]] T* allocate( std::size_t n )
   {
-    return static_cast<T*>(sqlite3_malloc64(n * sizeof(T)));
+    auto p = static_cast<T*>(sqlite3_malloc64(n * sizeof(T)));
+    if (p == nullptr)
+      boost::throw_exception(std::bad_alloc());
+    return p;
   }
   void deallocate( T* p, std::size_t)
   {
