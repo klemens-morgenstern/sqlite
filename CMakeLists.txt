@@ -73,8 +73,6 @@ else()
         set(BOOST_SQLITE_BUILD_TESTS ${BUILD_TESTING})
     endif()
 
-    find_package(Doxygen REQUIRED doxygen)
-
     file(GLOB_RECURSE ADOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.adoc)
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html
             COMMAND asciidoctor ${CMAKE_CURRENT_SOURCE_DIR}/doc/index.adoc -b html5 -a generate-diagram -o ${CMAKE_CURRENT_BINARY_DIR}/doc/index.html
