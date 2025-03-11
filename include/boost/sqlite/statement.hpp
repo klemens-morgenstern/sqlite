@@ -151,7 +151,7 @@ struct param_ref
         if (blob.size() > static_cast<std::size_t>(std::numeric_limits<int>::max()))
           return sqlite3_bind_blob64(stmt, col, blob.data(), blob.size(), SQLITE_STATIC);
         else
-          return sqlite3_bind_blob(stmt, col, blob.data(), blob.size(), SQLITE_STATIC);
+          return sqlite3_bind_blob(stmt, col, blob.data(), static_cast<int>(blob.size()), SQLITE_STATIC);
       }
 
       int operator()(string_view text)
@@ -159,7 +159,7 @@ struct param_ref
         if (text.size() > std::numeric_limits<int>::max())
           return sqlite3_bind_text64(stmt, col, text.data(), text.size(), SQLITE_STATIC, SQLITE_UTF8);
         else
-          return sqlite3_bind_text(stmt, col, text.data(), text.size(), SQLITE_STATIC);
+          return sqlite3_bind_text(stmt, col, text.data(), static_cast<int>(text.size()), SQLITE_STATIC);
       }
       int operator()(double value)
       {

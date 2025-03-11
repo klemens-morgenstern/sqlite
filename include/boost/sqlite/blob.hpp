@@ -56,12 +56,12 @@ struct blob
     /// Create a blob from a blob_view
     explicit blob(blob_view bv)
     {
-        impl_.reset(sqlite3_malloc(bv.size()));
+        impl_.reset(sqlite3_malloc(static_cast<int>(bv.size())));
         size_ = bv.size();
         std::memcpy(impl_.get(), bv.data(), size_);
     }
     /// Create an empty blob with size `n`.
-    explicit blob(std::size_t n) : impl_(sqlite3_malloc(n)), size_(n) {}
+    explicit blob(std::size_t n) : impl_(sqlite3_malloc(static_cast<int>(n))), size_(n) {}
 
     /// Construct an empty blob
     constexpr blob() = default;

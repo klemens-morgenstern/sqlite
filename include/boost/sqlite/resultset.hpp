@@ -63,17 +63,17 @@ struct resultset
     /// Returns the name of the column idx.
     core::string_view column_name(std::size_t idx) const
     {
-      return sqlite3_column_name(impl_.get(), idx);
+      return sqlite3_column_name(impl_.get(), static_cast<int>(idx));
     }
     /// Returns the name of the source table for column idx.
     core::string_view table_name(std::size_t idx) const
     {
-      return sqlite3_column_table_name(impl_.get(), idx);
+      return sqlite3_column_table_name(impl_.get(), static_cast<int>(idx));
     }
     /// Returns the origin name of the column for column idx.
     core::string_view column_origin_name(std::size_t idx) const
     {
-      return sqlite3_column_origin_name(impl_.get(), idx);
+      return sqlite3_column_origin_name(impl_.get(), static_cast<int>(idx));
     }
 
     /// The input iterator can be used to read every row in a for-loop
