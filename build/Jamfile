@@ -20,8 +20,8 @@ local SOURCES =
         blob.cpp
         connection.cpp
         error.cpp
+        ext.cpp
         field.cpp
-        json.cpp
         meta_data.cpp
         resultset.cpp
         row.cpp
