@@ -61,9 +61,9 @@ BOOST_AUTO_TEST_CASE(transaction)
         BOOST_CHECK(check_size() == 6);
         sq2.commit();
       }
-      BOOST_CHECK_EQUAL(check_size(), 6);
+      BOOST_CHECK_EQUAL(check_size(), 6u);
     }
-    BOOST_CHECK_EQUAL(check_size(), 3);
+    BOOST_CHECK_EQUAL(check_size(), 3u);
 
   }
 
