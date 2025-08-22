@@ -84,5 +84,6 @@ BOOST_AUTO_TEST_CASE(transaction)
     t.commit();
   }
 
-  BOOST_CHECK_EQUAL(check_size(), 2);
+  BOOST_CHECK_EQUAL(check_size(), 2u);
 }
+
