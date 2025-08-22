@@ -109,7 +109,7 @@ void check_columns(const std::tuple<Args...> *, const resultset & r,
   if (r.column_count() != sizeof...(Args))
   {
     BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-    ei.format("Tuple size doesn't match column count [%d != %d]", sizeof...(Args), r.column_count());
+    ei.format("Tuple size doesn't match column count [%ld != %ld]", sizeof...(Args), r.column_count());
   }
 }
 
@@ -159,7 +159,7 @@ void check_columns(const T *, const resultset & r,
   if (r.column_count() != sz)
   {
     BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-    ei.format("Describe size doesn't match column count [%d != %d]", sz, r.column_count());
+    ei.format("Describe size doesn't match column count [%ld != %ld]", sz, r.column_count());
   }
 
   // columns can be duplicated!
@@ -183,7 +183,7 @@ void check_columns(const T *, const resultset & r,
     if (!cfound)
     {
       BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-      ei.format("Column %Q not found in described struct.", r.column_name(i));
+      ei.format("Column '%s' not found in described struct.", r.column_name(i));
       break;
     }
   }
@@ -201,7 +201,7 @@ void check_columns(const T *, const resultset & r,
         {
           auto d = mp11::mp_at_c<mems, sz>();
           BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-          ei.format("Described field %Q not found in resultset struct.", d.name);
+          ei.format("Described field '%s' not found in resultset struct.", d.name);
         });
   }
 }

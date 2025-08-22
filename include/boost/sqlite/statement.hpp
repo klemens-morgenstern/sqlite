@@ -483,7 +483,7 @@ struct statement
         if (sizeof...(Args) < static_cast<std::size_t>(sz))
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-            ei.format("To few parameters provided. Needed %ld got %ld",
+            ei.format("To few parameters provided. Needed %d got %ld",
                       sz, sizeof...(Args));
             return;
         }
@@ -542,7 +542,7 @@ struct statement
         if (vec.size() < static_cast<std::size_t>(sz))
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-            ei.format("To few parameters provided. Needed %ld got %ld",
+            ei.format("To few parameters provided. Needed %d got %ld",
                       sz, vec.size());
         }
         int i = 1;

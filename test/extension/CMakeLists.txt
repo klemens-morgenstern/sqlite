@@ -5,7 +5,7 @@ file(GLOB_RECURSE ALL_CPP_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUR
 foreach(module ${ALL_CPP_FILES})
     get_filename_component(stem ${module} NAME_WE)
     add_library(boost_test_extension_${stem} SHARED ${module})
-    target_link_libraries(boost_test_extension_${stem} PUBLIC Boost::system Boost::sqlite_ext)
+    target_link_libraries(boost_test_extension_${stem} PUBLIC Boost::sqlite_ext)
     target_include_directories(boost_test_extension_${stem} PUBLIC ../../include)
     set_property(TARGET boost_test_extension_${stem} PROPERTY PREFIX "")
     set_target_properties(boost_test_extension_${stem} PROPERTIES OUTPUT_NAME ${stem})
