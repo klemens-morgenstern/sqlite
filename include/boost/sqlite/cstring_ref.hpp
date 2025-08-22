@@ -13,6 +13,11 @@
 #include <type_traits>
 #include <string>
 
+
+#if __cplusplus >= 201702L
+#include <string_view>
+#endif
+
 namespace boost
 {
 namespace sqlite
@@ -50,6 +55,10 @@ struct cstring_ref
 
   using string_view_type = core::string_view;
   constexpr operator string_view_type() const {return view_;}
+
+#if __cplusplus >= 201702L 
+  constexpr operator std::string_view() const {return view_;}
+#endif 
 
   using pointer                =       char *;
   using const_pointer          = const char *;
