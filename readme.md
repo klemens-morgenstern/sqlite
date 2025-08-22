@@ -1,6 +1,6 @@
 # boost_sqlite
 
-This library provides a simple C++ sqlite library.
+This library provides a simple C++ sqlite wrapper.
 
 It includes:
 

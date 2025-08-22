@@ -183,7 +183,7 @@ void check_columns(const T *, const resultset & r,
     if (!cfound)
     {
       BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-      ei.format("Column '%s' not found in described struct.", r.column_name(i));
+      ei.format("Column '%s' not found in described struct.", r.column_name(i).c_str());
       break;
     }
   }
