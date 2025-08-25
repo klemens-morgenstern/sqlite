@@ -255,7 +255,7 @@ void check_columns(const T *, const resultset & r,
   if (r.column_count() != sz)
   {
     BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-    ei.format("Describe size doesn't match column count [%d != %d]", sz, r.column_count());
+    ei.format("Describe size doesn't match column count [%ld != %ld]", sz, r.column_count());
   }
 
   // columns can be duplicated!
@@ -278,7 +278,7 @@ void check_columns(const T *, const resultset & r,
     if (!cfound)
     {
       BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-      ei.format("Column %Q not found in  struct.", r.column_name(i));
+      ei.format("Column %s not found in  struct.", r.column_name(i).c_str());
       break;
     }
   }
@@ -295,7 +295,8 @@ void check_columns(const T *, const resultset & r,
         [&](auto sz)
         {
           BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-          ei.format("PFR field %Q not found in resultset struct.", pfr::get_name<sz, T>() );
+          auto nm = pfr::get_name<sz, T>();
+          ei.format("PFR field %.*s not found in resultset struct.", static_cast<int>(nm.size()), nm.data());
         });
   }
 }

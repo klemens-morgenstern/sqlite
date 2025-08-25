@@ -513,7 +513,7 @@ struct statement
         if (static_cast<int>(sizeof...(Args)) < sz)
         {
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_ERROR);
-            ei.format("To few parameters provided. Needed %ld got %ld",
+            ei.format("To few parameters provided. Needed %d got %ld",
                       sz, sizeof...(Args));
             return;
         }

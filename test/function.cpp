@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(scalar_void)
   sqlite::create_scalar_function(
       conn,
       "to_upper",
-      [](sqlite::context<>, boost::span<sqlite::value, 1u> val)
+      [](sqlite::context<>, boost::span<sqlite::value, 1u> )
       {
         return ;
       });
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(scalar_void_pointer)
   sqlite::create_scalar_function(
       conn,
       "to_upper",
-      +[](sqlite::context<>, boost::span<sqlite::value, 1u> val)
+      +[](sqlite::context<>, boost::span<sqlite::value, 1u> )
       {
         return ;
       });

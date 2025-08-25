@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(hooks)
 
   bool called = false;
   auto l =
-      [&](int op, core::string_view db, core::string_view table, sqlite3_int64 id) noexcept
+      [&](int op, core::string_view db, core::string_view table, sqlite3_int64 ) noexcept
       {
         BOOST_CHECK(op == SQLITE_INSERT);
         BOOST_CHECK(db == "main");

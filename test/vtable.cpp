@@ -89,7 +89,7 @@ struct simple_test_impl final : sqlite::vtab::eponymous_module<simple_table>
 
 
   sqlite::result<table_type> connect(sqlite::connection,
-                                     int argc, const char * const  argv[])
+                                     int /*argc*/, const char * const * /*argv*/)
   {
     return table_type{names};
   }
@@ -181,8 +181,8 @@ struct modifyable_table final :
     BOOST_CHECK(names.erase(key.get_int()) == 1);
     return {};
   }
-  sqlite::result<sqlite_int64> insert(sqlite::value key, span<sqlite::value> values,
-                      int on_conflict)
+  sqlite::result<sqlite_int64> insert(sqlite::value /*key*/, span<sqlite::value> values,
+                      int /*on_conflict*/)
   {
     int id = values[0].is_null() ? last_index++ : values[0].get_int();
     auto itr = names.emplace(id, values[1].get_text()).first;
@@ -190,7 +190,7 @@ struct modifyable_table final :
   }
   sqlite::result<sqlite_int64> update(sqlite::value old_key, sqlite::value new_key,
                       span<sqlite::value> values,
-                      int on_conflict)
+                      int /*on_conflict*/)
   {
     if (new_key.get_int() != old_key.get_int())
       names.erase(old_key.get_int());
@@ -206,7 +206,7 @@ struct modifyable_test_impl final : sqlite::vtab::eponymous_module<modifyable_ta
   intrusive::list<table_type, intrusive::constant_time_size<false>> list;
 
   sqlite::result<table_type> connect(sqlite::connection,
-                                     int argc, const char * const  argv[]) noexcept
+                                     int /*argc*/, const char * const  argv[]) noexcept
   {
     table_type tt{};
     tt.name.assign(argv[2]);
