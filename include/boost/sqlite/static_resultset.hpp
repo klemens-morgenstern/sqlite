@@ -135,8 +135,12 @@ void convert_row(std::tuple<Args...> & res, const row & r, system::error_code ec
           }
           else if (f.type() != required_field_type(v))
           {
+#if defined (SQLITE_CONSTRAINT_DATATYPE)
             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
-            ei.format("unexpected type [%s] in column %d, expected [%s]",
+#else
+            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
+              ei.format("unexpected type [%s] in column %d, expected [%s]",
                       value_type_name(f.type()), i, value_type_name(required_field_type(v)));
           }
         }
@@ -229,7 +233,11 @@ void convert_row(T & res, const row & r, system::error_code ec, error_info & ei)
                 }
                 else if (f.type() != required_field_type(r))
                 {
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
                   BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                  BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                   ei.format("unexpected type [%s] in column %s, expected [%s]",
                             value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
                 }
@@ -324,7 +332,11 @@ void convert_row(T & res, const row & r, system::error_code ec, error_info & ei)
                 }
                 else if (f.type() != required_field_type(r))
                 {
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
                   BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                  BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                   ei.format("unexpected type [%s] in column %s, expected [%s]",
                             value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
                 }
