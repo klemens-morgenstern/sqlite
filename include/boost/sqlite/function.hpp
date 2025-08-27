@@ -31,7 +31,9 @@ enum function_flags
   directonly     = SQLITE_DIRECTONLY,
   subtype        = SQLITE_SUBTYPE,
   innocuous      = SQLITE_INNOCUOUS,
+#if defined(SQLITE_RESULT_SUBTYPE)
   result_subtype = SQLITE_RESULT_SUBTYPE,
+#endif
 #if defined(SQLITE_SELFORDER1)
   selforder1     = SQLITE_SELFORDER1,
 #else
