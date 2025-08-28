@@ -42,9 +42,9 @@ inline void tag_invoke(set_result_tag, sqlite3_context * ctx, sqlite3_int64 valu
   sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
 }
 
-template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite3_int64>::value>>
-inline void tag_invoke(set_result_tag, sqlite3_context * ctx, std::int64_t value)
-
+template<typename T>
+inline auto tag_invoke(set_result_tag, sqlite3_context * ctx, const T &value)
+  -> std::enable_if_t<!std::is_same<std::int64_t, sqlite3_int64>::value && std::is_same<T, std::int64_t>::value>
 {
   sqlite3_result_int64(ctx, static_cast<sqlite3_int64>(value));
 }
