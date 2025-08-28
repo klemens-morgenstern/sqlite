@@ -16,6 +16,7 @@
 
 #include <array>
 #include <cstdint>
+#include <type_traits>
 
 #if __cplusplus >= 202002L
 #include <boost/pfr/core.hpp>
@@ -37,8 +38,9 @@ namespace detail
 
 inline void convert_field(sqlite_int64 & target, const field & f) {target = f.get_int();}
 
-template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value>>
-inline void convert_field(std::int64_t & target, const field & f)
+template<typename T>
+inline auto convert_field(T & target, const field & f)
+  -> std::enable_if_t<!std::is_same<std::int64_t, sqlite3_int64>::value && std::is_same<std::int64_t, T>::value>
 {
   target = static_cast<std::int64_t>(f.get_int());
 }
@@ -88,8 +90,12 @@ inline bool field_type_is_nullable(const boost::optional<T> &) { return true; }
 
 inline value_type required_field_type(const sqlite3_int64 &) {return value_type::integer;}
 
-template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value>>
-inline value_type required_field_type(const std::int64_t &) {return value_type::integer;}
+template<typename T>
+inline auto required_field_type(const T &) 
+  -> std::enable_if_t<!std::is_same<std::int64_t, sqlite3_int64>::value && std::is_same<std::int64_t, T>::value, value_type>
+{
+    return value_type::integer;
+}
 
 template<typename Allocator, typename Traits>
 inline value_type required_field_type(const std::basic_string<char, Allocator, Traits> & )
