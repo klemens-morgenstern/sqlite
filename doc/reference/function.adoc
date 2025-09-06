@@ -1,5 +1,5 @@
 == `sqlite/function.hpp`
-
+[#function]
 === `function_flags`
 
 [source, cpp]
@@ -54,7 +54,7 @@ struct context
   // Set the an error through the context, instead of throwing it.
   void set_error(cstring_ref message, int code = SQLITE_ERROR);
 
-  // Returns the connection of the context.
+  // Returns the connection to the database currently invoking the function.
   connection get_connection() const;
 };
 ----
@@ -144,19 +144,19 @@ When the aggregation is done `final` is called and the result is returned to sql
 ----
 template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
-connection & conn,
-cstring_ref name,
-Args && args= {},
-function_flags flags = {});
+    connection & conn,
+    cstring_ref name,
+    Args && args= {},
+    function_flags flags = {});
 
 template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
-connection & conn,
-cstring_ref name,
-Args && args,
-function_flags flags,
-system::error_code & ec,
-error_info & ei);
+    connection & conn,
+    cstring_ref name,
+    Args && args,
+    function_flags flags,
+    system::error_code & ec,
+    error_info & ei);
 ----
 
 
@@ -257,7 +257,7 @@ struct window_func
   }
 };
 
-sqlite::create_function(conn, "win_char_counter", aggregate_func{});
+sqlite::create_function(conn, "win_char_counter", window_func{});
 ----
 
 

@@ -1,9 +1,9 @@
 == `sqlite/row.hpp`
+[#row]
 
 This type represents one row of data from a query.  Is a random-access range.
 
-WARNING: This type is a pure view type, and will be invalidated when the next row is read.
-
+WARNING: This type is a pure view type, and will be invalidated when the next row is read or the resultset or statement go out of scope.
 
 
 [source,cpp]

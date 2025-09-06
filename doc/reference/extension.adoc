@@ -14,7 +14,7 @@ Name:: The name of the module.
 Conn:: The parameter name of the connection.
 
 
-NOTE: When defining BOOST_SQLITE_COMPILE_EXTENSION (was is done in extension.hpp)
+NOTE: When defining BOOST_SQLITE_COMPILE_EXTENSION (which is done in extension.hpp)
 sqlite will use an inline namespace to avoid symbol clashes.
 
 You must link against `Boost::sqlite_ext` and not `Boost::sqlite` and should not mix both in the same binary.

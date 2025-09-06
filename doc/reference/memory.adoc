@@ -23,7 +23,7 @@ template<typename T>
 std::size_t msize(const unique_ptr<T> & ptr);
 
 
----
-<1> `new (sqlite::memory_tag{}) T()` uses sqlite3_malloc
+----
+<1> `new (sqlite::memory_tag{}) T()` uses `sqlite3_malloc`
 
 

@@ -13,9 +13,9 @@ struct connection
 {
     // The handle of the connection
     using handle_type = sqlite3*;
-    // Returns the handle
+    // Return the handle
     handle_type handle() const;
-    // Release the owned handle.
+    // Release the owned handle to be managed somewhere else.
     handle_type release() &&;
 
     //Default constructor
@@ -43,11 +43,11 @@ struct connection
     template<typename Path>
     void connect(const Path & pth, int flags, system::error_code & ec);
 
-    // Close the database connection.
+    // Close the database connection. Invalidates the handle.
     void close();
     void close(system::error_code & ec, error_info & ei);
 
-    // Check if the database holds a valid handle.
+    // Check if the handle refers to a daabase.
     bool valid() const;
 
     // Perform a query without parameters. Can only execute a single statement.
@@ -98,3 +98,4 @@ sqlite::connection conn;
 conn.connect("./my-database.db");
 conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
 ----
+

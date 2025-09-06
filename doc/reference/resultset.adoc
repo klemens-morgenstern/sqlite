@@ -1,4 +1,5 @@
 == `sqlite/resultset.hpp`
+[#resultset]
 
 A resultset represents the results of a query.
 
@@ -52,8 +53,7 @@ struct resultset
 };
 ----
 
-
-
+NOTE: When used with a statement, there must only be one resultset per in use per statement at one given time.
 
 .Example
 [source,cpp]
@@ -62,11 +62,11 @@ extern sqlite::connection conn;
 
 sqlite::resultset rs = conn.query("select * from users;");
 
-do
+while (!rs.done())
 {
   handle_row(r.current());
+  rs.read_next(); // read next row
 }
-while (rs.read_next()); // read it line by line
 ----
 
 

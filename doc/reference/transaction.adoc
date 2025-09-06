@@ -2,7 +2,7 @@
 
 === `transaction`
 
-A simple transaction guard implementing RAAI for transactions
+A simple transaction guard implementing RAII for transactions
 
 .Definition
 [source,cpp]
@@ -54,7 +54,7 @@ t.commit();
 
 === `savepoint`
 
-A simple transaction guard implementing RAAI for savepoints. Savepoints can be used recursively.
+A simple transaction guard implementing RAII for savepoints. Savepoints can be used recursively.
 
 .Definition
 [source,cpp]
@@ -101,4 +101,7 @@ sqlite::savepoint t{conn, "my-savepoint};
 conn.prepare("insert into log (text) values ($1)").execute(std::make_tuple("booting up"));
 t.commit();
 ----
+
+NOTE: The constructor will initiate a transaction or savepoint, but throw on failure. If you want the non-throwing version you need to do it manually and adopt the existing transaction/savepoint using `adopt_transaction`.
+
 

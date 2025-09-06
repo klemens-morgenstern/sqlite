@@ -1,6 +1,7 @@
 == `sqlite/static_resultset.hpp`
+[#static_resultset]
 
-A `static_resultset` represents the results of a query matched to a C++ type
+A `static_resultset` represents the results of a query matched to a C++ type.
 
 [source,cpp]
 ----
@@ -73,7 +74,7 @@ struct static_resultset
 ----
 
 
-T:: The static type of the query. This must be a tuple or pfr compatible (for C++20) or described.
+T:: The static type of the query. This must be a tuple, pfr compatible (for C++20) or https://boost.org/libs/describe[described].
 Strict:: Disables implicit conversions.
 
 
@@ -88,8 +89,8 @@ sqlite::resultset rs = conn.query("select first_name, last_name from users;");
 
 do
 {
-user usr = r.current();
-handle_row(u);
+  user usr = r.current();
+  handle_row(u);
 }
 while (rs.read_next()) // read it line by line
 

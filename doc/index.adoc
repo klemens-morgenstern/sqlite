@@ -17,7 +17,7 @@ Version 1.0, 23.11.2024
 = Introduction
 
 This small C+\+-14 library, extending the excellent sqlite API for C++.
-It sticks as close as possible to the sqlite API, but adopts thing like errors or ranges.
+It sticks as close as possible to the sqlite API, but provides support for `error_code` s or ranges.
 
 It is therefore highly recommended to study the https://www.sqlite.org/docs.html[sqlite documentation].
 

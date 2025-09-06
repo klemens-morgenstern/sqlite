@@ -1,4 +1,5 @@
 == `sqlite/statement.hpp`
+[#statement]
 
 === `param_ref`
 
@@ -53,8 +54,6 @@ struct param_ref
 === `statement`
 
 A statement used for a prepared-statement.
-
-
 
 [source,cpp]
 ----
@@ -143,23 +142,23 @@ struct statement
 <2> Executes a query with named arguments (from a map-like object)
 
 
+A call to `execute` requires the `statement` to outlive the `resultset` if the `statement` is not a temporary.
 
-
-
-WARNING: The `&&` overloads transfer ownership to the resultset, while the `&` keep them in the statement.
-That is, this is UB:
 [source,cpp]
 ----
-resultset get_users(sqlite::connection & conn)
-{
-  auto s = conn.prepare("SELECT * from users where name = ?");
-  return s.execute({"allen"}); // UB, because result set points into s
-}
-
-resultset get_users(sqlite::connection & conn)
-{
-  // correct, because resultset takes ownershipo
-  return conn.prepare("SELECT * from users where name = ?").execute({"allen"});
-}
+auto s = conn.prepare("SELECT * from users where name = ?");
+auto rs = s.execute({"allen"}); // `rs` must be destructed before `s`.
 ----
+
+However, the following is explicitly allowed because not every statement needs multiple executions:
+
+[source,cpp]
+----
+auto rs = conn.prepare("SELECT * from users where name = ?").execute({"allen"});
+----
+
+The `resultset` is aware in which way it was constructed and will either finalize the `sqlite3_stmt*` (if constructed from a temporary statement) or reset the current bindings,
+so that another execution can commence otherwise.
+
+
 

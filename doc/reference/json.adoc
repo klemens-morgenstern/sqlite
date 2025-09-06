@@ -1,6 +1,6 @@
 == `sqlite/json.hpp`
 
-The json header provides integration with boost/json.
+The json header provides integration with `boost/json`.
 
 [source,cpp]
 ----

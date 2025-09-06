@@ -118,7 +118,7 @@ struct url_wrapper final : sqlite::vtab::table<url_cursor>
 struct url_module final : sqlite::vtab::eponymous_module<url_wrapper>
 {
   sqlite::result<url_wrapper> connect(sqlite::connection /*db*/,
-                                      int /*argc*/, const char * const */*argv*/)
+                                      int /*argc*/, const char * const */ *argv*/)
   {
       return url_wrapper{};
   }

@@ -22,8 +22,8 @@ include::../example/tutorial.cpp[tag=conn_mem]
 
 == Executing SQL
 
-Once the `conn` is created, the common first step is to create a database schema.
-This can be done with the `execute` command, which allows the execution of multiple statements with one function invocation.
+Once the `conn` is created, a common first step is to create a database schema.
+This can be done with the `execute` command, which allows the execution of multiple statements with a single invocation.
 
 [source,cpp]
 ----
@@ -45,7 +45,7 @@ include::../example/tutorial_ec.cpp[tag=execute]
 The `boost::system::error_code` holds the https://www.sqlite.org/rescode.html[actual integer representing the error],
 while `boost::sqlite::error_info` is a string-like type holding the https://www.sqlite.org/c3ref/errcode.html[error message].
 
-For brevity, the tutorial section will use the exception overloads. See the <<reference>> for details on the overloads.
+For brevity, the tutorial section will use the exception throwing overloads. See the <<reference>> for details on the overloads.
 
 == Querying data
 
@@ -56,7 +56,7 @@ Once the database provides data it can be queried like this:
 include::../example/tutorial.cpp[tag=query1]
 ----
 
-The <<resultset>> is a forward range of the data queried from the database.
+The <<resultset,`resultset`>> is a forward range of the data queried from the database.
 The first row of the result is already read.
 
 [source,cpp]
@@ -66,13 +66,13 @@ include::../example/tutorial.cpp[tag=query2]
 
 NOTE: The `resultset` has `begin()`/`end()` member functions, so that it can be used in a ranged for loop.
 
-The <<row>> type is a range of <<field>>s,
+The <<row, `row`>> type is a range of <<field, `field`>>,
 which has all the information for the field requested.
 
-In many use-cases this is however superfluous because the structure of the table is known.
+In many use-cases manual access to columns is superfluous because the structure of the table is known.
 
 To make this easy, you can call query with a type parameter (`query<T>`) which will yield a
-`static_resultset<T>`. `T` can either be a tuple of a struct.
+<<static_resultset, `static_resultset<T>`>>. `T` can either be a tuple of a struct.
 
 A tuple will assign the query results by order.
 
@@ -95,13 +95,13 @@ The types allowed in the `static_resultset` are:
 - `std::int64_t`
 - `double`
 - <<blob, 'blob'>>, <<blob_view, `blob_view`>>
-- <<string>>, <<string_view>>
+-  std::string, <<string_view>>
 - `std::optional<T>`/`boost::optional<T>` with any of the types above.
 
-WARNING: `blob_view` and `string_view` have a limited lifetime. They might be invalidated when the next row is read!
+WARNING: `blob_view` and `string_view` have a limited lifetime. They may be invalidated when the next row is read.
 
 By default, the `static_result` does not check types, following https://www.sqlite.org/datatype3.html[sqlite's general dynamic type system].
-You can eat type checks, by using strict mode:
+You can add type checks by using strict mode:
 
 [source,cpp]
 ----
@@ -112,7 +112,7 @@ include::../example/tutorial.cpp[tag=query_strict]
 
 To avoid https://xkcd.com/327/[sql injection], querys and execution should not be build dynamically, but be done with parameters.
 
-This is done by creating a statement and then executing it with parameters.
+This is done by creating a <<statement,`statement`>> and then executing it with parameters.
 
 [source,cpp]
 ----
@@ -132,8 +132,5 @@ A prepared statement can be used multiple times.
 include::../example/tutorial.cpp[tag=statement_multi_insert]
 ----
 
-WARNING: Calling `.execute` on an lvalue of `statement` will transfer ownership to the `resultset`,
-while calling `.execute` on an rvalue will produce a `resultset` that points to the statement.
-
-NOTE: The result of an `.execute` can also be turned into a static_resultset<T> by using `.execute<T>`.
+NOTE: The result of an `.execute` can also be turned into a `static_resultset<T>` by using `.execute<T>`.
 

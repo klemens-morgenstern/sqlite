@@ -3,7 +3,7 @@
 [#string_view]
 
 The `sqlite::string_view` class is a https://en.cppreference.com/w/cpp/string/basic_string_view[std::string_view]
-compatible class.
+compatible class. It provides an additional `const char * c_str()` function that returns a null-terminated string.
 
 [#cstring_ref]
 

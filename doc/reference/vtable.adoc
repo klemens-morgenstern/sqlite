@@ -266,6 +266,7 @@ template<typename T>
 auto create_module(connection & conn,
                    const char * name,
                    T && module)  -> typename std::decay<T>::type &;
+
 ----
 <1> See https://www.sqlite.org/capi3ref.html#sqlite3_vtab_in_first[vtab_in_first]
 <2> See https://www.sqlite.org/vtab.html#xbestindex[best_index]

@@ -3,8 +3,8 @@
 This library can also be used to https://www.sqlite.org/loadext.html::[run-time loadable extensions]
 that can be used by other applications, e.g. the `sqlite3` CLI.
 
-In order to write this, you'll need to include `boost/sqlite/extension.hpp`,
-and write a named module like so:
+In order to write this, the source needs to include `boost/sqlite/extension.hpp`,
+and write a named module in a similar manner:
 
 [source,cpp]
 ----

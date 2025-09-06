@@ -14,7 +14,7 @@ include::../example/tutorial.cpp[tag=to_upper]
 <4> The function is determistic, i.e. it has no side effects (see https://www.sqlite.org/c3ref/c_deterministic.html[Function Flags])
 
 The return type `T` of the function gets transformed into an sqlite value by using a `tag_invoke` overload.
-This interface is public and meant to be extended.
+This interface is public and meant to be extended so that custom sub-types can be used.
 
 [source,cpp]
 ----
@@ -36,7 +36,7 @@ The builtin types are:
 - `std::unique_ptr<T>` (see the https://www.sqlite.org/bindptr.html[pointer passing interface])
 - `variant2::variant<Ts...>` if all `Ts` are supported
 - `result<T>`
-- `boost::json::value` //when including boost/sqlite/json.hpp
+- `boost::json::value` //when including `boost/sqlite/json.hpp`
 
 The translation of the exceptions happens as follows:
 
@@ -55,7 +55,7 @@ The translation of the exceptions happens as follows:
 
 NOTE: You can also return an <<`result`,sqlite::result>> type instead of throwing exceptions.
 
-== A ggregate functions
+== Aggregate functions
 
 An aggregate function builds a value from multiple values of the same column, e.g:
 
@@ -72,15 +72,15 @@ Below is a toy example. We count how many retirees are among the users, based on
 include::../example/tutorial.cpp[tag=oldest]
 ----
 
-The `retirees` object will be constructed for every query it's used in, and the parameters passed witht he `make_tuple`
+The `retirees` object will be constructed for every query it is used in, and the parameters passed with the `make_tuple`
 will be passed to the constructor.
 The `step` will be called for every value and `final` at the end when the query has ended and a value is required.
 
-The value types & exceptions are the same as for the scalar function.
+The rules for return value types and exceptions are the same as for the scalar function.
 
 == Window functions
 
-Window functions look similar to aggregate functions, they only need an `inverse` function, that shares the signature with `step`.
+Window functions look similar to aggregate functions, but they an `inverse` function, that shares the signature with `step`.
 
 It is recommended to consult the https://www.sqlite.org/windowfunctions.html[sqlite window function documentation].
 

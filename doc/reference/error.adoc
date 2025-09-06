@@ -11,7 +11,7 @@ The `error_info` class hold additional information about error conditions stored
 Contains an error message describing what happened. Not all error conditions are able to generate this extended information - those that
 can't will have an empty error message.
 
-The `error_info` allocates memory from the sqlite pool and holds it.
+The `error_info` allocates memory from the sqlite pool and holds it until destructed. That is the memory is reusable.
 
 [source,cpp]
 ----
@@ -43,7 +43,7 @@ struct error_info
 
     // Release the underlying memory. It must be freed using `sqlite_free` later.
     char * release();
-    // Restores the message to its initial state. Does not release memory.
+    // Restores the message to its initial state. Does not release the memory.
     void clear() noexcept;
 
 };

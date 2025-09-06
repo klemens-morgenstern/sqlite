@@ -1,4 +1,5 @@
 == `sqlite/value.hpp`
+[#value]
 
 === `value_type`
 

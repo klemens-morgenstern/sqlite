@@ -1,10 +1,11 @@
 == `sqlite/result.hpp`
+[#result]
 
 The result header is used by functions and vtables to turn resulting values into
 sqlite values. The `tag_invoke` interface is public and meant to extended.
 
 That is, implementing `tag_invoke(sqlite::set_result_tag, sqlite3_context, T);`
-will enable `T` to be used as a result by sqlite.
+will enable `T` to be used as a result by this library, e.g. for custom functions.
 
 [source,cpp]
 ----

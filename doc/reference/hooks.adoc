@@ -9,7 +9,7 @@ gets called before a commit gets performed.
 Likewise the rollback hook gets invoked before a rollback.
 If `func` returns true, the commit goes, otherwise it gets rolled back.
 
-NOTE: If the function is not a free function pointer, this function will *NOT* take ownership.
+WARNING: Even ff the function is not a free function pointer, this function will *NOT* take ownership. The function object must be kept alive by the user until the hooks is reset.
 
 NOTE: If `func` is a `nullptr` the hook gets reset.
 
@@ -34,7 +34,7 @@ The https://www.sqlite.org/c3ref/update_hook.html[update hook]
 The update hook gets called when an update was performed.
 
 
-NOTE: If the function is not a free function pointer, this function will *NOT* take ownership.
+WARNING: Even ff the function is not a free function pointer, this function will *NOT* take ownership. The function object must be kept alive by the user until the hooks is reset.
 
 NOTE: If `func` is a `nullptr` the hook gets reset.
 
@@ -72,8 +72,6 @@ struct preupdate_context
 
   // Query the status of blob access, e.g. when using blob_handle <1>
   int blob_write() const;
-
-  explicit preupdate_context(sqlite3 * db) noexcept;
 };
 
 
@@ -89,12 +87,12 @@ conn:: The database connection to install the hook in
 func:: The signature of the function is below:
 [source,cpp]
 ----
- void preupdate_hook(sqlite::preupdate_context ctx,
-                     int op,
-                     const char * db_name,
-                     const char * table_name,
-                     sqlite3_int64 current_key,
-                     sqlite3_int64 new_key);
+void preupdate_hook(sqlite::preupdate_context ctx,
+                    int op,
+                    const char * db_name,
+                    const char * table_name,
+                    sqlite3_int64 current_key,
+                    sqlite3_int64 new_key);
 ----
 
 

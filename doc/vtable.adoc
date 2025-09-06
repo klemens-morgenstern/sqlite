@@ -1,7 +1,7 @@
 = Virtual tables
 [#vtables]
 
-https://www.sqlite.org/vtab.html[A Virtual Table] is an object that is registered with a <<connection>>.
+https://www.sqlite.org/vtab.html[A Virtual Table] is an object that is registered with a <<connection,connection>>.
 It looks like a regular table, but is actually invoking virtual methods internally.
 This allows users to expose functionality from C++ to sqlite through a table interface.
 
@@ -51,7 +51,7 @@ include::../example/ordered_map.cpp[tag=filter]
 <3> A greater than/equal constraint can be fulfilled by moving the beginning of the range.
 <4> A lesser than/equal constraint can be fulfilled by moving the end of the range.
 
-NOTE: Constraints of the same can appear multiple times, so the filter must only narrow the range.
+NOTE: Constraints of the same type can appear multiple times, so the filter must only narrow the range.
 
 After the cursor, the actual table needs to be implemented:
 

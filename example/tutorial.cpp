@@ -45,7 +45,7 @@ int main(int /*argc*/, char */*argv*/[])
 
   // tag::query2[]
   assert(q.current()[0].get_text() == "Alice");
-  assert(q.read_next()); // true if it's the last row!
+  assert(q.read_next()); // true if it's not the last row!
   assert(q.current()[0].get_text() == "Bob");
   // end::query2[]
 
@@ -91,8 +91,8 @@ int main(int /*argc*/, char */*argv*/[])
       conn,
       "to_upper",
       [](sqlite::context<>, // <1>
-             boost::span<sqlite::value, 1u> val // <2>
-             ) -> std::string
+         boost::span<sqlite::value, 1u> val // <2>
+        ) -> std::string
       {
         if (val[0].type() != sqlite::value_type::text)
           throw std::logic_error("Value must be string"); // <3>

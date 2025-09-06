@@ -34,7 +34,7 @@ The `blob_view` can be used to access binary data from the database without copy
 === `zero_blob`
 
 The `zero_blob` is a special type that denotes blobs full of zeros without requiring any allocations.
-It can be used as a result from a <<function>> or as a parameter for a <<statement>>.
+It can be used as a result from a <<function, function>> or as a parameter for a <<statement, `statement`>>.
 
 .Definition
 [source,cpp]
@@ -57,7 +57,7 @@ The `blob` object owns a binary large object.
 
 [source,cpp]
 ----
-// @brief An object that owns a binary large object. @ingroup reference
+// An object that owns a binary large object.
 struct blob
 {
     // The data in the blob
@@ -72,7 +72,7 @@ struct blob
 
     // Construct an empty blob
     constexpr blob() = default;
-    // Release & take ownership of the blob.
+    // Release the ownership of the blob and return the point.
     void * release() &&
 };
 ----
@@ -101,13 +101,13 @@ blob_handle open_blob(connection & conn,
                       sqlite3_int64 row,
                       bool read_only = false);
 
-// An object that holds a binary large object. Can be obtained by using @ref blob_handle. @ingroup reference
+// An object that holds a binary large object. Can be obtained by using open_blob
 struct blob_handle
 {
     // Default constructor
     blob_handle() = default;
 
-    // Construct from a handle. This takesowner ship of the `sqlite3_blob` handle.
+    // Construct from a handle. This takes ownership of the `sqlite3_blob` handle.
     explicit blob_handle(sqlite3_blob * blob);
 
     // Reopen the blob on another row (i.e. the same column of the same table)
@@ -133,9 +133,5 @@ struct blob_handle
     handle_type release() &&;
 };
 ----
-
-
-
-
 
 

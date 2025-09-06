@@ -23,7 +23,7 @@ void delete_collation(connection & conn, cstring_ref name);
  name:: The name of the collation.
  func:: The function
 
-The function must be callable with two `string_view` and return an int, indicating the comparison results.
+The function must be callable with two `string_view`s and return an `int`, indicating the comparison results.
 
 .Example
 [source,cpp]

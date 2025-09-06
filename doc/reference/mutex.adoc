@@ -3,7 +3,7 @@
 The mutex header provides to std::mutex compatible classes using the sqlite mutex implementation.
 
 This will allow C++ code to use mutex code matching the configuration of sqlite.
-This may include the mutex being a noop.
+This may include the mutex being a noop, depending on the multi-threading configuration of sqlite.
 
 [source,cpp,subs=+quotes]
 ----

@@ -32,5 +32,5 @@ column_meta_data table_column_meta_data(connection  & conn,
                                         cstring_ref db_name, cstring_ref table_name, cstring_ref column_name);
 column_meta_data table_column_meta_data(connection  & conn,
                                         cstring_ref table_name, cstring_ref column_name);
----
+----
 
