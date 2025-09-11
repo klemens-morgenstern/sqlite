@@ -60,69 +60,46 @@ A statement used for a prepared-statement.
 ----
 struct statement
 {
-    // execute the prepared statement once. This transfers ownership to the resultset
+    // check if the whole statement has been completed.
+    bool done() const;
+
+    // Execute one step of the statement. Returns false when done.
+    bool step();
+    bool step(system::error_code& ec, error_info& ei);
+
+    // bind a set of parameters
     template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(ArgRange && params, system::error_code& ec, error_info& info) &&; // <1>
+    void bind(ArgRange && params, system::error_code& ec, error_info& info); // <1>
     template <typename ArgRange = std::initializer_list<param_ref>
-    resultset execute(ArgRange && params) &&; // <1>
-    resultset execute(
+    void bind(ArgRange && params); // <1>
+    void bind(
         std::initializer_list<std::pair<string_view, param_ref>> params,
         system::error_code& ec,
-        error_info& info) &&; // <2>
-
-    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&;
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(
-        ArgRange && params,
-        system::error_code & ec,
-        error_info & ei) &&; // <1>
-
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(ArgRange && params) &&; // <1>
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code & ec,
-        error_info & ei) &&; // <2>
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&; // <2>
+        error_info& info); // <2>
+    void bind(std::initializer_list<std::pair<string_view, param_ref>> params) ;
 
 
+    // Bind a single positional parameter
+    void bind(std::size_t idx, param_ref param);
+    void bind(std::size_t idx, param_ref param, system::error_code& ec, error_info& info);
+
+
+    // Bind a single named parameter
+    void bind(string_view name, param_ref param);
+    void bind(string_view name, param_ref param, system::error_code& ec, error_info& info);
+
+
+
+    // bind a set of parameters and call step once
     template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(
-            ArgRange && params,
-            system::error_code& ec,
-            error_info& info) &; // <1>
-
-
-    template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(ArgRange && params) &; // <1>
-
-
-    resultset execute(
+    void execute(ArgRange && params, system::error_code& ec, error_info& info); // <1>
+    template <typename ArgRange = std::initializer_list<param_ref>
+    void execute(ArgRange && params); // <1>
+    void execute(
         std::initializer_list<std::pair<string_view, param_ref>> params,
         system::error_code& ec,
-        error_info& info) &; // <2>
-
-    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &; // <2>
-
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(
-        ArgRange && params,
-        system::error_code & ec,
-        error_info & ei) &; // <1>
-
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(ArgRange && params) &; // <1>
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code & ec,
-        error_info & ei) &; // <2>
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &; // <2>
+        error_info& info); // <2>
+    void execute(std::initializer_list<std::pair<string_view, param_ref>> params) ;
 
 
 
@@ -137,29 +114,32 @@ struct statement
 
     // Returns the declared type of the column
     string_view declared_type(int id) const;
+
+
+    // The number of colums in the statement
+    std::size_t column_count() const;
+    // Returns the name of the column idx.
+    string_view column_name(std::size_t idx) const;
+    // Returns the name of the source table for column idx.
+    string_view table_name(std::size_t idx) const;
+    // Returns the origin name of the column for column idx.
+    string_view column_origin_name(std::size_t idx) const;
+
+    /// Clear previous bindings
+    void clear_bindings(system::error_code & ec, error_info & ei);
+    void clear_bindings();
+
+    /// Reset the current execution.
+    void reset(system::error_code & ec, error_info & ei);
+    void reset();
+
+    row current() const;
 };
 ----
-<1> Executes a query with positional arguments
-<2> Executes a query with named arguments (from a map-like object)
+<1> Binds positional arguments
+<2> Binds named arguments (from a map-like object)
 
 
 
 
-
-WARNING: The `&&` overloads transfer ownership to the resultset, while the `&` keep them in the statement.
-That is, this is UB:
-[source,cpp]
-----
-resultset get_users(sqlite::connection & conn)
-{
-  auto s = conn.prepare("SELECT * from users where name = ?");
-  return s.execute({"allen"}); // UB, because result set points into s
-}
-
-resultset get_users(sqlite::connection & conn)
-{
-  // correct, because resultset takes ownershipo
-  return conn.prepare("SELECT * from users where name = ?").execute({"allen"});
-}
-----
 

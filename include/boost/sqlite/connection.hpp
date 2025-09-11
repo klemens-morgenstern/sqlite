@@ -7,15 +7,11 @@
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/error.hpp>
-#include <boost/sqlite/resultset.hpp>
 #include <boost/sqlite/statement.hpp>
 #include <memory>
 #include <boost/system/system_error.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
-
-template<typename T, bool Strict>
-struct static_resultset;
 
 constexpr static cstring_ref in_memory = ":memory:";
 
@@ -100,40 +96,8 @@ struct connection
 
 
     ///@{
-    /// Perform a query without parameters. Can only execute a single statement.
-    BOOST_SQLITE_DECL resultset query(
-            core::string_view q,
-            system::error_code & ec,
-            error_info & ei);
 
-    BOOST_SQLITE_DECL resultset query(core::string_view q);
 
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> query(
-        core::string_view q,
-        system::error_code & ec,
-        error_info & ei)
-    {
-        static_resultset<T, Strict> tmp = query(q, ec, ei);
-        if (ec)
-            return {};
-        tmp.check_columns_(ec, ei);
-        if (ec)
-            return {};
-
-        return tmp;
-    }
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> query(core::string_view q)
-    {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = query<T, Strict>(q, ec, ei);
-        if (ec)
-            throw_exception(system::system_error(ec, ei.message()));
-        return tmp;
-    }
     ///@}
 
     ///@{
@@ -160,13 +124,57 @@ struct connection
     ///@}
 
     ///@{
-    /// Perform a query with parameters. Can only execute a single statement.
+    /// Preparse a query with or without bound parameters. Can only contain a single statement.
     BOOST_SQLITE_DECL statement prepare(
             core::string_view q,
             system::error_code & ec,
             error_info & ei);
 
     BOOST_SQLITE_DECL statement prepare(core::string_view q);
+
+
+    template<typename ArgRange = std::initializer_list<param_ref>>
+    statement prepare(core::string_view q, ArgRange && params)
+    {
+        auto s = prepare(q);
+        s.bind(std::forward<ArgRange>(params));
+        return s;
+    }
+
+    template<typename ArgRange = std::initializer_list<param_ref>>
+    statement prepare(
+        core::string_view q,
+        ArgRange && params,
+        system::error_code & ec,
+        error_info & ei)
+    {
+        auto s = prepare(q, ec, ei);
+        if (!ec)
+            s.bind(std::forward<ArgRange>(params), ec, ei);
+        return s;
+    }
+
+
+    statement prepare(core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params)
+    {
+        auto s = prepare(q);
+        s.bind(params);
+        return s;
+    }
+    statement prepare(
+        core::string_view q,
+        std::initializer_list<std::pair<string_view, param_ref>> params,
+        system::error_code & ec,
+        error_info & ei)
+    {
+        auto s = prepare(q, ec, ei);
+        if (!ec)
+            s.bind(params, ec, ei);
+        return s;
+    }
+
+
+
     ///@}
 
     /// Check if the database has the table

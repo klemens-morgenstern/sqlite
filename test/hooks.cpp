@@ -29,10 +29,10 @@ BOOST_AUTO_TEST_CASE(hooks)
 
   sqlite::update_hook(conn, l);
   // language=sqlite
-  conn.query(R"(
+  conn.prepare(R"(
     insert into library ("name", "author") values
       ('mustache',(select id from author where first_name = 'peter'  and last_name = 'dimov'));
-    )");
+    )").step();
 
   BOOST_CHECK(called);
 

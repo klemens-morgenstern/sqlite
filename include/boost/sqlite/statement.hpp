@@ -8,7 +8,7 @@
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/detail/exception.hpp>
 #include <boost/sqlite/blob.hpp>
-#include <boost/sqlite/resultset.hpp>
+#include <boost/sqlite/row.hpp>
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/core/ignore_unused.hpp>
@@ -19,8 +19,7 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 struct connection;
-template<typename, bool>
-struct static_resultset;
+
 
 /// @brief A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
 /// @ingroup reference
@@ -197,251 +196,171 @@ struct param_ref
  */
 struct statement
 {
-    ///@{
-    /** @brief execute the prepared statement once.
+  bool done() const {return done_;}
 
-      @param params The arguments to be passed to the prepared statement. This can be a map or a vector of param_ref.
-      @param ec     The system::error_code used to deliver errors for the exception less overload.
-      @param info   The error_info used to deliver errors for the exception less overload.
-      @return The resultset of the query.
 
-      @code{.cpp}
-        extern sqlite::connection conn;
-        statement st = conn.prepare("select id from users where name = $1;");
-        resultset q = std::move(st).execute(std::make_tuple("peter"));
-      @endcode
+  bool step()
+  {
+    system::error_code ec;
+    error_info ei;
+    const auto cc = step(ec, ei);
+    if (ec)
+      throw_exception(system::system_error(ec, ei.message()));
+    return cc;
+  }
+  bool step(system::error_code& ec, error_info& ei)
+  {
+    if (done_)
+      return false;
+    auto cc = (sqlite3_step)(impl_.get());
+    if (cc == SQLITE_DONE)
+    {
+      done_ = true;
+      return false;
+    }
+    else if (cc != SQLITE_ROW)
+    {
+      BOOST_SQLITE_ASSIGN_EC(ec, cc);
+      ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+      }
+    return !done_;
+  }
 
-     */
     template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(
+    void bind(
             ArgRange && params,
             system::error_code& ec,
-            error_info& info) &&
+            error_info& info)
     {
-        bind_impl(std::forward<ArgRange>(params), ec, info);
-        resultset rs;
-        rs.impl_.reset(impl_.release());
-        if (!ec)
-          rs.read_next(ec, info);
-        return rs;
+      bind_impl(std::forward<ArgRange>(params), ec, info);
     }
+
 
     template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(ArgRange && params) &&
-    {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = std::move(*this).execute(std::forward<ArgRange>(params), ec, ei);
-        if (ec)
-            detail::throw_error_code(ec, ei);
-        return tmp;
-    }
-
-    resultset execute(
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code& ec,
-        error_info& info) &&
-    {
-        bind_impl(std::move(params), ec, info);
-        resultset rs;
-        rs.impl_.reset(impl_.release());
-        if (!ec)
-          rs.read_next(ec, info);
-        return rs;
-    }
-
-    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&
+    void bind(ArgRange && params)
     {
       system::error_code ec;
       error_info ei;
-      auto tmp = std::move(*this).execute(std::move(params), ec, ei);
+      bind(std::forward<ArgRange>(params), ec, ei);
       if (ec)
         detail::throw_error_code(ec, ei);
-      return tmp;
-    }
-
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(
-        ArgRange && params,
-        system::error_code & ec,
-        error_info & ei) &&
-    {
-      static_resultset<T, Strict> tmp = std::move(*this).execute(std::forward<ArgRange>(params), ec, ei);
-      if (ec)
-        return {};
-      tmp.check_columns_(ec, ei);
-      if (ec)
-        return {};
-
-      return tmp;
-    }
-
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(ArgRange && params) &&
-    {
-      system::error_code ec;
-      error_info ei;
-      auto tmp = std::move(*this).execute<T>(std::forward<ArgRange>(params), ec, ei);
-      if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
-      return tmp;
-    }
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code & ec,
-        error_info & ei) &&
-    {
-      static_resultset<T, Strict> tmp = std::move(*this).execute(std::move(params), ec, ei);
-      if (ec)
-        return {};
-      tmp.check_columns_(ec, ei);
-      if (ec)
-        return {};
-
-      return tmp;
-    }
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &&
-    {
-      system::error_code ec;
-      error_info ei;
-      auto tmp = std::move(*this).execute<T, Strict>(std::move(params), ec, ei);
-      if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
-      return tmp;
-    }
-
-    ///@}
-
-    ///@{
-    /** @brief execute the prepared statement and reset it afterwards.
-
-      @warning The handle is shared between the statement & resultset. The statemens need to be kept alive.
-
-      @param params The arguments to be passed to the prepared statement.  This can be a map, a vector or a stuple of param_ref.
-      @param ec     The system::error_code used to deliver errors for the exception less overload.
-      @param info   The error_info used to deliver errors for the exception less overload.
-      @return The resultset of the query.
-
-      @code{.cpp}
-        extern sqlite::connection conn;
-        statement st = conn.prepare("select id from users where name = $1;");
-        resultset q = std::move(st).execute(std::make_tuple("peter"));
-      @endcode
-
-
-
-     */
-    template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(
-            ArgRange && params,
-            system::error_code& ec,
-            error_info& info) &
-    {
-        bind_impl(std::forward<ArgRange>(params), ec, info);
-        resultset rs;
-        rs.impl_.get_deleter().delete_ = false;
-        rs.impl_.reset(impl_.get());
-        if (!ec)
-            rs.read_next(ec, info);
-        return rs;
     }
 
 
-    template <typename ArgRange = std::initializer_list<param_ref>>
-    resultset execute(ArgRange && params) &
-    {
-        system::error_code ec;
-        error_info ei;
-        auto tmp = execute(std::forward<ArgRange>(params), ec, ei);
-        if (ec)
-            detail::throw_error_code(ec, ei);
-        return tmp;
-    }
-
-
-    resultset execute(
+    void bind(
         std::initializer_list<std::pair<string_view, param_ref>> params,
         system::error_code& ec,
-        error_info& info) &
+        error_info& info)
     {
-      bind_impl(std::move(params), ec, info);
-      resultset rs;
-      rs.impl_.get_deleter().delete_ = false;
-      rs.impl_.reset(impl_.get());
+      bind_impl(std::move(params), ec, info);;
+    }
+
+    void bind(std::initializer_list<std::pair<string_view, param_ref>> params)
+    {
+      system::error_code ec;
+      error_info ei;
+      bind(std::move(params), ec, ei);
+      if (ec)
+        detail::throw_error_code(ec, ei);
+    }
+
+    void bind(std::size_t index, param_ref param, system::error_code & ec, error_info & ei)
+    {
+      const auto sz =  sqlite3_bind_parameter_count(impl_.get());
+      int ar = param.apply(impl_.get(), index);
+      if (ar != SQLITE_OK)
+      {
+        BOOST_SQLITE_ASSIGN_EC(ec, ar);
+        ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+        return;
+      }
+    }
+
+    void bind(std::size_t index, param_ref param)
+    {
+      system::error_code ec;
+      error_info ei;
+      bind(index, std::move(param), ec, ei);
+      if (ec)
+        detail::throw_error_code(ec, ei);
+    }
+
+
+    void bind(core::string_view name, param_ref param, system::error_code & ec, error_info & ei)
+    {
+      for (auto i = 1; i <= sqlite3_bind_parameter_count(impl_.get()); i ++)
+      {
+        auto c = sqlite3_bind_parameter_name(impl_.get(), i);
+
+        if (c == nullptr)
+          continue;
+
+        if (c == name)
+        {
+          bind(static_cast<std::size_t>(i), std::move(param), ec, ei);
+          break;
+        }
+      }
+    }
+
+    void bind(core::string_view name, param_ref param)
+    {
+      system::error_code ec;
+      error_info ei;
+      bind(name, std::move(param), ec, ei);
+      if (ec)
+        detail::throw_error_code(ec, ei);
+    }
+    ///@}
+
+
+    /// Bind the values and call step() once
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    void execute(
+      ArgRange && params,
+      system::error_code& ec,
+      error_info& info)
+    {
+      bind(std::forward<ArgRange>(params), ec, info);
       if (!ec)
-        rs.read_next(ec, info);
-      return rs;
+        step(ec, info);
+      if (!ec)
+        reset(ec, info);
     }
 
-    resultset execute(std::initializer_list<std::pair<string_view, param_ref>> params) &
+
+    template <typename ArgRange = std::initializer_list<param_ref>>
+    void execute(ArgRange && params)
     {
       system::error_code ec;
       error_info ei;
-      auto tmp = execute(std::move(params), ec, ei);
+      execute(std::forward<ArgRange>(params), ec, ei);
       if (ec)
         detail::throw_error_code(ec, ei);
-      return tmp;
     }
 
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(
-        ArgRange && params,
-        system::error_code & ec,
-        error_info & ei) &
+
+    void execute(
+      std::initializer_list<std::pair<string_view, param_ref>> params,
+      system::error_code& ec,
+      error_info& info)
     {
-      static_resultset<T, Strict> tmp = execute(std::forward<ArgRange>(params), ec, ei);
-      if (ec)
-        return {};
-      tmp.check_columns_(ec, ei);
-      if (ec)
-        return {};
-
-      return tmp;
+      bind(std::move(params), ec, info);
+      if (!ec)
+        step(ec, info);
+      if (!ec)
+        reset(ec, info);
     }
 
-    template<typename T, bool Strict = false, typename ArgRange = std::initializer_list<param_ref>>
-    static_resultset<T, Strict> execute(ArgRange && params) &
+    void execute(std::initializer_list<std::pair<string_view, param_ref>> params)
     {
       system::error_code ec;
       error_info ei;
-      auto tmp = execute<T, Strict>(std::forward<ArgRange>(params), ec, ei);
+      execute(std::move(params), ec, ei);
       if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
-      return tmp;
+        detail::throw_error_code(ec, ei);
     }
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code & ec,
-        error_info & ei) &
-    {
-      static_resultset<T, Strict> tmp = execute(std::move(params), ec, ei);
-      if (ec)
-        return {};
-      tmp.check_columns_(ec, ei);
-      if (ec)
-        return {};
-
-      return tmp;
-    }
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> execute(std::initializer_list<std::pair<string_view, param_ref>> params) &
-    {
-      system::error_code ec;
-      error_info ei;
-      auto tmp = execute<T, Strict>(std::move(params), ec, ei);
-      if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
-      return tmp;
-    }
-
-    ///@}
+    ///
 
 
     /// Returns the sql used to construct the prepared statement.
@@ -460,17 +379,86 @@ struct statement
 
     /// Returns the expanded sql used to construct the prepared statement.
 #ifdef SQLITE_ENABLE_NORMALIZE
-    core::string_view normalized_sql()
+    cstring_ref normalized_sql()
     {
       return sqlite3_normalized_sql(impl_.get());
     }
 #endif
 
     /// Returns the declared type of the column
-    core::string_view declared_type(int id) const
+    cstring_ref declared_type(int id) const
     {
         return sqlite3_column_decltype(impl_.get(), id);
     }
+
+    ///
+    std::size_t column_count() const
+    {
+      return sqlite3_column_count(impl_.get());
+    }
+    /// Returns the name of the column idx.
+    cstring_ref column_name(std::size_t idx) const
+    {
+      return sqlite3_column_name(impl_.get(), idx);
+    }
+    /// Returns the name of the source table for column idx.
+    cstring_ref table_name(std::size_t idx) const
+    {
+      return sqlite3_column_table_name(impl_.get(), idx);
+    }
+    /// Returns the origin name of the column for column idx.
+    cstring_ref column_origin_name(std::size_t idx) const
+    {
+      return sqlite3_column_origin_name(impl_.get(), idx);
+    }
+
+    /// Clear the bindings
+    void clear_bindings(system::error_code & ec, error_info & ei)
+    {
+      auto cc = sqlite3_clear_bindings(impl_.get());
+      if (cc != SQLITE_DONE)
+      {
+        BOOST_SQLITE_ASSIGN_EC(ec, cc);
+        ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+      }
+    }
+
+    void clear_bindings()
+    {
+      system::error_code ec;
+      error_info ei;
+      clear_bindings(ec, ei);
+      if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+    }
+
+    /// Reset the current execution.
+    void reset(system::error_code & ec, error_info & ei)
+    {
+      auto cc = sqlite3_reset(impl_.get());
+      if (cc != SQLITE_DONE)
+      {
+        BOOST_SQLITE_ASSIGN_EC(ec, cc);
+        ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
+      }
+    }
+
+    void reset()
+    {
+      system::error_code ec;
+      error_info ei;
+      clear_bindings(ec, ei);
+      if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+    }
+
+    row current() const
+    {
+       row rw;
+       rw.stm_ = impl_.get();
+       return rw;
+    }
+
 
   private:
 
@@ -551,7 +539,6 @@ struct statement
           int ar = pr.apply(impl_.get(), i++);
           if (ar != SQLITE_OK)
           {
-
             BOOST_SQLITE_ASSIGN_EC(ec, ar);
             ei.set_message(sqlite3_errmsg(sqlite3_db_handle(impl_.get())));
             return;
@@ -634,6 +621,9 @@ struct statement
     }
 
 
+    template<typename, bool>
+    friend struct statement_iterator;
+
     friend
     struct connection;
     struct deleter_
@@ -644,6 +634,8 @@ struct statement
         }
     };
     std::unique_ptr<sqlite3_stmt, deleter_> impl_;
+    bool done_ = false;
+
 };
 
 BOOST_SQLITE_END_NAMESPACE

@@ -386,11 +386,11 @@ std::initializer_list<std::tuple<std::string, std::string>> data = {
     {"wave",                      "1.33.0"}
 };
 
-void print(std::ostream & os, sqlite::resultset rw, boost::source_location loc = BOOST_CURRENT_LOCATION)
+void print(std::ostream & os, sqlite::statement rw, boost::source_location loc = BOOST_CURRENT_LOCATION)
 {
   os << loc.file_name() << "(" << loc.line() << "): ";
   os << "[";
-  for (auto & r : rw)
+  for (auto & r : sqlite::statement_range(rw))
     os << r.at(0).get_text() << ", ";
   os << "]" << std::endl;
 }
@@ -407,26 +407,26 @@ int main (int /*argc*/, char * /*argv*/[])
       p.execute(d);
   }
 
-  print(std::cout, conn.query("select * from my_map order by name desc;"));
-  print(std::cout, conn.query("select * from my_map where name = 'url';"));
-  print(std::cout, conn.query("select * from my_map where name <  'url';"));
-  print(std::cout, conn.query("select * from my_map where name >= 'system' ;"));
-  print(std::cout, conn.query("select * from my_map where name >= 'system' and name < 'url' ;"));
-  print(std::cout, conn.query("select * from my_map where name > 'system' and name <= 'url' ;"));
-  print(std::cout, conn.query("select * from my_map where name >  'json';"));
-  print(std::cout, conn.query("select * from my_map where name >= 'json';"));
-  print(std::cout, conn.query("select * from my_map where name <  'json';"));
+  print(std::cout, conn.prepare("select * from my_map order by name desc;"));
+  print(std::cout, conn.prepare("select * from my_map where name = 'url';"));
+  print(std::cout, conn.prepare("select * from my_map where name <  'url';"));
+  print(std::cout, conn.prepare("select * from my_map where name >= 'system' ;"));
+  print(std::cout, conn.prepare("select * from my_map where name >= 'system' and name < 'url' ;"));
+  print(std::cout, conn.prepare("select * from my_map where name > 'system' and name <= 'url' ;"));
+  print(std::cout, conn.prepare("select * from my_map where name >  'json';"));
+  print(std::cout, conn.prepare("select * from my_map where name >= 'json';"));
+  print(std::cout, conn.prepare("select * from my_map where name <  'json';"));
 
-  print(std::cout, conn.query("select * from my_map where name == 'json' order by name  asc;"));
-  print(std::cout, conn.query("select * from my_map where name == 'json' and name == 'url';"));
-  print(std::cout, conn.query("select * from my_map where name == 'json' order by name desc;"));
+  print(std::cout, conn.prepare("select * from my_map where name == 'json' order by name  asc;"));
+  print(std::cout, conn.prepare("select * from my_map where name == 'json' and name == 'url';"));
+  print(std::cout, conn.prepare("select * from my_map where name == 'json' order by name desc;"));
 
-  print(std::cout, conn.query("select * from my_map where name < 'url' and name >= 'system' order by name desc;"));
-  print(std::cout, conn.query("select * from my_map where version == '1.81.0';"));
+  print(std::cout, conn.prepare("select * from my_map where name < 'url' and name >= 'system' order by name desc;"));
+  print(std::cout, conn.prepare("select * from my_map where version == '1.81.0';"));
 
-  print(std::cout, conn.query("select * from my_map where version > '1.32.0' order by version desc;"));
-  conn.query("delete from my_map where version == '1.81.0';");
-  print(std::cout, conn.query("select * from my_map where name < 'system' and name <= 'system' ;"));
+  print(std::cout, conn.prepare("select * from my_map where version > '1.32.0' order by version desc;"));
+  conn.prepare("delete from my_map where version == '1.81.0';");
+  print(std::cout, conn.prepare("select * from my_map where name < 'system' and name <= 'system' ;"));
 
 
   return 0;

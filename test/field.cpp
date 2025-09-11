@@ -24,7 +24,8 @@ create table type_tester(
   insert into type_tester values(42, 1.2, null, 'text', x'04050607');
 )");
 
-  auto res = conn.query("select * from type_tester");
+  auto res = conn.prepare("select * from type_tester");
+  res.step();
   auto r = res.current();
 
   BOOST_CHECK(r[0].type() == sqlite::value_type::integer);

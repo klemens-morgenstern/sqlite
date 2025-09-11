@@ -1,4 +1,5 @@
 == `sqlite/field.hpp`
+[#field]
 
 A `field` is a type representing a <<value>> in a database. or as a result from a query.
 
@@ -37,6 +38,6 @@ struct field
 
 NOTE: The view types can be invalidated when the database changes or the next row is read by the query.
 
-WARNING: The `field` type does not own the statement/query it was produced by. It is a merely a view into the `resultset`.
+WARNING: The `field` type does not own the statement/query it was produced by. It is a merely a view into the `statement`.
 Reading the next row will change the values returned.
 

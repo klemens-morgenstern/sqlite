@@ -6,6 +6,7 @@
 //
 
 #include <boost/sqlite/collation.hpp>
+#include <boost/sqlite/iterator.hpp>
 #include <string>
 #include <vector>
 
@@ -33,7 +34,8 @@ BOOST_AUTO_TEST_CASE(collation)
   std::vector<std::string> names;
 
   // language=sqlite
-  for (auto r : conn.query("select first_name from author where first_name = 5 collate length order by last_name asc;"))
+  auto sr = conn.prepare("select first_name from author where first_name = 5 collate length order by last_name asc;");
+  for (auto r : sqlite::statement_range(sr))
     names.emplace_back(r.at(0).get_text());
 
   std::vector<std::string> cmp = {"peter", "ruben"};
@@ -41,5 +43,5 @@ BOOST_AUTO_TEST_CASE(collation)
 
   sqlite::delete_collation(conn, "length");
 
-  BOOST_CHECK_THROW(conn.query("select first_name from author where first_name = 5 collate length order by last_name asc;"), system::system_error);
+  BOOST_CHECK_THROW(conn.prepare("select first_name from author where first_name = 5 collate length order by last_name asc;"), system::system_error);
 }

@@ -40,29 +40,32 @@ int main(int /*argc*/, char */*argv*/[])
   // end::execute[]
 
   // tag::query1[]
-  sqlite::resultset q = conn.query("SELECT name, age FROM users ORDER BY id ASC;");
+  sqlite::statement q = conn.prepare("SELECT name, age FROM users ORDER BY id ASC;");
   // end::query1[]
 
   // tag::query2[]
+  assert(q.step()); // get the first row
   assert(q.current()[0].get_text() == "Alice");
-  assert(q.read_next()); // true if it's the last row!
+  assert(q.step()); // true if it's the last row!
   assert(q.current()[0].get_text() == "Bob");
   // end::query2[]
 
 
   // tag::query3[]
-  for (const auto & t :
-          conn.query<std::tuple<sqlite::string_view, std::int64_t>>("SELECT name, age FROM users;"))
+  q = conn.prepare("SELECT name, age FROM users;");
+  for (const auto & t : sqlite::statement_range<std::tuple<sqlite::string_view, std::int64_t>>(q))
     std::cout << "User " << std::get<0>(t) << " is " << std::get<1>(t) << " old." << std::endl;
   // end::query3[]
 
   // tag::query4[]
-  for (const auto & a : conn.query<users>("SELECT age, name FROM users;"))
+  q = conn.prepare("SELECT age, name FROM users;");
+  for (const auto & a : sqlite::statement_range<users>(q))
     std::cout << "User " << a.name << " is " << a.age << " old." << std::endl;
   // end::query4[]
 
   // tag::query_strict[]
-  for (const auto & a : conn.query<users>("SELECT age, name FROM users;").strict())
+  q = conn.prepare("SELECT age, name FROM users;");
+  for (const auto & a : sqlite::statement_range<users, true>(q))
     std::cout << "User " << a.name << " is " << a.age << " old." << std::endl;
   // end::query_strict[]
 
@@ -105,7 +108,7 @@ int main(int /*argc*/, char */*argv*/[])
       sqlite::deterministic // <4>
       );
 
-  auto qu = conn.query("SELECT to_upper(name) FROM users WHERE name == 'Alice';");
+  auto qu = conn.prepare("SELECT to_upper(name) FROM users WHERE name == 'Alice';");
   assert(qu.current()[0].get_text() == "ALICE");
   // end::to_upper[]
 
@@ -128,7 +131,7 @@ int main(int /*argc*/, char */*argv*/[])
   };
   sqlite::create_aggregate_function<retirees>(conn, "retirees", std::make_tuple(65));
 
-  q = conn.query("select retirees(age) from users;");
+  q = conn.prepare("select retirees(age) from users;");
   std::cout << "The amount of retirees is " << q.current()[0].get_text() << std::endl;
   // end::oldest[]
 

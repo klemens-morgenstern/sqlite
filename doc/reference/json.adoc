@@ -22,7 +22,7 @@ json::value as_json(const field & f, json::storage_ptr ptr = {});
 // Allow conversions to boost::json::value
 void tag_invoke( const json::value_from_tag &, json::value& val, const value & f);
 void tag_invoke( const json::value_from_tag &, json::value& val, const field & f);
-void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs);
+void tag_invoke( const json::value_from_tag &, json::value& val, statement && rs);
 ----
 
 

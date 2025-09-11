@@ -269,10 +269,10 @@ std::initializer_list<std::pair<std::string, std::string>> init_data = {
     {"wave",                      "1.33.0"}
 };
 
-void print(std::ostream & os, sqlite::resultset rw)
+void print(std::ostream & os, sqlite::statement rw)
 {
   os << "[";
-  for (auto & r : rw)
+  for (auto & r : sqlite::statement_range(rw))
     os << r.at(0).get_text() << ", ";
   os << "]" << std::endl;
 }
@@ -286,19 +286,19 @@ int main (int /*argc*/, char * /*argv*/[])
   // end::module[]
   boost::ignore_unused(m);
 
-  print(std::cout, conn.query("select * from my_map order by name desc;"));
-  print(std::cout, conn.query("select * from my_map where name = 'url';"));
-  print(std::cout, conn.query("select * from my_map where name < 'url' and name >= 'system' ;"));
-  print(std::cout, conn.query("select * from my_map where name >  'json';"));
-  print(std::cout, conn.query("select * from my_map where name >= 'json';"));
-  print(std::cout, conn.query("select * from my_map where name <  'json';"));
-  print(std::cout, conn.query("select * from my_map where name == 'json' order by name  asc;"));
-  print(std::cout, conn.query("select * from my_map where name == 'json' order by name desc;"));
+  print(std::cout, conn.prepare("select * from my_map order by name desc;"));
+  print(std::cout, conn.prepare("select * from my_map where name = 'url';"));
+  print(std::cout, conn.prepare("select * from my_map where name < 'url' and name >= 'system' ;"));
+  print(std::cout, conn.prepare("select * from my_map where name >  'json';"));
+  print(std::cout, conn.prepare("select * from my_map where name >= 'json';"));
+  print(std::cout, conn.prepare("select * from my_map where name <  'json';"));
+  print(std::cout, conn.prepare("select * from my_map where name == 'json' order by name  asc;"));
+  print(std::cout, conn.prepare("select * from my_map where name == 'json' order by name desc;"));
 
-  print(std::cout, conn.query("select * from my_map where name < 'url' and name >= 'system' order by name desc;"));
-  print(std::cout, conn.query("select * from my_map where data == '1.81.0';"));
+  print(std::cout, conn.prepare("select * from my_map where name < 'url' and name >= 'system' order by name desc;"));
+  print(std::cout, conn.prepare("select * from my_map where data == '1.81.0';"));
 
-  conn.query("delete from my_map where data == '1.81.0';");
+  conn.prepare("delete from my_map where data == '1.81.0';");
 
   return 0;
 }

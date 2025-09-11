@@ -268,6 +268,6 @@ int main (int /*argc*/, char * /*argv*/[])
     conn.execute("commit");
   }
 
-  conn.query("delete from csv_example where first_name in ('peter', 'klemens')");
+  conn.prepare("delete from csv_example where first_name in ('peter', 'klemens')");
   return 0;
 }

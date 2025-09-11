@@ -25,7 +25,8 @@ BOOST_AUTO_TEST_CASE(statement)
   std::unique_ptr<int> data{new int(42)};
 
   auto ip = data.get();
-  auto q = conn.prepare("select $1;").execute(std::make_tuple(std::move(data)));
+  auto q = conn.prepare("select $1;", std::make_tuple(std::move(data)));
+  q.step();
   sqlite::row r = q.current();
   BOOST_CHECK(r.size() == 1u);
 
@@ -63,12 +64,12 @@ BOOST_AUTO_TEST_CASE(map)
   conn.execute(
 #include "test-db.sql"
   );
-  auto q = conn.prepare("select * from author where first_name = $name;").execute({{"name", 42}});
-  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;").execute({{"n4ame", 123}}), boost::system::system_error);
+  auto q = conn.prepare("select * from author where first_name = $name;", {{"name", 42}});
+  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;", {{"n4ame", 123}}), boost::system::system_error);
 
   std::unordered_map<std::string, variant2::variant<int, std::string>> params = {{"name", 42}};
-  q = conn.prepare("select * from author where first_name = $name;").execute(params);
-  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;").execute(params), boost::system::system_error);
+  q = conn.prepare("select * from author where first_name = $name;", params);
+  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;", params), boost::system::system_error);
 
   BOOST_CHECK_THROW(conn.prepare("elect * from nothing;"), boost::system::system_error);
 }

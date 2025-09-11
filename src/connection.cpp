@@ -61,42 +61,6 @@ void connection::close(system::error_code & ec,
     }
 }
 
-
-resultset connection::query(
-        core::string_view q,
-        system::error_code & ec,
-        error_info & ei)
-{
-    resultset res;
-    sqlite3_stmt * ss;
-    const auto cc = sqlite3_prepare_v2(impl_.get(),
-                       q.data(), static_cast<int>(q.size()),
-                       &ss, nullptr);
-
-    if (cc != SQLITE_OK)
-    {
-        BOOST_SQLITE_ASSIGN_EC(ec, cc);
-        ei.set_message(sqlite3_errmsg(impl_.get()));
-    }
-    else
-    {
-      res.impl_.reset(ss);
-      if (!ec)
-        res.read_next(ec, ei);
-    }
-    return res;
-}
-
-resultset connection::query(core::string_view q)
-{
-    system::error_code ec;
-    error_info ei;
-    auto tmp = query(q, ec, ei);
-    if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
-    return tmp;
-}
-
 statement connection::prepare(
         core::string_view q,
         system::error_code & ec,

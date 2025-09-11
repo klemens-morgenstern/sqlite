@@ -1,4 +1,5 @@
 == `sqlite/row.hpp`
+[#row]
 
 This type represents one row of data from a query.  Is a random-access range.
 

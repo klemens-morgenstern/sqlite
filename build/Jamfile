@@ -23,7 +23,6 @@ local SOURCES =
         ext.cpp
         field.cpp
         meta_data.cpp
-        resultset.cpp
         row.cpp
         value.cpp ;
 
