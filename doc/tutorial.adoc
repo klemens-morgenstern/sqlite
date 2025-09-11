@@ -56,23 +56,21 @@ Once the database provides data it can be queried like this:
 include::../example/tutorial.cpp[tag=query1]
 ----
 
-The <<resultset>> is a forward range of the data queried from the database.
-The first row of the result is already read.
+The <<statement>> is represent a prepared statement object, which contains precompiled byte-code ready to execute.
 
 [source,cpp]
 ----
 include::../example/tutorial.cpp[tag=query2]
 ----
 
-NOTE: The `resultset` has `begin()`/`end()` member functions, so that it can be used in a ranged for loop.
+NOTE: The `statement` can be used with a <<statement_range>> in a range-for loop.  This implements an input_iterator range, similar to std::ranges::istream.
 
 The <<row>> type is a range of <<field>>s,
 which has all the information for the field requested.
 
 In many use-cases this is however superfluous because the structure of the table is known.
 
-To make this easy, you can call query with a type parameter (`query<T>`) which will yield a
-`static_resultset<T>`. `T` can either be a tuple of a struct.
+To make this easy, the <<statement_range>> has a type parameter (`query<T>`) which will transform every row into `T`.. `T` can either be a tuple of a struct.
 
 A tuple will assign the query results by order.
 
@@ -90,7 +88,7 @@ include::../example/tutorial.cpp[tag=query_t]
 include::../example/tutorial.cpp[tag=query4]
 ----
 
-The types allowed in the `static_resultset` are:
+The types allowed in the `statement_range` and `statement_iterator` are:
 
 - `std::int64_t`
 - `double`
@@ -100,8 +98,8 @@ The types allowed in the `static_resultset` are:
 
 WARNING: `blob_view` and `string_view` have a limited lifetime. They might be invalidated when the next row is read!
 
-By default, the `static_result` does not check types, following https://www.sqlite.org/datatype3.html[sqlite's general dynamic type system].
-You can eat type checks, by using strict mode:
+By default, the `statement_range` and `statement_iterator` do not check types, following https://www.sqlite.org/datatype3.html[sqlite's general dynamic type system].
+You can eat type checks, by setting the strict mode to `true` with the second template parameter.
 
 [source,cpp]
 ----
@@ -132,8 +130,4 @@ A prepared statement can be used multiple times.
 include::../example/tutorial.cpp[tag=statement_multi_insert]
 ----
 
-WARNING: Calling `.execute` on an lvalue of `statement` will transfer ownership to the `resultset`,
-while calling `.execute` on an rvalue will produce a `resultset` that points to the statement.
-
-NOTE: The result of an `.execute` can also be turned into a static_resultset<T> by using `.execute<T>`.
-
+NOTE: `execute()` does is equivalent to calling `.bind()`, `.step()` and `.reset()`.

@@ -9,7 +9,7 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 field row::at(std::size_t idx) const
 {
-  if (idx >= size())
+  if (!stm_ || idx >= size())
     throw_exception(std::out_of_range("column out of range"), BOOST_CURRENT_LOCATION);
   else
   {

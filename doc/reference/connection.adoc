@@ -51,16 +51,11 @@ struct connection
     bool valid() const;
 
     // Perform a query without parameters. Can only execute a single statement.
-    resultset query(
+    statement prepare(
             core::string_view q,
             system::error_code & ec,
             error_info & ei);
-    resultset query(core::string_view q);
-
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> query(core::string_view q, system::error_code & ec, error_info & ei);
-    template<typename T, bool Strict = false>
-    static_resultset<T, Strict> query(core::string_view q);
+    statement prepare(core::string_view q);
 
     // Perform a query without parametert, It execute a multiple statement.
     void execute(cstring_ref q, system::error_code & ec, error_info & ei);

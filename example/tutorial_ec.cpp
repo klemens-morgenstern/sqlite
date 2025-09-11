@@ -53,14 +53,14 @@ int main(int /*argc*/, char */*argv*/[])
 
 {
   // tag::query1[]
-  sqlite::resultset q = conn.query("SELECT name, age FROM users ORDER BY id ASC;", ec, ei);
+  sqlite::statement q = conn.prepare("SELECT name, age FROM users ORDER BY id ASC;", ec, ei);
   if (ec)
     goto error;
   // end::query1[]
 
   // tag::query2[]
   assert(q.current()[0].get_text() == "Alice");
-  assert(q.read_next(ec, ei)); // true if it's the last row!
+  assert(q.step(ec, ei)); // true if it's the last row!
   if (ec)
     goto error;
   assert(q.current()[0].get_text() == "Bob");
@@ -68,46 +68,23 @@ int main(int /*argc*/, char */*argv*/[])
 }
 
   // tag::query3[]
-  for (const auto & t :
-          conn.query<std::tuple<sqlite::string_view, std::int64_t>>("SELECT name, age FROM users;", ec, ei))
-    std::cout << "User " << std::get<0>(t) << " is " << std::get<1>(t) << " old." << std::endl;
-
-  if (ec)
-    goto error;
-
-  // end::query3[]
-
-  // tag::query4[]
-  for (const auto & a : conn.query<users>("SELECT age, name FROM users;", ec, ei))
-    std::cout << "User " << a.name << " is " << a.age << " old." << std::endl;
-  if (ec)
-    goto error;
-  // end::query4[]
-
-  // tag::query_strict[]
   {
-    auto r = conn.query<users>("SELECT age, name FROM users;", ec, ei).strict();
-    while (r.read_next(ec, ei) && !ec)
+    auto q = conn.prepare("SELECT name, age FROM users;", ec, ei);
+    while (!ec && q.step())
     {
-      // because this is strict, it takes ec & ei for conversion errors.
-      const auto & a = r.current(ec, ei);
-      if (ec)
-        break;
-      std::cout << "User " << a.name << " is " << a.age << " old." << std::endl;
+      auto r = q.current();
+      std::cout << "User " << r[0].get_text() << " is " << r[1].get_text() << " old." << std::endl;
     }
   }
   if (ec)
     goto error;
 
-  // end::query_strict[]
-
+  // end::query3[]
 
   // tag::statement_insert[]
 
   {
-    auto p = conn.prepare("insert into users (name, age) values (?1, ?2), (?3, ?4)", ec, ei);
-    if (!ec)
-      std::move(p).execute({"Paul", 31, "Mark", 51}, ec, ei);
+    conn.prepare("insert into users (name, age) values (?1, ?2), (?3, ?4)", {"Paul", 31, "Mark", 51}, ec, ei);
     if (ec)
       goto error;
   }
@@ -157,7 +134,7 @@ int main(int /*argc*/, char */*argv*/[])
   if (ec)
     goto error;
   {
-    auto qu = conn.query("SELECT to_upper(name) FROM users WHERE name == 'Alice';", ec, ei);
+    auto qu = conn.prepare("SELECT to_upper(name) FROM users WHERE name == 'Alice';", ec, ei);
     if (ec) goto error;
     assert(qu.current()[0].get_text() == "ALICE");
   }
@@ -183,7 +160,7 @@ int main(int /*argc*/, char */*argv*/[])
   if (ec) goto error;
 
   {
-    auto q = conn.query("select retirees(age) from users;", ec, ei);
+    auto q = conn.prepare("select retirees(age) from users;", ec, ei);
     if (ec) goto error;
     std::cout << "The amount of retirees is " << q.current()[0].get_text() << std::endl;
   }

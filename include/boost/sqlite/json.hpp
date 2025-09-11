@@ -10,7 +10,8 @@
 
 #include <boost/sqlite/detail/config.hpp>
 #include <boost/sqlite/field.hpp>
-#include <boost/sqlite/resultset.hpp>
+#include <boost/sqlite/iterator.hpp>
+#include <boost/sqlite/statement.hpp>
 #include <boost/sqlite/value.hpp>
 #include <boost/json/parse.hpp>
 #include <boost/json/serializer.hpp>
@@ -19,7 +20,6 @@
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-struct resultset;
 struct field;
 struct value;
 
@@ -122,11 +122,11 @@ inline void tag_invoke( const json::value_from_tag &, json::value& val, const fi
   }
 }
 
-inline void tag_invoke( const json::value_from_tag &, json::value& val, resultset && rs)
+inline void tag_invoke( const json::value_from_tag &, json::value& val, statement && rs)
 {
   auto & obj = val.emplace_array();
 
-  for (auto r : rs)
+  for (auto r : sqlite::statement_range(rs))
   {
     auto & row = obj.emplace_back(json::object(obj.storage())).get_object();
     for (auto c : r)

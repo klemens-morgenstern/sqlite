@@ -79,7 +79,7 @@ void create_collation(
         },
         +[](void * p) { delete_(static_cast<func_type*>(p)); }
       );
-    
+
     if (res != SQLITE_OK)
       BOOST_SQLITE_ASSIGN_EC(ec, res);
     else

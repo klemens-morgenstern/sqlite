@@ -137,7 +137,7 @@ struct describe_module final : sqlite::vtab::eponymous_module<describe_table<T>>
 };
 
 
-void print_table(std::ostream & str, sqlite::resultset res)
+void print_table(std::ostream & str, sqlite::statement res)
 {
   for (auto i = 0u; i < res.column_count(); i ++)
     str << "| " << std::setfill(' ') << std::setw(15) << res.column_name(i) << " ";
@@ -148,7 +148,7 @@ void print_table(std::ostream & str, sqlite::resultset res)
     str << "|-----------------";
   str << "|\n";
 
-  for (auto && r : res)
+  for (auto && r : sqlite::statement_range(res))
   {
     for (auto i = 0u; i < res.column_count(); i ++)
       str << "| " << std::setfill(' ') << std::setw(15) << r.at(i).get_text() << " ";
@@ -186,17 +186,17 @@ int main (int /*argc*/, char * /*argv*/[])
   }
 
 
-  print_table(std::cout, conn.query("select * from boost_libraries;"));
+  print_table(std::cout, conn.prepare("select * from boost_libraries;"));
 
   // same as conn.execute("update boost_libraries set standard = 11 where standard = 98;");
   for (auto & p : md.data)
     if (p.second.standard == 98)
       p.second.standard = 11;
 
-  print_table(std::cout, conn.query("select * from boost_libraries;"));
+  print_table(std::cout, conn.prepare("select * from boost_libraries;"));
 
   conn.prepare("delete from boost_libraries where name = ?").execute({"mpi"});
-  print_table(std::cout, conn.query("select * from boost_libraries;"));
+  print_table(std::cout, conn.prepare("select * from boost_libraries;"));
 
   return 0;
 }

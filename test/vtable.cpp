@@ -103,7 +103,8 @@ BOOST_AUTO_TEST_CASE(simple_reader)
   auto & m = create_module(conn, "test_table", simple_test_impl{});
 
   auto itr = m.names.begin();
-  for (auto q : conn.query("select * from test_table ;"))
+  auto qq = conn.prepare("select * from test_table ;");
+  for (auto q : sqlite::statement_range(qq))
   {
     BOOST_CHECK(q.size() == 1);
     BOOST_CHECK(q.at(0).get_text() == *itr++);
@@ -111,13 +112,14 @@ BOOST_AUTO_TEST_CASE(simple_reader)
 
   m.names.emplace_back("marcelo");
   itr = m.names.begin();
-  for (auto q : conn.query("select * from test_table ;"))
+  qq = conn.prepare("select * from test_table ;");
+  for (auto q : sqlite::statement_range(qq))
   {
     BOOST_CHECK(q.size() == 1);
     BOOST_CHECK(q.at(0).get_text() == *itr++);
   }
 
-  BOOST_CHECK_THROW(conn.query("insert into test_table values('chris')"), boost::system::system_error);
+  BOOST_CHECK_THROW(conn.prepare("insert into test_table values('chris')"), boost::system::system_error);
 }
 
 struct modifyable_table;

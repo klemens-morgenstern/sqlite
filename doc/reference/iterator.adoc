@@ -1,0 +1,42 @@
+== `sqlite/iterator.hpp`
+[#statement_iterator]
+[#statement_range]
+
+The iterator interface works like the input_iterators for `std::istream`.
+
+
+
+.sqlite/iterator.hpp
+[source,cpp]
+----
+template<typename T = row, bool Strict = false>
+struct statement_iterator
+{
+    using value_type = T;
+    using difference_type = int;
+    using reference = T&;
+    using iterator_category = std::input_iterator_tag;
+
+    statement_iterator() = default;
+    statement_iterator(statement & st);
+
+    bool operator!=(statement_iterator rhs) const;
+
+    T &operator*()  ;
+    T *operator->() ;
+
+    statement_iterator operator++();
+};
+
+template<typename T = row, bool Strict = false>
+struct statement_range
+{
+    statement_range(statement & st);
+    statement_iterator<T, Strict> begin() const;
+    statement_iterator<T, Strict> end()   const; {return {};}
+};
+----
+
+
+
+

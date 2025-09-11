@@ -8,6 +8,7 @@
 
 #include <boost/sqlite/backup.hpp>
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/iterator.hpp>
 
 #include <string>
 #include <vector>
@@ -23,7 +24,7 @@ BOOST_AUTO_TEST_CASE(backup)
 #include "test-db.sql"
       );
   // language=sqlite
-  conn1.query("select * from author;");
+  conn1.prepare("select * from author;");
 
 
   sqlite::connection conn2{":memory:"};
@@ -32,11 +33,13 @@ BOOST_AUTO_TEST_CASE(backup)
   std::vector<std::string> names1, names2;
 
   // language=sqlite
-  for (auto r : conn1.query("select first_name from author;"))
+  auto q1 = conn1.prepare("select first_name from author;");
+  for (auto r : sqlite::statement_range(q1))
     names1.emplace_back(r.at(0u).get_text());
 
   // language=sqlite
-  for (auto r : conn2.query("select first_name from author;"))
+  auto q2 = conn2.prepare("select first_name from author;");
+  for (auto r : sqlite::statement_range(q2))
     names2.emplace_back(r.at(0u).get_text());
 
   BOOST_CHECK(!names1.empty());

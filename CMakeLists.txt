@@ -23,7 +23,6 @@ set(BOOST_SQLITE_SOURCES
     src/error.cpp
     src/field.cpp
     src/meta_data.cpp
-    src/resultset.cpp
     src/row.cpp
     src/value.cpp
 )

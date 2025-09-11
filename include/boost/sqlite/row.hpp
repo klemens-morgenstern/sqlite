@@ -152,13 +152,15 @@ struct row
     const_iterator end() const
     {
         const_iterator ci;
-        ci.f_.col_ = sqlite3_column_count(stm_);
+        ci.f_.col_ = stm_ ? sqlite3_column_count(stm_) : 0;
         ci.f_.stm_ = stm_;
         return ci;
     }
   private:
-    friend struct resultset;
-    sqlite3_stmt * stm_;
+    friend struct statement;
+    template<typename, bool >
+    friend struct statement_iterator;
+    sqlite3_stmt * stm_ = nullptr;
 
 };
 

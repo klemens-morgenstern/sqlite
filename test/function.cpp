@@ -5,6 +5,7 @@
 
 #include <boost/sqlite/function.hpp>
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/iterator.hpp>
 #include "test.hpp"
 
 #include <string>
@@ -41,7 +42,8 @@ BOOST_AUTO_TEST_CASE(scalar)
   std::vector<std::string> names;
 
   // language=sqlite
-  for (auto r : conn.query("select to_upper(first_name) from author order by last_name asc;"))
+  auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
+  for (auto r : sqlite::statement_range(q))
     names.emplace_back(r.at(0).get_text());
 
 
@@ -78,8 +80,9 @@ BOOST_AUTO_TEST_CASE(scalar_pointer)
 
   std::vector<std::string> names;
 
+  auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
   // language=sqlite
-  for (auto r : conn.query("select to_upper(first_name) from author order by last_name asc;"))
+  for (auto r : sqlite::statement_range(q))
     names.emplace_back(r.at(0).get_text());
 
 
@@ -105,7 +108,8 @@ BOOST_AUTO_TEST_CASE(scalar_void)
 
 
   // language=sqlite
-  for (auto r : conn.query("select to_upper(first_name) from author order by last_name asc;"))
+  auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
+  for (auto r : sqlite::statement_range(q))
     BOOST_CHECK(r[0].is_null());
 }
 
@@ -128,7 +132,8 @@ BOOST_AUTO_TEST_CASE(scalar_void_pointer)
   std::vector<std::string> names;
 
   // language=sqlite
-  for (auto r : conn.query("select to_upper(first_name) from author order by last_name asc;"))
+  auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
+  for (auto r : sqlite::statement_range(q))
     BOOST_CHECK(r[0].is_null());
 }
 
@@ -163,7 +168,8 @@ BOOST_AUTO_TEST_CASE(aggregate)
   std::vector<std::size_t> lens;
 
   // language=sqlite
-  for (auto r : conn.query("select char_counter(first_name) from author;"))
+  auto q = conn.prepare("select char_counter(first_name) from author;");
+  for (auto r : sqlite::statement_range(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 1u);
@@ -200,7 +206,8 @@ BOOST_AUTO_TEST_CASE(aggregate_result)
   std::vector<std::size_t> lens;
 
   // language=sqlite
-  for (auto r : conn.query("select char_counter(first_name) from author;"))
+  auto q = conn.prepare("select char_counter(first_name) from author;");
+  for (auto r : sqlite::statement_range(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 1u);
@@ -242,10 +249,11 @@ BOOST_AUTO_TEST_CASE(window)
   std::vector<std::size_t> lens;
 
   // language=sqlite
-  for (auto r : conn.query(R"(
+  auto q = conn.prepare(R"(
 select win_counter(first_name) over (
   order by last_name rows between 1 preceding and 1 following ) as subrows
-    from author order by last_name asc;)"))
+    from author order by last_name asc;)");
+  for (auto r : sqlite::statement_range(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 4u);
@@ -291,10 +299,11 @@ BOOST_AUTO_TEST_CASE(window_result)
   std::vector<std::size_t> lens;
 
   // language=sqlite
-  for (auto r : conn.query(R"(
+  auto q = conn.prepare(R"(
 select win_counter(first_name) over (
   order by last_name rows between 1 preceding and 1 following ) as subrows
-    from author order by last_name asc;)"))
+    from author order by last_name asc;)");
+  for (auto r : sqlite::statement_range(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 4u);

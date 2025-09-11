@@ -5,6 +5,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <boost/sqlite/iterator.hpp>
 #include <boost/sqlite/transaction.hpp>
 
 #include "test.hpp"
@@ -18,7 +19,8 @@ BOOST_AUTO_TEST_CASE(transaction)
 
   auto check_size = [&]{
     std::size_t n = 0ull;
-    for (auto l : conn.query("select * from test"))
+    auto q = conn.prepare("select * from test");
+    for (auto l : sqlite::statement_range(q))
     {
       boost::ignore_unused(l);
       n++;
@@ -67,7 +69,12 @@ BOOST_AUTO_TEST_CASE(transaction)
 
   }
 
-  BOOST_CHECK(conn.query("select * from test").done());
+  {
+    auto s = conn.prepare("select * from test");
+    BOOST_CHECK(!s.done());
+    BOOST_CHECK(!s.step());
+    BOOST_CHECK( s.done());
+  }
 
   {
     system::error_code ec;
