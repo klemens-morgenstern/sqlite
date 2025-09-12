@@ -24,6 +24,7 @@
 #include <boost/sqlite/iterator.hpp>
 #include <boost/sqlite/json.hpp>
 #include <boost/sqlite/row.hpp>
+#include <boost/sqlite/query.hpp>
 #include <boost/sqlite/statement.hpp>
 #include <boost/sqlite/string.hpp>
 #include <boost/sqlite/transaction.hpp>
