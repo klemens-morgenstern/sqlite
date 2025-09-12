@@ -28,6 +28,8 @@ namespace boost { template<typename> class optional;}
 #endif
 
 #include <boost/sqlite/statement.hpp>
+#include <boost/sqlite/error.hpp>
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -371,7 +373,7 @@ struct statement_iterator
            if (!ec)
              detail::convert_row<Strict >(row_, st_->current(), ec, ei);
            if (ec)
-             throw_exception(system::system_error(ec, ei.message()));
+             handle_error_(ec, ei);
         }
 
 
@@ -396,7 +398,7 @@ struct statement_iterator
             error_info ei;
             detail::convert_row<Strict >(row_, st_->current(), ec, ei);
             if (ec)
-                throw_exception(system::system_error(ec, ei.message()));
+                handle_error_(ec, ei);
         }
         return *this;
     }
@@ -404,6 +406,20 @@ struct statement_iterator
  private:
     statement * st_ = nullptr;
     T row_;
+
+    void handle_error_(system::error_code &ec, error_info & ei)
+    {
+        handle_error_impl_(is_result_type<T>{}, ec, ei);
+    }
+    void handle_error_impl_(std::true_type  /* is_result_type */, system::error_code &ec, error_info & ei)
+    {
+        row_ = T(boost::system::in_place_error, error{ec, std::move(ei)});
+    }
+    BOOST_NORETURN
+    void handle_error_impl_(std::false_type /* is_result_type */, system::error_code &ec, error_info & ei)
+    {
+        throw_exception(system::system_error(ec, ei.message()));
+    }
 };
 
 

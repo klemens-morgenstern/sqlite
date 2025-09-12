@@ -36,10 +36,10 @@ BOOST_SQLITE_BEGIN_NAMESPACE
  sqlite::create_collation(conn, "iequal", &ci_compare);
 
  // use the collation to get by name, case insensitively
- conn.query("select first_name, last_name from people where first_name = 'Klemens' collate iequal;");
+ conn.execute("select first_name, last_name from people where first_name = 'Klemens' collate iequal;");
 
  // order by names case insensitively
- conn.query("select * from people order by last_name collate iequal asc;");
+ conn.execute("select * from people order by last_name collate iequal asc;");
 
  @endcode
 
