@@ -343,7 +343,7 @@ struct map_impl final
 
 struct multi_index_map final : sqlite::vtab::eponymous_module<map_impl>
 {
-  sqlite::result<map_impl> connect(sqlite::connection, int, const char * const *)
+  sqlite::result<map_impl> connect(sqlite::connection_ref, int, const char * const *)
   {
     return map_impl{};
   }

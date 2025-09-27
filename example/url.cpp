@@ -117,7 +117,7 @@ struct url_wrapper final : sqlite::vtab::table<url_cursor>
 
 struct url_module final : sqlite::vtab::eponymous_module<url_wrapper>
 {
-  sqlite::result<url_wrapper> connect(sqlite::connection /*db*/,
+  sqlite::result<url_wrapper> connect(sqlite::connection_ref /*db*/,
                                       int /*argc*/, const char * const */*argv*/)
   {
       return url_wrapper{};
@@ -197,7 +197,7 @@ struct segment_wrapper final : sqlite::vtab::table<segements_cursor>
 
 struct segments_module final : sqlite::vtab::eponymous_module<segment_wrapper>
 {
-  sqlite::result<segment_wrapper> connect(sqlite::connection /*conn*/,
+  sqlite::result<segment_wrapper> connect(sqlite::connection_ref /*conn*/,
                                           int /*argc*/, const char * const */*argv*/)
   {
     return segment_wrapper{};
@@ -283,7 +283,7 @@ struct query_wrapper final : sqlite::vtab::table<query_cursor>
 
 struct query_module final : sqlite::vtab::eponymous_module<query_wrapper>
 {
-  sqlite::result<query_wrapper> connect(sqlite::connection /*conn*/,
+  sqlite::result<query_wrapper> connect(sqlite::connection_ref /*conn*/,
                         int /*argc*/, const char * const */*argv*/)
   {
     return query_wrapper{};

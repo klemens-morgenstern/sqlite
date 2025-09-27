@@ -47,7 +47,7 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 template<typename Func>
 void create_collation(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Func && func,
     typename std::enable_if<
@@ -89,7 +89,7 @@ void create_collation(
 
 template<typename Func>
 auto create_collation(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Func && func)
 #if !defined(BOOST_SQLITE_GENERATING_DOCS)
@@ -107,7 +107,7 @@ auto create_collation(
 
 
 inline void delete_collation(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     system::error_code & ec)
 {
@@ -124,7 +124,7 @@ inline void delete_collation(
 
 
 inline auto delete_collation(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name)
 {
     system::error_code ec;

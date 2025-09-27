@@ -88,7 +88,7 @@ struct simple_test_impl final : sqlite::vtab::eponymous_module<simple_table>
 
 
 
-  sqlite::result<table_type> connect(sqlite::connection,
+  sqlite::result<table_type> connect(sqlite::connection_ref,
                                      int /*argc*/, const char * const * /*argv*/)
   {
     return table_type{names};
@@ -207,7 +207,7 @@ struct modifyable_test_impl final : sqlite::vtab::eponymous_module<modifyable_ta
 
   intrusive::list<table_type, intrusive::constant_time_size<false>> list;
 
-  sqlite::result<table_type> connect(sqlite::connection,
+  sqlite::result<table_type> connect(sqlite::connection_ref,
                                      int /*argc*/, const char * const  argv[]) noexcept
   {
     table_type tt{};

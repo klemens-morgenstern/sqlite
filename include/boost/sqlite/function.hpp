@@ -170,7 +170,7 @@ struct context
  */
 template<typename Func>
 auto create_scalar_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Func && func,
     function_flags flags,
@@ -231,7 +231,7 @@ auto create_scalar_function(
  */
 template<typename Func>
 auto create_scalar_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Func && func,
     function_flags flags = {})
@@ -306,7 +306,7 @@ auto create_scalar_function(
  */
 template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Args && args,
     function_flags flags,
@@ -327,7 +327,7 @@ void create_aggregate_function(
 
 template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Args && args= {},
     function_flags flags = {})
@@ -398,7 +398,7 @@ void create_aggregate_function(
  */
 template<typename Func, typename Args = std::tuple<>>
 void create_window_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Args && args,
     function_flags flags,
@@ -414,7 +414,7 @@ void create_window_function(
 
 template<typename Func, typename Args = std::tuple<>>
 void create_window_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Args && args = {},
     function_flags flags = {})
@@ -430,7 +430,7 @@ void create_window_function(
 ///@{
 /// Delete function
 
-inline void delete_function(connection & conn, cstring_ref name, int argc, system::error_code &ec)
+inline void delete_function(connection_ref conn, cstring_ref name, int argc, system::error_code &ec)
 {
   auto res = sqlite3_create_function_v2(conn.handle(), name.c_str(), argc, 0, nullptr, nullptr, nullptr, nullptr, nullptr);
   if (res != 0)
@@ -438,7 +438,7 @@ inline void delete_function(connection & conn, cstring_ref name, int argc, syste
 
 }
 
-inline void delete_function(connection & conn, cstring_ref name, int argc = -1)
+inline void delete_function(connection_ref conn, cstring_ref name, int argc = -1)
 {
   system::error_code ec;
   delete_function(conn, name, argc, ec);

@@ -10,13 +10,13 @@ that allows ordering with a custom algorithm.
 
 // Create a collation
 template<typename Func>
-void create_collation(connection & conn, cstring_ref name, Func && func);
+void create_collation(connection_ref conn, cstring_ref name, Func && func);
 template<typename Func>
-void create_collation(connection & conn, cstring_ref name, Func && func, system::error_code &ec);
+void create_collation(connection_ref conn, cstring_ref name, Func && func, system::error_code &ec);
 
 // Delete an existing collation.
-void delete_collation(connection & conn, cstring_ref name, system::error_code & ec);
-void delete_collation(connection & conn, cstring_ref name);
+void delete_collation(connection_ref conn, cstring_ref name, system::error_code & ec);
+void delete_collation(connection_ref conn, cstring_ref name);
 ----
 
  conn:: A connection to the database in which to install the collation.

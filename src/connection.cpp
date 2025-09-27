@@ -29,10 +29,7 @@ void connection::connect(cstring_ref filename, int flags, system::error_code & e
     if (r != SQLITE_OK)
         BOOST_SQLITE_ASSIGN_EC(ec, r);
     else
-    {
       impl_.reset(res);
-      impl_.get_deleter().owned_ = true;
-    }
     sqlite3_extended_result_codes(impl_.get(), true);
 }
 

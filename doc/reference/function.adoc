@@ -92,14 +92,14 @@ Creates a https://www.sqlite.org/appfunc.html[scalar function].
 
 template<typename Func>
 auto create_scalar_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Func && func,
     function_flags flags = {});
 
 template<typename Func>
 auto create_scalar_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Func && func,
     function_flags flags,
@@ -144,14 +144,14 @@ When the aggregation is done `final` is called and the result is returned to sql
 ----
 template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
-connection & conn,
+connection_ref conn,
 cstring_ref name,
 Args && args= {},
 function_flags flags = {});
 
 template<typename Func, typename Args = std::tuple<>>
 void create_aggregate_function(
-connection & conn,
+connection_ref conn,
 cstring_ref name,
 Args && args,
 function_flags flags,
@@ -207,14 +207,14 @@ When the aggregation is done `final` is called and the result is returned to sql
 ----
 template<typename Func, typename Args = std::tuple<>>
 void create_window_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Args && args = {},
     function_flags flags = {});
 
 template<typename Func, typename Args = std::tuple<>>
 void create_window_function(
-    connection & conn,
+    connection_ref conn,
     cstring_ref name,
     Args && args,
     function_flags flags,

@@ -24,7 +24,7 @@ static int connect(sqlite3 * db, void * pAux, int argc, const char * const * arg
   BOOST_SQLITE_TRY
   {
     result<table_type> rtab = impl.connect(
-        sqlite::connection(db, false),
+        sqlite::connection_ref(db),
         argc, argv);
 
     if (rtab.has_error())
@@ -58,7 +58,7 @@ static int create(sqlite3 * db, void * pAux, int argc, const char * const * argv
   BOOST_SQLITE_TRY
   {
     result<table_type> rtab = impl.create(
-        sqlite::connection(db, false),
+        sqlite::connection_ref(db),
         argc, argv);
 
     if (rtab.has_error())
