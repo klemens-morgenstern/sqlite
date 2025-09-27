@@ -102,6 +102,9 @@ struct param_ref
     }
 #endif
 
+    // Make sure the bind can not be constructed from a single string
+    param_ref(char ) = delete;
+
     /// Apply the param_ref to a statement.
     int apply(sqlite3_stmt * stmt, int c) const
     {
@@ -635,7 +638,6 @@ struct statement
     };
     std::unique_ptr<sqlite3_stmt, deleter_> impl_;
     bool done_ = false;
-
 };
 
 BOOST_SQLITE_END_NAMESPACE
