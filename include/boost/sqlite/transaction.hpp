@@ -35,26 +35,26 @@ struct transaction
 
 
   /// Create transaction guard on an existing transaction
-  transaction(connection & conn, adopt_transaction_t) : conn_(conn), completed_(false)
+  transaction(connection_ref conn, adopt_transaction_t) : conn_(conn), completed_(false)
   {
   }
 
 
   /// Create transaction guard and initiate a transaction
-  transaction(connection & conn) : conn_(conn)
+  transaction(connection_ref conn) : conn_(conn)
   {
-    conn.execute("BEGIN");
+    conn.prepare("BEGIN").step();
     completed_ = false;
   }
 
   /// Create transaction guard and initiate a transaction with the defined behaviour
-  transaction(connection & conn, behaviour b) : conn_(conn)
+  transaction(connection_ref conn, behaviour b) : conn_(conn)
   {
     switch (b)
     {
-      case deferred:  conn.execute("BEGIN DEFERRED"); break;
-      case immediate: conn.execute("BEGIN IMMEDIATE"); break;
-      case exclusive: conn.execute("BEGIN EXCLUSIVE"); break;
+      case deferred:  conn.prepare("BEGIN DEFERRED").step(); break;
+      case immediate: conn.prepare("BEGIN IMMEDIATE").step(); break;
+      case exclusive: conn.prepare("BEGIN EXCLUSIVE").step(); break;
     }
     completed_ = false;
   }
@@ -64,20 +64,20 @@ struct transaction
   ~transaction() noexcept(SQLITE_VERSION_NUMBER >= 3007011)
   {
     if (!completed_)
-      conn_.execute("ROLLBACK");
+      conn_.prepare("ROLLBACK").step();
   }
 
   ///@{
   /// Commit the transaction.
   void commit()
   {
-    conn_.execute("COMMIT");
+    conn_.prepare("COMMIT").step();
     completed_ = true;
   }
 
   void commit(system::error_code & ec, error_info & ei)
   {
-    conn_.execute("COMMIT", ec, ei);
+    conn_.prepare("COMMIT").step(ec, ei);
     completed_ = true;
   }
   ///@}
@@ -86,19 +86,19 @@ struct transaction
   /// Rollback the transaction explicitly.
   void rollback()
   {
-    conn_.execute("ROLLBACK");
+    conn_.prepare("ROLLBACK").step();
     completed_ = true;
   }
 
   void rollback(system::error_code & ec, error_info & ei)
   {
-    conn_.execute("ROLLBACK", ec, ei);
+    conn_.prepare("ROLLBACK").step(ec, ei);
     completed_ = true;
   }
   ///@}
 
  private:
-  connection & conn_;
+  connection_ref conn_;
   bool completed_ = true;
 };
 
@@ -122,15 +122,15 @@ struct savepoint
   constexpr static transaction::adopt_transaction_t adopt_transaction{};
 
   /// Create savepoint guard on an existing savepoint
-  savepoint(connection & conn, std::string name, transaction::adopt_transaction_t)
+  savepoint(connection_ref conn, std::string name, transaction::adopt_transaction_t)
       : conn_(conn), name_(std::move(name))
   {
   }
 
   /// Create transaction guard and initiate it
-  savepoint(connection & conn, std::string name) : conn_(conn), name_(std::move(name))
+  savepoint(connection_ref conn, std::string name) : conn_(conn), name_(std::move(name))
   {
-    conn.execute("SAVEPOINT " + name_);
+    conn.prepare("SAVEPOINT " + name_).step();
     completed_ = false;
   }
 
@@ -139,32 +139,32 @@ struct savepoint
   ~savepoint() noexcept(SQLITE_VERSION_NUMBER >= 3007011)
   {
     if (!completed_)
-      conn_.execute("ROLLBACK TO " + name_);
+      conn_.prepare("ROLLBACK TO " + name_).step();
   }
 
   ///@{
   /// Commit/Release the transaction.
   void commit()
   {
-    conn_.execute("RELEASE " + name_);
+    conn_.prepare("RELEASE " + name_).step();
     completed_ = true;
   }
 
   void commit(system::error_code & ec, error_info & ei)
   {
-    conn_.execute("RELEASE " + name_, ec, ei);
+    conn_.prepare("RELEASE " + name_).step(ec, ei);
     completed_ = true;
   }
 
   void release()
   {
-    conn_.execute("RELEASE " + name_);
+    conn_.prepare("RELEASE " + name_).step();
     completed_ = true;
   }
 
   void release(system::error_code & ec, error_info & ei)
   {
-    conn_.execute("RELEASE " + name_, ec, ei);
+    conn_.prepare("RELEASE " + name_).step( ec, ei);
     completed_ = true;
   }
   ///@}
@@ -173,13 +173,13 @@ struct savepoint
   /// Rollback the transaction explicitly.
   void rollback()
   {
-    conn_.execute("ROLLBACK TO" + name_);
+    conn_.prepare("ROLLBACK TO" + name_);
     completed_ = true;
   }
 
   void rollback(system::error_code & ec, error_info & ei)
   {
-    conn_.execute("ROLLBACK TO " + name_, ec, ei);
+    conn_.prepare("ROLLBACK TO " + name_).step( ec, ei);
     completed_ = true;
   }
   ///@}
@@ -187,7 +187,7 @@ struct savepoint
   /// The name of the savepoint.
   const std::string & name() const {return name_;}
  private:
-  connection & conn_;
+  connection_ref conn_;
   std::string name_;
   bool completed_ = true;
 };

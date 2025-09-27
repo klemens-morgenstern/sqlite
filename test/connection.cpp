@@ -18,7 +18,6 @@ BOOST_AUTO_TEST_CASE(connection)
   conn.execute(
 #include "test-db.sql"
   );
-
   BOOST_CHECK_THROW(conn.execute("elect * from nothing;"), boost::system::system_error);
   conn.close();
 }

@@ -23,9 +23,9 @@ struct connection
     // Construct the connection from a handle.
     explicit connection(handle_type handle, bool take_ownership = true); // <1>
     // Move constructor.
-    connection(connection && ) = default;
+    connection(connection_ref& ) = default;
     // Move assign operator.
-    connection& operator=(connection && ) = default;
+    connection& operator=(connection_ref& ) = default;
 
     // Construct a connection and connect it to `filename`. `flags` is set by `SQLITE_OPEN_*` flags.
     connection(cstring_ref filename,

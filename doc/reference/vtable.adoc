@@ -176,7 +176,7 @@ struct table : protected sqlite3_vtab
   // Get the connection of the vtable
   sqlite::connection connection() const;
 
-  table(const sqlite::connection & conn);
+  table(const sqlite::connection_ref conn);
 };
 
 
@@ -257,13 +257,13 @@ struct recursive_transaction
  Returns a reference to the module as stored in the database. It's lifetime is managed by the database.
 */
 template<typename T>
-auto create_module(connection & conn,
+auto create_module(connection_ref conn,
                    cstring_ref name,
                    T && module,
                    system::error_code & ec,
                    error_info & ei) -> typename std::decay<T>::type &;
 template<typename T>
-auto create_module(connection & conn,
+auto create_module(connection_ref conn,
                    const char * name,
                    T && module)  -> typename std::decay<T>::type &;
 ----

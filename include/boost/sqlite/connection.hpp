@@ -10,6 +10,7 @@
 #include <boost/sqlite/statement.hpp>
 #include <memory>
 #include <boost/system/system_error.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -38,11 +39,11 @@ struct connection
     ///Default constructor
     connection() = default;
     /// Construct the connection from a handle.
-    explicit connection(handle_type handle, bool take_ownership = true) : impl_(handle, take_ownership) {}
+    explicit connection(handle_type handle) : impl_(handle) {}
     /// Move constructor.
-    connection(connection && ) = default;
+    connection(connection&& ) = default;
     /// Move assign operator.
-    connection& operator=(connection && ) = default;
+    connection& operator=(connection&& ) = default;
 
     /// Construct a connection and connect it to `filename`. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
     connection(cstring_ref filename,
@@ -94,14 +95,7 @@ struct connection
     /// Check if the database holds a valid handle.
     bool valid() const {return impl_ != nullptr;}
 
-
-    ///@{
-
-
-    ///@}
-
-    ///@{
-    /// Perform a query without parametert, It execute a multiple statement.
+    /// Perform a query without parametert, It executes multiple statements.
     BOOST_SQLITE_DECL void execute(
         cstring_ref q,
         system::error_code & ec,
@@ -200,11 +194,9 @@ struct connection
  private:
     struct deleter_
     {
-        deleter_(bool owned = true) : owned_(owned) {}
-        bool owned_ = true;
+        deleter_() = default;
         void operator()(sqlite3  *impl)
         {
-            if (owned_)
               sqlite3_close_v2(impl);
         }
     };

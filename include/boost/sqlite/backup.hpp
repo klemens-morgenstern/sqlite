@@ -9,6 +9,7 @@
 #define BOOST_SQLITE_BACKUP_HPP
 
 #include <boost/sqlite/detail/config.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 #include <boost/sqlite/cstring_ref.hpp>
 #include <boost/sqlite/error.hpp>
 
@@ -52,8 +53,8 @@ struct connection ;
  */
 BOOST_SQLITE_DECL
 void
-backup(connection & source,
-       connection & target,
+backup(connection_ref source,
+       connection_ref target,
        cstring_ref source_name,
        cstring_ref target_name,
        system::error_code & ec,
@@ -61,8 +62,8 @@ backup(connection & source,
 
 BOOST_SQLITE_DECL
 void
-backup(connection & source,
-       connection & target,
+backup(connection_ref source,
+       connection_ref target,
        cstring_ref source_name = "main",
        cstring_ref target_name = "main");
 

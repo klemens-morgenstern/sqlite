@@ -7,14 +7,14 @@ This can be useful to write an in memory database to disk et vice versa.
 [source,cpp]
 ----
 void
-backup(connection & source,
-       connection & target,
+backup(connection_ref source,
+       connection_ref target,
        cstring_ref source_name = "main",
        cstring_ref target_name = "main");
 
 void
-backup(connection & source,
-       connection & target,
+backup(connection_ref source,
+       connection_ref target,
        cstring_ref source_name,
        cstring_ref target_name,
        system::error_code & ec,

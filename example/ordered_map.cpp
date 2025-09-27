@@ -224,7 +224,7 @@ struct ordered_map_module final : sqlite::vtab::eponymous_module<map_impl>
   ordered_map_module(Args && ...args) : data(std::forward<Args>(args)...) {}
 
   sqlite::result<map_impl> connect(
-      sqlite::connection /*conn*/, int /*argc*/, const char * const */*argv*/)
+      sqlite::connection_ref /*conn*/, int /*argc*/, const char * const */*argv*/)
   {
     return map_impl{data};
   }

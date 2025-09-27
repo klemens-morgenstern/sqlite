@@ -629,6 +629,8 @@ struct statement
 
     friend
     struct connection;
+    friend
+    struct connection_ref;
     struct deleter_
     {
         void operator()(sqlite3_stmt * sm)

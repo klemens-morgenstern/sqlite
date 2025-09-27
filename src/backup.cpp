@@ -7,14 +7,14 @@
 
 
 #include <boost/sqlite/backup.hpp>
-#include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 void
-backup(connection & source,
-       connection & target,
+backup(connection_ref source,
+       connection_ref target,
        cstring_ref source_name,
        cstring_ref target_name,
        system::error_code & ec,
@@ -45,8 +45,8 @@ backup(connection & source,
 
 
 void
-backup(connection & source,
-       connection & target,
+backup(connection_ref source,
+       connection_ref target,
        cstring_ref source_name,
        cstring_ref target_name)
 {
