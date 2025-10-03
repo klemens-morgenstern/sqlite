@@ -21,7 +21,8 @@ BOOST_AUTO_TEST_CASE(to_value)
 #include "test-db.sql"
   );
 
-  auto q = conn.prepare("select 'foo', json_array($1, '2', null)", std::make_tuple(1));
+  auto q = conn.prepare("select 'foo', json_array($1, '2', null)");
+  q.bind(std::make_tuple(1));
   q.step();
   sqlite::row r = q.current();
 
@@ -63,7 +64,8 @@ BOOST_AUTO_TEST_CASE(blob)
 {
   sqlite::connection conn(":memory:");
 
-  auto q = conn.prepare("select $1;", {sqlite::zero_blob(1024)});
+  auto q = conn.prepare("select $1;");
+  q.bind({sqlite::zero_blob(1024)});
   q.step();
 
   BOOST_CHECK_THROW(json::value_from(q.current().at(0)), std::invalid_argument);
@@ -86,7 +88,8 @@ BOOST_AUTO_TEST_CASE(blob)
 BOOST_AUTO_TEST_CASE(value)
 {
   sqlite::connection conn(":memory:");
-  auto q = conn.prepare("select $1;", {sqlite::zero_blob(1024)});
+  auto q = conn.prepare("select $1;");
+  q.bind({sqlite::zero_blob(1024)});
   q.step();
   BOOST_CHECK_THROW(     json::value_from(q.current().at(0)), std::invalid_argument);
 
@@ -112,11 +115,13 @@ BOOST_AUTO_TEST_CASE(value)
 BOOST_AUTO_TEST_CASE(subtype)
 {
   sqlite::connection conn(":memory:");
-  auto q = conn.prepare("select $1;", {"foobar"});
+  auto q = conn.prepare("select $1;");
+  q.bind({"foobar"});
   q.step();
   BOOST_CHECK(!sqlite::is_json(q.current().at(0)));
 
-  q = conn.prepare("select json_array($1);", {"foobar"});
+  q = conn.prepare("select json_array($1);");
+  q.bind({"foobar"});
   q.step();
   BOOST_CHECK(sqlite::is_json(q.current().at(0)));
 }
@@ -131,7 +136,8 @@ BOOST_AUTO_TEST_CASE(function)
                                       return json::parse(s[0].get_text());
                                  });
 
-  auto q = conn.prepare("select my_json_parse($1);", {R"({"foo" : 42, "bar" : "xyz"})"});
+  auto q = conn.prepare("select my_json_parse($1);");
+  q.bind({R"({"foo" : 42, "bar" : "xyz"})"});
   q.step();
   BOOST_CHECK(sqlite::is_json(q.current().at(0)));
 }

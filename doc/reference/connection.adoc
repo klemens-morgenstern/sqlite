@@ -62,12 +62,20 @@ struct connection
     void execute(cstring_ref q);
 
 
-    // Preparse a a statement.
+    // Preparse a statement.
     statement prepare(
             core::string_view q,
             system::error_code & ec,
             error_info & ei);
     statement prepare(core::string_view q);
+
+    
+    // Preparse a list of statements.
+    statement_list prepare_many(
+            core::string_view q,
+            system::error_code & ec,
+            error_info & ei);
+    statement_list prepare_many(core::string_view q);
 
 
     // Check if the database has the table

@@ -111,47 +111,6 @@ struct connection
 
     BOOST_SQLITE_DECL statement prepare(core::string_view q);
 
-
-    template<typename ArgRange = std::initializer_list<param_ref>>
-    statement prepare(core::string_view q, ArgRange && params)
-    {
-        auto s = prepare(q);
-        s.bind(std::forward<ArgRange>(params));
-        return s;
-    }
-
-    template<typename ArgRange = std::initializer_list<param_ref>>
-    statement prepare(
-        core::string_view q,
-        ArgRange && params,
-        system::error_code & ec,
-        error_info & ei)
-    {
-        auto s = prepare(q, ec, ei);
-        if (!ec)
-            s.bind(std::forward<ArgRange>(params), ec, ei);
-        return s;
-    }
-
-
-    statement prepare(core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params)
-    {
-        auto s = prepare(q);
-        s.bind(params);
-        return s;
-    }
-    statement prepare(
-        core::string_view q,
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code & ec,
-        error_info & ei)
-    {
-        auto s = prepare(q, ec, ei);
-        if (!ec)
-            s.bind(params, ec, ei);
-        return s;
-    }
-
     BOOST_SQLITE_DECL
     statement_list prepare_many(
         core::string_view q);

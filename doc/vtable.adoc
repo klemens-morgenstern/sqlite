@@ -138,11 +138,11 @@ The table is required to have a `destroy` function that removes the resource.
 struct csv_module final : sqlite::vtab::module<csv_table>
 {
     // create the csv file
-    sqlite::result<table_type> create(sqlite::connection /*db*/,
+    sqlite::result<table_type> create(sqlite::connection_ref /*db*/,
                                       int argc, const char * const  argv[]);
 
     // connect to an existing csv file.
-    sqlite::result<table_type> connect(sqlite::connection /*db*/,
+    sqlite::result<table_type> connect(sqlite::connection_ref /*db*/,
                                        int argc, const char * const  argv[]);
 
 };
