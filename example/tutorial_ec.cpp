@@ -84,7 +84,11 @@ int main(int /*argc*/, char */*argv*/[])
   // tag::statement_insert[]
 
   {
-    conn.prepare("insert into users (name, age) values (?1, ?2), (?3, ?4)", {"Paul", 31, "Mark", 51}, ec, ei);
+    auto p = conn.prepare("insert into users (name, age) values (?1, ?2), (?3, ?4)");
+    p.bind({"Paul", 31, "Mark", 51}, ec, ei);
+    if (ec)
+      goto error;
+    p.step(ec, ei);
     if (ec)
       goto error;
   }
