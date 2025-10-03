@@ -1,7 +1,7 @@
 == `sqlite/statement.hpp`
 
 === `param_ref`
-[#param_ref]
+
 
 A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
 
@@ -52,7 +52,6 @@ struct param_ref
 
 
 === `statement`
-[#statement]
 
 A statement used for a prepared-statement.
 
@@ -142,7 +141,6 @@ struct statement
 <2> Binds named arguments (from a map-like object)
 
 === `statement_list`
-[#statement_list]
 
 A statement list is a forward-sequence of statements that can be executed in sequence.
 
