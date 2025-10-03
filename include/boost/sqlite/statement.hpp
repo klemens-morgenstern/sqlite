@@ -15,6 +15,7 @@
 #include <boost/variant2/variant.hpp>
 
 
+#include <iterator>
 #include <tuple>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
@@ -199,6 +200,16 @@ struct param_ref
  */
 struct statement
 {
+
+  using handle_type = sqlite3_stmt*;
+
+  handle_type handle() const {return impl_.get(); }
+  handle_type release() && {return impl_.release(); }
+
+
+  statement() noexcept = default;
+  explicit statement(handle_type h) noexcept : impl_(h) {}
+
   bool done() const {return done_;}
 
 
@@ -462,7 +473,6 @@ struct statement
        return rw;
     }
 
-
   private:
 
     template<typename ... Args>
@@ -642,6 +652,88 @@ struct statement
     bool done_ = false;
 };
 
+struct statement_list
+{
+  statement & current() { return stmt_; }
+  std::string_view tail() {return tail_; }
+
+  void prepare_next()
+  {
+    system::error_code ec;
+    error_info ei;
+    prepare_next(ec, ei);
+    if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+  }
+  void prepare_next(boost::system::error_code & ec, error_info & ei)
+  {
+    sqlite3_stmt * ss = nullptr;
+    const char * new_tail;
+    const auto db = sqlite3_db_handle(stmt_.handle());
+    const auto cc = sqlite3_prepare_v2(db, tail_.data(), static_cast<int>(tail_.size()), &ss, &new_tail);
+
+    if (cc != SQLITE_OK)
+    {
+      BOOST_SQLITE_ASSIGN_EC(ec, cc);
+      ei.set_message(sqlite3_errmsg(db));
+      tail_ = {new_tail, tail_.end()};
+    }
+    else if (ss != nullptr)
+    {
+      stmt_ = statement(ss);
+      tail_ = {new_tail, tail_.end()};
+    }
+    else
+    {
+        stmt_ = {};
+        tail_ = {};
+    }
+    
+  }
+
+  bool done() const { return stmt_.handle() == nullptr; }
+
+
+  struct iterator 
+  {
+    using value_type = statement;
+    using reference = statement&;
+    using iterator_category = std::input_iterator_tag;
+
+    iterator() = default;
+    iterator(statement_list & sl) : sl_(&sl) {}
+
+    bool operator != (iterator rhs ) 
+    {
+        return sl_ != rhs.sl_;
+    }
+
+    statement & operator *() { return sl_->current();  }
+    statement * operator->() { return &sl_->current(); }
+
+    iterator  & operator ++()
+    {
+       if (sl_)
+        sl_->prepare_next();
+       return * this;
+    }    
+
+   private:
+    statement_list * sl_ = nullptr;
+ };
+
+  iterator begin() {return iterator(*this); }
+  iterator   end() {return iterator(); }
+   
+  statement_list(statement stmt, core::string_view tail) : stmt_(std::move(stmt)), tail_(tail) {}
+  statement_list(statement_list &&) noexcept = default;
+ private:
+
+  statement stmt_;    
+  core::string_view tail_;
+};
+
 BOOST_SQLITE_END_NAMESPACE
 
 #endif //BOOST_SQLITE_STATEMENT_HPP
+

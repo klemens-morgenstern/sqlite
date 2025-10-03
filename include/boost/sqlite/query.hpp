@@ -9,7 +9,7 @@
 #define BOOST_SQLITE_QUERY_HPP
 
 #include <boost/sqlite/detail/config.hpp>
-#include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 #include <boost/sqlite/iterator.hpp>
 #include <boost/sqlite/row.hpp>
 #include <boost/sqlite/statement.hpp>

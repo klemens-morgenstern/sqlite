@@ -30,6 +30,8 @@ BOOST_AUTO_TEST_CASE(blob)
   std::generate(blobby.begin(), blobby.end(),
                 [&]{return static_cast<unsigned char>(dist(rng));});
 
+  BOOST_TEST_CHECKPOINT("prep");
+
 
   conn.prepare("insert into blobs(bb) values ($1);").execute(std::make_tuple(sqlite::zero_blob(4096 * 4096 )));
 

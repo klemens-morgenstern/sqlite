@@ -355,7 +355,6 @@ template<typename T = row, bool Strict = false>
 struct statement_iterator
 {
     using value_type = T;
-    using difference_type = int;
     using reference = T&;
     using iterator_category = std::input_iterator_tag;
 

@@ -47,6 +47,65 @@ statement connection_ref::prepare(core::string_view q)
     return tmp;
 }
 
+
+statement_list connection_ref::prepare_many(
+        core::string_view q,
+        system::error_code & ec,
+        error_info & ei)
+{
+    statement res;
+    sqlite3_stmt * ss;
+    const char * tail = q.begin();
+    const auto cc = sqlite3_prepare_v2(impl_,
+                                       q.data(), static_cast<int>(q.size()),
+                                       &ss, &tail);
+
+    if (cc != SQLITE_OK)
+    {
+        BOOST_SQLITE_ASSIGN_EC(ec, cc);
+        ei.set_message(sqlite3_errmsg(impl_));
+    }
+    else
+        res.impl_.reset(ss);
+    return {std::move(res), core::string_view(tail, q.end())};
+}
+
+statement_list connection_ref::prepare_many(core::string_view q)
+{
+    system::error_code ec;
+    error_info ei;
+    auto tmp = prepare_many(q, ec, ei);
+    if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+    return tmp;
+}
+
+void connection_ref::execute(
+        std::string_view q,
+        system::error_code &ec,
+        error_info & ei)
+{
+    auto sl = prepare_many(q, ec, ei);
+    while (!sl.done() && !ec)
+    {
+        auto & s = sl.current();
+        while (!s.done() && !ec)
+            s.step(ec, ei);
+
+        if (!ec)
+            sl.prepare_next(ec, ei);
+    }
+}        
+
+void connection_ref::execute(std::string_view q)
+{
+    system::error_code ec;
+    error_info ei;
+    execute(q, ec, ei);
+    if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+}
+
 BOOST_SQLITE_END_NAMESPACE
 
 

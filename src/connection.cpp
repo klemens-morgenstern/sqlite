@@ -89,30 +89,67 @@ statement connection::prepare(core::string_view q)
     return tmp;
 }
 
-void connection::execute(
-    cstring_ref q,
-    system::error_code & ec,
-    error_info & ei)
+statement_list connection::prepare_many(
+        core::string_view q,
+        system::error_code & ec,
+        error_info & ei)
 {
-    char * msg = nullptr;
+    statement res;
+    sqlite3_stmt * ss;
+    const char * tail = q.begin();
+    const auto cc = sqlite3_prepare_v2(impl_.get(),
+                                       q.data(), static_cast<int>(q.size()),
+                                       &ss, &tail);
 
-    auto res = sqlite3_exec(impl_.get(), q.c_str(), nullptr, nullptr, &msg);
-    if (res != SQLITE_OK)
+    if (cc != SQLITE_OK)
     {
-        BOOST_SQLITE_ASSIGN_EC(ec, res);
-        if (msg != nullptr)
-            ei.set_message(msg);
+        BOOST_SQLITE_ASSIGN_EC(ec, cc);
+        ei.set_message(sqlite3_errmsg(impl_.get()));
     }
+    else
+        res.impl_.reset(ss);
+    return {std::move(res), core::string_view(tail, q.end())};
 }
 
-void connection::execute(cstring_ref q)
+statement_list connection::prepare_many(core::string_view q)
+{
+    system::error_code ec;
+    error_info ei;
+    auto tmp = prepare_many(q, ec, ei);
+    if (ec)
+        throw_exception(system::system_error(ec, ei.message()));
+    return tmp;
+}
+
+void connection::execute(
+        std::string_view q,
+        system::error_code &ec,
+        error_info & ei)
+{
+    auto sl = prepare_many(q, ec, ei);
+
+    while (!sl.done() && !ec)
+    {
+        auto & s = sl.current();
+        while (!s.done() && !ec)
+            s.step(ec, ei);
+
+        if (!ec)
+            sl.prepare_next(ec, ei);
+    }
+}        
+
+void connection::execute(std::string_view q)
 {
     system::error_code ec;
     error_info ei;
     execute(q, ec, ei);
     if (ec)
-      throw_exception(system::system_error(ec, ei.message()));
+        throw_exception(system::system_error(ec, ei.message()));
 }
+
+
+
 
 BOOST_SQLITE_END_NAMESPACE
 

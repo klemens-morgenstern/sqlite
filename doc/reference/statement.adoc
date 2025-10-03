@@ -1,6 +1,7 @@
 == `sqlite/statement.hpp`
 
 === `param_ref`
+[#param_ref]
 
 A reference to a value to temporary bind for an execute statement. Most values are captures by reference.
 
@@ -51,6 +52,7 @@ struct param_ref
 
 
 === `statement`
+[#statement]
 
 A statement used for a prepared-statement.
 
@@ -139,7 +141,38 @@ struct statement
 <1> Binds positional arguments
 <2> Binds named arguments (from a map-like object)
 
+=== `statement_list`
+[#statement_list]
 
+A statement list is a forward-sequence of statements that can be executed in sequence.
+
+[source,cpp]
+----
+struct statement_list
+{
+
+  // The current statement
+  statement & current();
+  // The unparsed sql.
+  std::string_view tail();
+
+  // Prepare the next statement. Returns current() after preparing
+  void prepare_next();
+  void prepare_next(boost::system::error_code & ec, error_info & ei);
+  
+  bool done() const;
+
+
+  // And input iterator yielding `statement`.
+  struct iterator;
+
+  iterator begin();
+  iterator   end();
+   
+  statement_list(statement stmt, core::string_view tail);
+  statement_list(statement_list &&) noexcept = default;
+};
+----
 
 
 
