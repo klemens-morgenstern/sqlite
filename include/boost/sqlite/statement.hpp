@@ -328,7 +328,7 @@ struct statement
     ///@}
 
 
-    /// Bind the values and call step() once
+    /// Bind the values and call step() until the statement completed.
     template <typename ArgRange = std::initializer_list<param_ref>>
     void execute(
       ArgRange && params,
@@ -336,7 +336,7 @@ struct statement
       error_info& info)
     {
       bind(std::forward<ArgRange>(params), ec, info);
-      if (!ec)
+      while (!ec && !done())
         step(ec, info);
       if (!ec)
         reset(ec, info);
@@ -360,7 +360,7 @@ struct statement
       error_info& info)
     {
       bind(std::move(params), ec, info);
-      if (!ec)
+      while (!ec && !done())
         step(ec, info);
       if (!ec)
         reset(ec, info);
