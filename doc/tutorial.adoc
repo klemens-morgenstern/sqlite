@@ -1,9 +1,11 @@
-= Accessing a database
+= Quickstart
 
 == Connecting to a database
 
 The `sqlite::connection` holds a https://www.sqlite.org/c3ref/sqlite3.html[connection handle],
 which is automatically closes on destruction.
+
+NOTE: The connection is an open file-handle, not a network connection to a remove database server, as sqlite embedded in the current process.
 
 [source,cpp]
 .examples/tutorial.cpp
@@ -31,8 +33,9 @@ include::../example/tutorial.cpp[tag=execute]
 ----
 
 Like most functions in sqlite, the `execute` function comes overloaded to allow two modes of error handling:
-- errors as exception
-- errors assigned to a `boost::system::error_code` and <<error_info>>
+
+ - errors as exception
+ - errors assigned to a `boost::system::error_code` and <<error_info>>
 
 The second version takes both types by reference after the main arguments, i.e.:
 
@@ -45,7 +48,7 @@ include::../example/tutorial_ec.cpp[tag=execute]
 The `boost::system::error_code` holds the https://www.sqlite.org/rescode.html[actual integer representing the error],
 while `boost::sqlite::error_info` is a string-like type holding the https://www.sqlite.org/c3ref/errcode.html[error message].
 
-For brevity, the tutorial section will use the exception overloads. See the <<reference>> for details on the overloads.
+For brevity, this tutorial section will use the exception overloads. See the <<reference>> for details on the overloads.
 
 == Querying data
 
@@ -65,14 +68,14 @@ include::../example/tutorial.cpp[tag=query2]
 
 NOTE: The `statement` can be used with a <<statement_range>> in a range-for loop.  This implements an input_iterator range, similar to std::ranges::istream.
 
-The <<row>> type is a range of <<field>>s,
+The <<row, row>> type is a range of <<field,fields>>,
 which has all the information for the field requested.
 
 In many use-cases this is however superfluous because the structure of the table is known.
 
-To make this easy, the <<statement_range>> has a type parameter (`query<T>`) which will transform every row into `T`.. `T` can either be a tuple of a struct.
+To make this easy, the <<statement_range,statement_range>> has a type parameter (or `query<T>`) which will transform every row into `T`. 
 
-A tuple will assign the query results by order.
+`T` can either be a tuple of a struct. A tuple will assign the query results by order.
 
 [source,cpp]
 ----
@@ -93,13 +96,13 @@ The types allowed in the `statement_range` and `statement_iterator` are:
 - `std::int64_t`
 - `double`
 - <<blob, 'blob'>>, <<blob_view, `blob_view`>>
-- <<string>>, <<string_view>>
+- `string`, `string_view`
 - `std::optional<T>`/`boost::optional<T>` with any of the types above.
 
 WARNING: `blob_view` and `string_view` have a limited lifetime. They might be invalidated when the next row is read!
 
 By default, the `statement_range` and `statement_iterator` do not check types, following https://www.sqlite.org/datatype3.html[sqlite's general dynamic type system].
-You can eat type checks, by setting the strict mode to `true` with the second template parameter.
+You can add type checks, by setting the strict mode to `true` with the second template parameter.
 
 [source,cpp]
 ----
@@ -119,7 +122,7 @@ include::../example/tutorial.cpp[tag=statement_insert]
 
 The syntax in the sqlite provides multiple versions.
 `?` is a positional parameter, that can have an explicit index at the end (e.g. `?3`) as in the above example.
-`:`, `@`, `$` are named parameters, e.g. `$age`. Named parameters can make queries more readable and provide more checks.
+`:`, `@`, `$` are named parameters, e.g. `$age`. Named parameters can make queries more readable and provide more checks but add overhead.
 
 NOTE: See the https://www.sqlite.org/c3ref/bind_blob.html[sqlite syntax] for more details.
 
@@ -130,4 +133,6 @@ A prepared statement can be used multiple times.
 include::../example/tutorial.cpp[tag=statement_multi_insert]
 ----
 
-NOTE: `execute()` does is equivalent to calling `.bind()`, `.step()` and `.reset()`.
+NOTE: `execute()` is equivalent to calling `.bind()`, `.step()` and `.reset()`.
+
+
