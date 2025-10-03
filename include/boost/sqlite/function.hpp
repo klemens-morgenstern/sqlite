@@ -123,9 +123,9 @@ struct context
     sqlite3_result_error_code(ctx_, code);
   }
   /// Returns the connection of the context.
-  connection get_connection() const
+  connection_ref get_connection() const
   {
-    return connection{sqlite3_context_db_handle(ctx_), false};
+    return connection_ref{sqlite3_context_db_handle(ctx_)};
   }
 
  private:
