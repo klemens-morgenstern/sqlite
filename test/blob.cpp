@@ -15,7 +15,7 @@
 
 using namespace boost;
 
-BOOST_AUTO_TEST_CASE(blob)
+BOOST_AUTO_TEST_CASE(blob_handle)
 {
   sqlite::connection conn{":memory:"};
   // language=sqlite
@@ -51,8 +51,32 @@ BOOST_AUTO_TEST_CASE(blob)
 
   BOOST_CHECK_THROW(open_blob(conn, "main", "doesnt-exit", "blobber", 2), boost::system::system_error);
 
+  
+
   sqlite::blob_handle bb;
   BOOST_CHECK_THROW(bb.read_at(blobby.data(), blobby.size(), 0), boost::system::system_error);
   BOOST_CHECK_THROW(bb.write_at(blobby.data(), blobby.size(), 0), boost::system::system_error);
 
+  BOOST_CHECK_NE(bh.handle(), nullptr);
+  auto hh = std::move(bh).release();
+  BOOST_CHECK_EQUAL(bh.handle(), nullptr);
+  sqlite::blob_handle bb2(hh);
+
+
+  sqlite::blob_view bv{blobby};
+  BOOST_CHECK_EQUAL(bv.size(), blobby.size());
+  BOOST_CHECK_EQUAL(bv.data(), blobby.data());
+
+  sqlite::blob b{bv};
+  
+  BOOST_CHECK_EQUAL(b.size(), blobby.size());
+  BOOST_CHECK_NE(b.data(), blobby.data());
+  BOOST_CHECK_EQUAL(std::memcmp(b.data(), blobby.data(), blobby.size()), 0);
+
+  auto h2 = std::move(b).release();
+  
+  BOOST_CHECK_EQUAL(b.data(), nullptr);
+
+  sqlite3_free(h2);  
 }
+
