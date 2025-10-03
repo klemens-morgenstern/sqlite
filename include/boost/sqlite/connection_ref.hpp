@@ -95,10 +95,25 @@ struct connection_ref
             s.bind(params, ec, ei);
         return s;
     }
-
-
-
     ///@}
+
+    BOOST_SQLITE_DECL
+    statement_list prepare_many(
+        core::string_view q);
+
+    BOOST_SQLITE_DECL
+    statement_list prepare_many(
+        core::string_view q,
+        system::error_code & ec,
+        error_info & ei);
+
+    /// Execute
+    BOOST_SQLITE_DECL void execute(
+        std::string_view q,
+        system::error_code &ec,
+        error_info & ei);
+
+    BOOST_SQLITE_DECL void execute(std::string_view q);
 
     /// Check if the database has the table
     bool has_table(

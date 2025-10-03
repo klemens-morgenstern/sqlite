@@ -95,27 +95,12 @@ struct connection
     /// Check if the database holds a valid handle.
     bool valid() const {return impl_ != nullptr;}
 
-    /// Perform a query without parametert, It executes multiple statements.
     BOOST_SQLITE_DECL void execute(
-        cstring_ref q,
-        system::error_code & ec,
+        std::string_view q,
+        system::error_code &ec,
         error_info & ei);
 
-    BOOST_SQLITE_DECL void execute(cstring_ref q);
-
-    template<typename StringLike,
-             typename = decltype(std::declval<const StringLike&>().c_str())>
-    void execute(
-        const StringLike& q,
-        system::error_code & ec,
-        error_info & ei)
-    {
-        execute(q.c_str(), ec, ei);
-    }
-    template<typename StringLike,
-             typename = decltype(std::declval<const StringLike&>().c_str())>
-    void execute(const StringLike & q) { execute(q.c_str());}
-    ///@}
+    BOOST_SQLITE_DECL void execute(std::string_view q);
 
     ///@{
     /// Preparse a query with or without bound parameters. Can only contain a single statement.
@@ -167,7 +152,15 @@ struct connection
         return s;
     }
 
+    BOOST_SQLITE_DECL
+    statement_list prepare_many(
+        core::string_view q);
 
+    BOOST_SQLITE_DECL
+    statement_list prepare_many(
+        core::string_view q,
+        system::error_code & ec,
+        error_info & ei);
 
     ///@}
 
