@@ -207,7 +207,7 @@ struct csv_table final
 struct csv_module final : sqlite::vtab::module<csv_table>
 {
 
-  sqlite::result<table_type> create(sqlite::connection /*db*/,
+  sqlite::result<table_type> create(sqlite::connection_ref /*db*/,
                                     int argc, const char * const  argv[])
   {
     if (argc < 4)
@@ -222,7 +222,7 @@ struct csv_module final : sqlite::vtab::module<csv_table>
     return tt;
   }
 
-  sqlite::result<table_type>  connect(sqlite::connection /*db*/,
+  sqlite::result<table_type>  connect(sqlite::connection_ref /*db*/,
                                       int argc, const char * const  argv[])
   {
     if (argc < 4)

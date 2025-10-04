@@ -13,7 +13,7 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 
 
 
-auto table_column_meta_data(connection& conn,
+auto table_column_meta_data(connection_ref conn,
                             cstring_ref db_name, cstring_ref table_name, cstring_ref column_name,
                             system::error_code & ec, error_info &ei) -> column_meta_data
 {
@@ -35,7 +35,7 @@ auto table_column_meta_data(connection& conn,
 
 
 
-auto table_column_meta_data(connection& conn,
+auto table_column_meta_data(connection_ref conn,
                             cstring_ref table_name, cstring_ref column_name,
                             system::error_code & ec, error_info &ei) -> column_meta_data
 {
@@ -57,7 +57,7 @@ auto table_column_meta_data(connection& conn,
 
 
 
-auto table_column_meta_data(connection& conn,
+auto table_column_meta_data(connection_ref conn,
                             cstring_ref db_name, cstring_ref table_name, cstring_ref column_name) -> column_meta_data
 {
     system::error_code ec;
@@ -68,7 +68,7 @@ auto table_column_meta_data(connection& conn,
     return res;
 }
 
-auto table_column_meta_data(connection& conn,
+auto table_column_meta_data(connection_ref conn,
                             cstring_ref table_name, cstring_ref column_name) -> column_meta_data
 {
     system::error_code ec;

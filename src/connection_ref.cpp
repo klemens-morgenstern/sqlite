@@ -6,80 +6,38 @@
 //
 
 
+#include <boost/sqlite/connection_ref.hpp>
 #include <boost/sqlite/connection.hpp>
 #include <boost/sqlite/statement.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
 
+connection_ref::connection_ref(connection & conn) : impl_(conn.handle()) {}
 
-void connection::connect(cstring_ref filename, int flags)
-{
-    system::error_code ec;
-    connect(filename, flags, ec);
-    if (ec)
-        throw_exception(system::system_error(ec, "connect"));
-}
 
-void connection::connect(cstring_ref filename, int flags, system::error_code & ec)
-{
-    sqlite3 * res;
-    auto r = sqlite3_open_v2(filename.c_str(), &res, flags,
-                             nullptr);
-    if (r != SQLITE_OK)
-        BOOST_SQLITE_ASSIGN_EC(ec, r);
-    else
-      impl_.reset(res);
-    sqlite3_extended_result_codes(impl_.get(), true);
-}
-
-void connection::close()
-{
-    system::error_code ec;
-    error_info ei;
-    close(ec, ei);
-    if (ec)
-        throw_exception(system::system_error(ec, ei.message()));
-}
-
-void connection::close(system::error_code & ec,
-                       error_info & ei)
-{
-    if (impl_)
-    {
-        auto tmp = impl_.release();
-        auto cc = sqlite3_close(tmp);
-        if (SQLITE_OK != cc)
-        {
-            impl_.reset(tmp);
-            BOOST_SQLITE_ASSIGN_EC(ec, cc);
-            ei.set_message(sqlite3_errmsg(impl_.get()));
-        }
-    }
-}
-
-statement connection::prepare(
+statement connection_ref::prepare(
         core::string_view q,
         system::error_code & ec,
         error_info & ei)
 {
     statement res;
     sqlite3_stmt * ss;
-    const auto cc = sqlite3_prepare_v2(impl_.get(),
+    const auto cc = sqlite3_prepare_v2(impl_,
                                        q.data(), static_cast<int>(q.size()),
                                        &ss, nullptr);
 
     if (cc != SQLITE_OK)
     {
         BOOST_SQLITE_ASSIGN_EC(ec, cc);
-        ei.set_message(sqlite3_errmsg(impl_.get()));
+        ei.set_message(sqlite3_errmsg(impl_));
     }
     else
         res.impl_.reset(ss);
     return res;
 }
 
-statement connection::prepare(core::string_view q)
+statement connection_ref::prepare(core::string_view q)
 {
     system::error_code ec;
     error_info ei;
@@ -89,7 +47,8 @@ statement connection::prepare(core::string_view q)
     return tmp;
 }
 
-statement_list connection::prepare_many(
+
+statement_list connection_ref::prepare_many(
         core::string_view q,
         system::error_code & ec,
         error_info & ei)
@@ -97,21 +56,21 @@ statement_list connection::prepare_many(
     statement res;
     sqlite3_stmt * ss;
     const char * tail = q.begin();
-    const auto cc = sqlite3_prepare_v2(impl_.get(),
+    const auto cc = sqlite3_prepare_v2(impl_,
                                        q.data(), static_cast<int>(q.size()),
                                        &ss, &tail);
 
     if (cc != SQLITE_OK)
     {
         BOOST_SQLITE_ASSIGN_EC(ec, cc);
-        ei.set_message(sqlite3_errmsg(impl_.get()));
+        ei.set_message(sqlite3_errmsg(impl_));
     }
     else
         res.impl_.reset(ss);
     return {std::move(res), core::string_view(tail, q.end())};
 }
 
-statement_list connection::prepare_many(core::string_view q)
+statement_list connection_ref::prepare_many(core::string_view q)
 {
     system::error_code ec;
     error_info ei;
@@ -121,13 +80,12 @@ statement_list connection::prepare_many(core::string_view q)
     return tmp;
 }
 
-void connection::execute(
+void connection_ref::execute(
         core::string_view q,
         system::error_code &ec,
         error_info & ei)
 {
     auto sl = prepare_many(q, ec, ei);
-
     while (!sl.done() && !ec)
     {
         auto & s = sl.current();
@@ -139,7 +97,7 @@ void connection::execute(
     }
 }        
 
-void connection::execute(core::string_view q)
+void connection_ref::execute(core::string_view q)
 {
     system::error_code ec;
     error_info ei;
@@ -147,9 +105,6 @@ void connection::execute(core::string_view q)
     if (ec)
         throw_exception(system::system_error(ec, ei.message()));
 }
-
-
-
 
 BOOST_SQLITE_END_NAMESPACE
 

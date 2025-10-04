@@ -14,6 +14,7 @@
 #include <boost/sqlite/blob.hpp>
 #include <boost/sqlite/collation.hpp>
 #include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 #include <boost/sqlite/cstring_ref.hpp>
 #include <boost/sqlite/error.hpp>
 #include <boost/sqlite/field.hpp>

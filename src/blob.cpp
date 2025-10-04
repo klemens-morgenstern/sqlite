@@ -7,11 +7,11 @@
 
 
 #include <boost/sqlite/blob.hpp>
-#include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
-blob_handle open_blob(connection & conn,
+blob_handle open_blob(connection_ref conn,
                       cstring_ref db,
                       cstring_ref table,
                       cstring_ref column,
@@ -36,7 +36,7 @@ blob_handle open_blob(connection & conn,
   return bh;
 }
 
-blob_handle open_blob(connection & conn,
+blob_handle open_blob(connection_ref conn,
                       cstring_ref db,
                       cstring_ref table,
                       cstring_ref column,

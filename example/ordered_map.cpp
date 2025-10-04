@@ -224,7 +224,7 @@ struct ordered_map_module final : sqlite::vtab::eponymous_module<map_impl>
   ordered_map_module(Args && ...args) : data(std::forward<Args>(args)...) {}
 
   sqlite::result<map_impl> connect(
-      sqlite::connection /*conn*/, int /*argc*/, const char * const */*argv*/)
+      sqlite::connection_ref /*conn*/, int /*argc*/, const char * const */*argv*/)
   {
     return map_impl{data};
   }
@@ -272,7 +272,7 @@ std::initializer_list<std::pair<std::string, std::string>> init_data = {
 void print(std::ostream & os, sqlite::statement rw)
 {
   os << "[";
-  for (auto & r : sqlite::statement_range(rw))
+  for (auto & r : sqlite::statement_range<sqlite::row>(rw))
     os << r.at(0).get_text() << ", ";
   os << "]" << std::endl;
 }

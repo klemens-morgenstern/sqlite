@@ -55,7 +55,7 @@ The translation of the exceptions happens as follows:
 
 NOTE: You can also return an <<`result`,sqlite::result>> type instead of throwing exceptions.
 
-== A ggregate functions
+== Aggregate functions
 
 An aggregate function builds a value from multiple values of the same column, e.g:
 

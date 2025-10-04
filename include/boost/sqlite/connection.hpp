@@ -10,6 +10,7 @@
 #include <boost/sqlite/statement.hpp>
 #include <memory>
 #include <boost/system/system_error.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 
@@ -38,11 +39,11 @@ struct connection
     ///Default constructor
     connection() = default;
     /// Construct the connection from a handle.
-    explicit connection(handle_type handle, bool take_ownership = true) : impl_(handle, take_ownership) {}
+    explicit connection(handle_type handle) : impl_(handle) {}
     /// Move constructor.
-    connection(connection && ) = default;
+    connection(connection&& ) = default;
     /// Move assign operator.
-    connection& operator=(connection && ) = default;
+    connection& operator=(connection&& ) = default;
 
     /// Construct a connection and connect it to `filename`. `flags` is set by `SQLITE_OPEN_*` flags. @see https://www.sqlite.org/c3ref/c_open_autoproxy.html
     connection(cstring_ref filename,
@@ -94,34 +95,12 @@ struct connection
     /// Check if the database holds a valid handle.
     bool valid() const {return impl_ != nullptr;}
 
-
-    ///@{
-
-
-    ///@}
-
-    ///@{
-    /// Perform a query without parametert, It execute a multiple statement.
     BOOST_SQLITE_DECL void execute(
-        cstring_ref q,
-        system::error_code & ec,
+        core::string_view q,
+        system::error_code &ec,
         error_info & ei);
 
-    BOOST_SQLITE_DECL void execute(cstring_ref q);
-
-    template<typename StringLike,
-             typename = decltype(std::declval<const StringLike&>().c_str())>
-    void execute(
-        const StringLike& q,
-        system::error_code & ec,
-        error_info & ei)
-    {
-        execute(q.c_str(), ec, ei);
-    }
-    template<typename StringLike,
-             typename = decltype(std::declval<const StringLike&>().c_str())>
-    void execute(const StringLike & q) { execute(q.c_str());}
-    ///@}
+    BOOST_SQLITE_DECL void execute(core::string_view q);
 
     ///@{
     /// Preparse a query with or without bound parameters. Can only contain a single statement.
@@ -132,48 +111,15 @@ struct connection
 
     BOOST_SQLITE_DECL statement prepare(core::string_view q);
 
+    BOOST_SQLITE_DECL
+    statement_list prepare_many(
+        core::string_view q);
 
-    template<typename ArgRange = std::initializer_list<param_ref>>
-    statement prepare(core::string_view q, ArgRange && params)
-    {
-        auto s = prepare(q);
-        s.bind(std::forward<ArgRange>(params));
-        return s;
-    }
-
-    template<typename ArgRange = std::initializer_list<param_ref>>
-    statement prepare(
+    BOOST_SQLITE_DECL
+    statement_list prepare_many(
         core::string_view q,
-        ArgRange && params,
         system::error_code & ec,
-        error_info & ei)
-    {
-        auto s = prepare(q, ec, ei);
-        if (!ec)
-            s.bind(std::forward<ArgRange>(params), ec, ei);
-        return s;
-    }
-
-
-    statement prepare(core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params)
-    {
-        auto s = prepare(q);
-        s.bind(params);
-        return s;
-    }
-    statement prepare(
-        core::string_view q,
-        std::initializer_list<std::pair<string_view, param_ref>> params,
-        system::error_code & ec,
-        error_info & ei)
-    {
-        auto s = prepare(q, ec, ei);
-        if (!ec)
-            s.bind(params, ec, ei);
-        return s;
-    }
-
-
+        error_info & ei);
 
     ///@}
 
@@ -200,11 +146,9 @@ struct connection
  private:
     struct deleter_
     {
-        deleter_(bool owned = true) : owned_(owned) {}
-        bool owned_ = true;
+        deleter_() = default;
         void operator()(sqlite3  *impl)
         {
-            if (owned_)
               sqlite3_close_v2(impl);
         }
     };

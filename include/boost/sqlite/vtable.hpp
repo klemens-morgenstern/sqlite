@@ -348,12 +348,12 @@ struct module
   /// @brief Creates the instance
   /// The instance_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
   /// instance_type must have a member `declaration` that returns a `const char *` for the declaration.
-  BOOST_SQLITE_VIRTUAL result<table_type> create(sqlite::connection db, int argc, const char * const argv[]) BOOST_SQLITE_PURE;
+  BOOST_SQLITE_VIRTUAL result<table_type> create(sqlite::connection_ref db, int argc, const char * const argv[]) BOOST_SQLITE_PURE;
 
   /// @brief Create a table
   /// The table_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
   /// table_type must have a member `declaration` that returns a `const char *` for the declaration.
-  BOOST_SQLITE_VIRTUAL result<table_type> connect(sqlite::connection db, int argc, const char * const argv[]) BOOST_SQLITE_PURE;
+  BOOST_SQLITE_VIRTUAL result<table_type> connect(sqlite::connection_ref db, int argc, const char * const argv[]) BOOST_SQLITE_PURE;
 };
 
 template<typename Table>
@@ -364,7 +364,7 @@ struct eponymous_module
   /// @brief Creates the instance
   /// The instance_type gets used & managed by value, OR a pointer to a class that inherits sqlite3_vtab.
   /// instance_type must have a member `declaration` that returns a `const char *` for the declaration.
-  BOOST_SQLITE_VIRTUAL result<table_type> connect(sqlite::connection db, int argc, const char * const argv[]) BOOST_SQLITE_PURE;
+  BOOST_SQLITE_VIRTUAL result<table_type> connect(sqlite::connection_ref db, int argc, const char * const argv[]) BOOST_SQLITE_PURE;
 
   eponymous_module(bool eponymous_only = false) : eponymous_only_(eponymous_only) {}
 
@@ -400,9 +400,9 @@ struct table : protected sqlite3_vtab
   BOOST_SQLITE_VIRTUAL result<cursor_type> open() BOOST_SQLITE_PURE;
 
   /// Get the connection of the vtable
-  sqlite::connection connection() const {return sqlite::connection{db_, false};}
+  sqlite::connection_ref connection() const {return sqlite::connection_ref{db_};}
 
-  table(const sqlite::connection & conn) : db_(conn.handle()) {}
+  table(const sqlite::connection_ref conn) : db_(conn.handle()) {}
   table(sqlite3  * db = nullptr) : db_(db) {}
  private:
   template<typename ColumnType>
@@ -563,7 +563,7 @@ const sqlite3_module make_module(const Module & mod);
 
 */
 template<typename T>
-auto create_module(connection & conn,
+auto create_module(connection_ref conn,
                    cstring_ref name,
                    T && module,
                    system::error_code & ec,
@@ -593,7 +593,7 @@ auto create_module(connection & conn,
 }
 
 template<typename T>
-auto create_module(connection & conn,
+auto create_module(connection_ref conn,
                    const char * name,
                    T && module)  -> typename std::decay<T>::type &
 {

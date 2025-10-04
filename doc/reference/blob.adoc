@@ -86,7 +86,7 @@ It allows incremental reading/writing of the raw data.
 [source,cpp]
 ----
 // Open a blob
-blob_handle open_blob(connection & conn,
+blob_handle open_blob(connection_ref conn,
                       cstring_ref db,
                       cstring_ref table,
                       cstring_ref column,
@@ -94,7 +94,7 @@ blob_handle open_blob(connection & conn,
                       bool read_only,
                       system::error_code &ec,
                       error_info &ei);
-blob_handle open_blob(connection & conn,
+blob_handle open_blob(connection_ref conn,
                       cstring_ref db,
                       cstring_ref table,
                       cstring_ref column,

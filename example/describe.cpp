@@ -129,7 +129,7 @@ struct describe_module final : sqlite::vtab::eponymous_module<describe_table<T>>
 {
   boost::unordered_map<sqlite3_int64, T> data;
   constexpr static std::size_t column_count = mp11::mp_size<describe::describe_members<T, describe::mod_any_access>>::value;
-  sqlite::result<describe_table<T>> connect(sqlite::connection ,
+  sqlite::result<describe_table<T>> connect(sqlite::connection_ref ,
                                             int, const char * const [])
   {
     return describe_table<T>{data};
@@ -148,7 +148,7 @@ void print_table(std::ostream & str, sqlite::statement res)
     str << "|-----------------";
   str << "|\n";
 
-  for (auto && r : sqlite::statement_range(res))
+  for (auto && r : sqlite::statement_range<sqlite::row>(res))
   {
     for (auto i = 0u; i < res.column_count(); i ++)
       str << "| " << std::setfill(' ') << std::setw(15) << r.at(i).get_text() << " ";

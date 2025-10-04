@@ -88,7 +88,7 @@ struct simple_test_impl final : sqlite::vtab::eponymous_module<simple_table>
 
 
 
-  sqlite::result<table_type> connect(sqlite::connection,
+  sqlite::result<table_type> connect(sqlite::connection_ref,
                                      int /*argc*/, const char * const * /*argv*/)
   {
     return table_type{names};
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(simple_reader)
 
   auto itr = m.names.begin();
   auto qq = conn.prepare("select * from test_table ;");
-  for (auto q : sqlite::statement_range(qq))
+  for (auto q : sqlite::statement_range<sqlite::row>(qq))
   {
     BOOST_CHECK(q.size() == 1);
     BOOST_CHECK(q.at(0).get_text() == *itr++);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(simple_reader)
   m.names.emplace_back("marcelo");
   itr = m.names.begin();
   qq = conn.prepare("select * from test_table ;");
-  for (auto q : sqlite::statement_range(qq))
+  for (auto q : sqlite::statement_range<sqlite::row>(qq))
   {
     BOOST_CHECK(q.size() == 1);
     BOOST_CHECK(q.at(0).get_text() == *itr++);
@@ -207,7 +207,7 @@ struct modifyable_test_impl final : sqlite::vtab::eponymous_module<modifyable_ta
 
   intrusive::list<table_type, intrusive::constant_time_size<false>> list;
 
-  sqlite::result<table_type> connect(sqlite::connection,
+  sqlite::result<table_type> connect(sqlite::connection_ref,
                                      int /*argc*/, const char * const  argv[]) noexcept
   {
     table_type tt{};

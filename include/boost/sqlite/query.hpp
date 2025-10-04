@@ -9,7 +9,7 @@
 #define BOOST_SQLITE_QUERY_HPP
 
 #include <boost/sqlite/detail/config.hpp>
-#include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 #include <boost/sqlite/iterator.hpp>
 #include <boost/sqlite/row.hpp>
 #include <boost/sqlite/statement.hpp>
@@ -31,36 +31,46 @@ struct query_range
 };
 
 template<typename T = row>
-query_range<T> query(connection & conn, core::string_view q) { return {conn.prepare(q)};}
+query_range<T> query(connection_ref conn, core::string_view q) { return {conn.prepare(q)};}
 
 template<typename T = row>
-query_range<T> query(connection & conn, core::string_view q, system::error_code &ec, error_info & ei)
+query_range<T> query(connection_ref conn, core::string_view q, system::error_code &ec, error_info & ei)
 {
   return {conn.prepare(q, ec, ei)};
 }
 
 template<typename T = row, typename ArgRange = std::initializer_list<param_ref>>
-query_range<T> query(connection & conn, core::string_view q, ArgRange params)
+query_range<T> query(connection_ref conn, core::string_view q, ArgRange params)
 {
-    return {conn.prepare(q, std::forward<ArgRange>(params))};
+    auto s = conn.prepare(q);
+    s.bind(std::forward<ArgRange>(params));
+    return {std::move(s)};
 }
 
 template<typename T = row, typename ArgRange = std::initializer_list<param_ref>>
-query_range<T> query(connection & conn, core::string_view q, ArgRange params, system::error_code &ec, error_info & ei)
+query_range<T> query(connection_ref conn, core::string_view q, ArgRange params, system::error_code &ec, error_info & ei)
 {
-    return {conn.prepare(q, std::forward<ArgRange>(params), ec, ei)};
+    auto s = conn.prepare(q, ec, ei);
+    if (!ec)
+      s.bind(std::forward<ArgRange>(params));
+    return {std::move(s)};
 }
 
 template<typename T = row>
-query_range<T> query(connection & conn, core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params)
+query_range<T> query(connection_ref conn, core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params)
 {
-  return {conn.prepare(q, params)};
+    auto s = conn.prepare(q);
+    s.bind(params);
+    return {std::move(s)};
 }
 
 template<typename T = row>
-query_range<T> query(connection & conn, core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params, system::error_code &ec, error_info & ei)
+query_range<T> query(connection_ref conn, core::string_view q, std::initializer_list<std::pair<string_view, param_ref>> params, system::error_code &ec, error_info & ei)
 {
-    return {conn.prepare(q, params, ec, ei)};
+    auto s = conn.prepare(q, ec, ei);
+    if (!ec)
+      s.bind(params);
+    return {std::move(s)};
 }
 
 

@@ -94,7 +94,7 @@ sqlite::create_aggregate_function(conn, "collect_libs", collect_libs{});
 Print out the query with aggregates libraries:
 
 ```cpp
-for (boost::sqlite::row r : conn.query(
+for (boost::sqlite::row r : query(conn,
     "select first_name, collect_libs(name) "
        " from author inner join library l on author.id = l.author group by last_name"))
   std::cout << r.at(0u).get_text() << " authored " << r.at(1u).get_text() << std::endl;
@@ -104,15 +104,16 @@ Alternatively a query result can also be read manually instead of using a loop:
 
 ```cpp
 boost::sqlite::row r;
-boost::sqlite::query q = conn.query(
+boost::sqlite::query q = query(conn,
     "select first_name, collect_libs(name) " 
        " from author inner join library l on author.id = l.author group by last_name")
-do 
+
+while (q.step())
 {
   auto r = q.current();''
   std::cout << r.at(0u).get_text() << " authored " << r.at(1u).get_text() << std::endl;
 }
-while (q.read_next());
+
 
 ```
 
@@ -163,7 +164,7 @@ The type to hold them is `static_resultset<T>` which will check if the columns m
 Tuples are matched by position, structs by name.
 
 ```cpp
-for (auto q : conn.query<std::tuple<std::string, std::string>>(
+for (auto q : .query<std::tuple<std::string, std::string>>(conn,
     "select first_name, collect_libs(name) "
        " from author inner join library l on author.id = l.author group by last_name"))
   std::cout << std::get<0>(q) << " authored " << std::get<0>(q) << std::endl;
@@ -174,7 +175,7 @@ for (auto q : conn.query<std::tuple<std::string, std::string>>(
 struct query_result { std::string first_name, lib_name;};
 BOOST_DESCRIBE_STRUCT(query_result, (), (first_name, lib_name)); // this can be omitted with C++20. 
 
-for (auto q : conn.query<query_result>(
+for (auto q : query<query_result>(conn,
     "select first_name, collect_libs(name) as lib_name"
        " from author inner join library l on author.id = l.author group by last_name"))
   std::cout << q.first_name << " authored " << q.lib_name << std::endl;
@@ -192,8 +193,6 @@ The following types are allowed in a static query result:
  - `sqlite::blob_view`
 
 
-You'll need to include `boost/sqlite/static_resultset.hpp` for this to work.
-
 ## Custom functions
 
 Since sqlite is running in the same process you can add custom functions that can be used from within sqlite. 
@@ -203,7 +202,7 @@ Since sqlite is running in the same process you can add custom functions that ca
  - [aggregate function](@ref boost::sqlite::create_aggregate_function)
  - [window function](@ref boost::sqlite::create_window_function)
 
-## Vtables
+## VTables
 
 This library also simplifies adding virtual tables significantly; 
 virtual tables are table that are backed by code instead of data.

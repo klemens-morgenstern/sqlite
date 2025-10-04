@@ -6,7 +6,10 @@
 #include <boost/sqlite/connection.hpp>
 #include "test.hpp"
 
+#if defined(__cpp_lib_filesystem)
 #include <filesystem>
+#endif
+
 
 using namespace boost;
 
@@ -14,11 +17,15 @@ using namespace boost;
 BOOST_AUTO_TEST_CASE(connection)
 {
   sqlite::connection conn;
+#if defined(__cpp_lib_filesystem)
   conn.connect(std::filesystem::path(":memory:"));
+#else
+  conn.connect(":memory:");
+#endif
+
   conn.execute(
 #include "test-db.sql"
   );
-
   BOOST_CHECK_THROW(conn.execute("elect * from nothing;"), boost::system::system_error);
   conn.close();
 }

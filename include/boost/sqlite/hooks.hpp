@@ -273,7 +273,7 @@ bool update_hook(sqlite3 * db,
   @return true if an hook has been replaced.
  */
 template<typename Func>
-bool commit_hook(connection & conn, Func && func)
+bool commit_hook(connection_ref conn, Func && func)
 {
   return detail::commit_hook(conn.handle(), std::forward<Func>(func));
 }
@@ -295,7 +295,7 @@ bool commit_hook(connection & conn, Func && func)
   @return true if an hook has been replaced.
  */
 template<typename Func>
-bool rollback_hook(connection & conn, Func && func)
+bool rollback_hook(connection_ref conn, Func && func)
 {
   return detail::rollback_hook(conn.handle(), std::forward<Func>(func));
 }
@@ -333,7 +333,7 @@ bool rollback_hook(connection & conn, Func && func)
 
 */
 template<typename Func>
-bool preupdate_hook(connection & conn, Func && func)
+bool preupdate_hook(connection_ref conn, Func && func)
 {
   return detail::preupdate_hook(conn.handle(), std::forward<Func>(func));
 }
@@ -360,7 +360,7 @@ bool preupdate_hook(connection & conn, Func && func)
   @return true if an hook has been replaced.
  */
 template<typename Func>
-bool update_hook(connection & conn, Func && func)
+bool update_hook(connection_ref conn, Func && func)
 {
   return detail::update_hook(conn.handle(), std::forward<Func>(func));
 }

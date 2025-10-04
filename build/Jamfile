@@ -19,6 +19,7 @@ local SOURCES =
         backup.cpp
         blob.cpp
         connection.cpp
+        connection_ref.cpp
         error.cpp
         ext.cpp
         field.cpp

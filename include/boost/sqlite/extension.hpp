@@ -10,7 +10,7 @@
 
 #define BOOST_SQLITE_COMPILE_EXTENSION 1
 #include <boost/sqlite/detail/config.hpp>
-#include <boost/sqlite/connection.hpp>
+#include <boost/sqlite/connection_ref.hpp>
 #include <boost/sqlite/detail/catch.hpp>
 #include <boost/config.hpp>
 
@@ -45,7 +45,7 @@
 
  */
 #define BOOST_SQLITE_EXTENSION(Name, Conn)                                \
-void sqlite_##Name##_impl (boost::sqlite::connection Conn);               \
+void sqlite_##Name##_impl (boost::sqlite::connection_ref Conn);           \
 extern "C" BOOST_SYMBOL_EXPORT                                            \
 int sqlite3_##Name##_init(                                                \
     sqlite3 *db,                                                          \
@@ -57,11 +57,11 @@ int sqlite3_##Name##_init(                                                \
                                                                           \
   BOOST_SQLITE_TRY                                                        \
   {                                                                       \
-    sqlite_##Name##_impl(boost::sqlite::connection{db, false});           \
+    sqlite_##Name##_impl(boost::sqlite::connection_ref{db});              \
     return SQLITE_OK;                                                     \
   }                                                                       \
   BOOST_SQLITE_CATCH_ASSIGN_STR_AND_RETURN(*pzErrMsg);                    \
 }                                                                         \
-void sqlite_##Name##_impl(boost::sqlite::connection Conn)
+void sqlite_##Name##_impl(boost::sqlite::connection_ref Conn)
 
 #endif //BOOST_SQLITE_EXTENSION_HPP

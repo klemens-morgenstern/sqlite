@@ -127,10 +127,12 @@ struct blob_handle
     std::unique_ptr<sqlite3_blob, deleter_> blob_;
 };
 
+struct connection_ref;
+
 ///@{
 /// Open a blob for incremental access
 BOOST_SQLITE_DECL
-blob_handle open_blob(connection & conn,
+blob_handle open_blob(connection_ref conn,
                       cstring_ref db,
                       cstring_ref table,
                       cstring_ref column,
@@ -140,7 +142,7 @@ blob_handle open_blob(connection & conn,
                       error_info &ei);
 
 BOOST_SQLITE_DECL
-blob_handle open_blob(connection & conn,
+blob_handle open_blob(connection_ref conn,
                       cstring_ref db,
                       cstring_ref table,
                       cstring_ref column,

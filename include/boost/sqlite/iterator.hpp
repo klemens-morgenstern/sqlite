@@ -142,13 +142,17 @@ namespace detail
                         if (f.is_null() && !field_type_is_nullable(v))
                         {
                             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_NOTNULL);
-                            ei.format("unexpected null in column %d", i);
+                            ei.format("unexpected null in column %d", static_cast<int>(i));
                         }
                         else if (f.type() != required_field_type(v))
                         {
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
                             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                             ei.format("unexpected type [%s] in column %d, expected [%s]",
-                                      value_type_name(f.type()), i, value_type_name(required_field_type(v)));
+                                      value_type_name(f.type()), static_cast<int>(i), value_type_name(required_field_type(v)));
                         }
                     }
                 }
@@ -194,7 +198,7 @@ namespace detail
             if (!cfound)
             {
                 BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-                ei.format("Column %Q not found in described struct.", r.column_name(i));
+                ei.format("Column %s not found in described struct.", r.column_name(i).c_str());
                 break;
             }
         }
@@ -212,7 +216,7 @@ namespace detail
                                     {
                                         auto d = mp11::mp_at_c<mems, sz>();
                                         BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-                                        ei.format("Described field %Q not found in statement struct.", d.name);
+                                        ei.format("Described field %s not found in statement struct.", d.name);
                                     });
         }
     }
@@ -240,7 +244,11 @@ namespace detail
                                 }
                                 else if (f.type() != required_field_type(r))
                                 {
-                                    BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                                     ei.format("unexpected type [%s] in column %s, expected [%s]",
                                               value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
                                 }
@@ -289,7 +297,7 @@ namespace detail
             if (!cfound)
             {
                 BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-                ei.format("Column %Q not found in  struct.", r.column_name(i));
+                ei.format("Column %s not found in  struct.", r.column_name(i).c_str());
                 break;
             }
         }
@@ -305,8 +313,9 @@ namespace detail
                 std::distance(found.begin(), itr),
                                     [&](auto sz)
                                     {
+                                        auto nm = pfr::get_name<sz, T>() ;
                                         BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_MISMATCH);
-                                        ei.format("PFR field %Q not found in statement struct.", pfr::get_name<sz, T>() );
+                                        ei.format("PFR field %.*s not found in statement struct.", static_cast<int>(nm.size()), nm.data());
                                     });
         }
     }
@@ -334,7 +343,11 @@ namespace detail
                                 }
                                 else if (f.type() != required_field_type(r))
                                 {
-                                    BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                                    BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                                     ei.format("unexpected type [%s] in column %s, expected [%s]",
                                               value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
                                 }
@@ -355,7 +368,6 @@ template<typename T = row, bool Strict = false>
 struct statement_iterator
 {
     using value_type = T;
-    using difference_type = int;
     using reference = T&;
     using iterator_category = std::input_iterator_tag;
 

@@ -21,6 +21,7 @@ set(BOOST_SQLITE_SOURCES
     src/backup.cpp
     src/blob.cpp
     src/connection.cpp
+    src/connection_ref.cpp
     src/error.cpp
     src/field.cpp
     src/meta_data.cpp
