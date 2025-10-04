@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(scalar)
 
   // language=sqlite
   auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     names.emplace_back(r.at(0).get_text());
 
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(scalar_pointer)
 
   auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
   // language=sqlite
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     names.emplace_back(r.at(0).get_text());
 
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(scalar_void)
 
   // language=sqlite
   auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     BOOST_CHECK(r[0].is_null());
 }
 
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(scalar_void_pointer)
 
   // language=sqlite
   auto q = conn.prepare("select to_upper(first_name) from author order by last_name asc;");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     BOOST_CHECK(r[0].is_null());
 }
 
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(aggregate)
 
   // language=sqlite
   auto q = conn.prepare("select char_counter(first_name) from author;");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 1u);
@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE(aggregate_result)
 
   // language=sqlite
   auto q = conn.prepare("select char_counter(first_name) from author;");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 1u);
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(window)
 select win_counter(first_name) over (
   order by last_name rows between 1 preceding and 1 following ) as subrows
     from author order by last_name asc;)");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 4u);
@@ -303,7 +303,7 @@ BOOST_AUTO_TEST_CASE(window_result)
 select win_counter(first_name) over (
   order by last_name rows between 1 preceding and 1 following ) as subrows
     from author order by last_name asc;)");
-  for (auto r : sqlite::statement_range(q))
+  for (auto r : sqlite::statement_range<sqlite::row>(q))
     lens.emplace_back(r.at(0).get_int());
 
   BOOST_CHECK(lens.size() == 4u);

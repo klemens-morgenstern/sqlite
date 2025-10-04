@@ -148,7 +148,7 @@ void print_table(std::ostream & str, sqlite::statement res)
     str << "|-----------------";
   str << "|\n";
 
-  for (auto && r : sqlite::statement_range(res))
+  for (auto && r : sqlite::statement_range<sqlite::row>(res))
   {
     for (auto i = 0u; i < res.column_count(); i ++)
       str << "| " << std::setfill(' ') << std::setw(15) << r.at(i).get_text() << " ";

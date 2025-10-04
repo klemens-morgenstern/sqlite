@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(collation)
 
   // language=sqlite
   auto sr = conn.prepare("select first_name from author where first_name = 5 collate length order by last_name asc;");
-  for (auto r : sqlite::statement_range(sr))
+  for (auto r : sqlite::statement_range<sqlite::row>(sr))
     names.emplace_back(r.at(0).get_text());
 
   std::vector<std::string> cmp = {"peter", "ruben"};

@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(transaction)
   auto check_size = [&]{
     std::size_t n = 0ull;
     auto q = conn.prepare("select * from test");
-    for (auto l : sqlite::statement_range(q))
+    for (auto l : sqlite::statement_range<sqlite::row>(q))
     {
       boost::ignore_unused(l);
       n++;

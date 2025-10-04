@@ -34,12 +34,12 @@ BOOST_AUTO_TEST_CASE(backup)
 
   // language=sqlite
   auto q1 = conn1.prepare("select first_name from author;");
-  for (auto r : sqlite::statement_range(q1))
+  for (auto r : sqlite::statement_range<sqlite::row>(q1))
     names1.emplace_back(r.at(0u).get_text());
 
   // language=sqlite
   auto q2 = conn2.prepare("select first_name from author;");
-  for (auto r : sqlite::statement_range(q2))
+  for (auto r : sqlite::statement_range<sqlite::row>(q2))
     names2.emplace_back(r.at(0u).get_text());
 
   BOOST_CHECK(!names1.empty());

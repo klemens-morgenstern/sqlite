@@ -272,7 +272,7 @@ std::initializer_list<std::pair<std::string, std::string>> init_data = {
 void print(std::ostream & os, sqlite::statement rw)
 {
   os << "[";
-  for (auto & r : sqlite::statement_range(rw))
+  for (auto & r : sqlite::statement_range<sqlite::row>(rw))
     os << r.at(0).get_text() << ", ";
   os << "]" << std::endl;
 }

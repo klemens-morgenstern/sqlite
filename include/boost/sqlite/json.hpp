@@ -126,7 +126,7 @@ inline void tag_invoke( const json::value_from_tag &, json::value& val, statemen
 {
   auto & obj = val.emplace_array();
 
-  for (auto r : sqlite::statement_range(rs))
+  for (auto r : sqlite::statement_range<sqlite::row>(rs))
   {
     auto & row = obj.emplace_back(json::object(obj.storage())).get_object();
     for (auto c : r)
