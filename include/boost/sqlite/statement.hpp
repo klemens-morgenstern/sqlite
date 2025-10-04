@@ -280,7 +280,6 @@ struct statement
 
     void bind(std::size_t index, param_ref param, system::error_code & ec, error_info & ei)
     {
-      const auto sz =  sqlite3_bind_parameter_count(impl_.get());
       int ar = param.apply(impl_.get(), index);
       if (ar != SQLITE_OK)
       {
@@ -655,7 +654,7 @@ struct statement
 struct statement_list
 {
   statement & current() { return stmt_; }
-  std::string_view tail() {return tail_; }
+  core::string_view tail() {return tail_; }
 
   void prepare_next()
   {

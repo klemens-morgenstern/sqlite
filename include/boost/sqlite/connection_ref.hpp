@@ -69,11 +69,11 @@ struct connection_ref
 
     /// Execute
     BOOST_SQLITE_DECL void execute(
-        std::string_view q,
+        core::string_view q,
         system::error_code &ec,
         error_info & ei);
 
-    BOOST_SQLITE_DECL void execute(std::string_view q);
+    BOOST_SQLITE_DECL void execute(core::string_view q);
 
     /// Check if the database has the table
     bool has_table(

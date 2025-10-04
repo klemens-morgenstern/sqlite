@@ -122,7 +122,7 @@ statement_list connection::prepare_many(core::string_view q)
 }
 
 void connection::execute(
-        std::string_view q,
+        core::string_view q,
         system::error_code &ec,
         error_info & ei)
 {
@@ -139,7 +139,7 @@ void connection::execute(
     }
 }        
 
-void connection::execute(std::string_view q)
+void connection::execute(core::string_view q)
 {
     system::error_code ec;
     error_info ei;
