@@ -28,9 +28,15 @@ BOOST_SQLITE_BEGIN_NAMESPACE
 enum function_flags
 {
   deterministic  = SQLITE_DETERMINISTIC,
+#if defined(SQLITE_DIRECTONLY)
   directonly     = SQLITE_DIRECTONLY,
+#endif
+#if defined(SQLITE_SUBTYPE)
   subtype        = SQLITE_SUBTYPE,
+#endif
+#if defined(SQLITE_INNOCUOUS)
   innocuous      = SQLITE_INNOCUOUS,
+#endif
 #if defined(SQLITE_RESULT_SUBTYPE)
   result_subtype = SQLITE_RESULT_SUBTYPE,
 #endif
