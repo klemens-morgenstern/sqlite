@@ -210,6 +210,13 @@ struct statement
   statement() noexcept = default;
   explicit statement(handle_type h) noexcept : impl_(h) {}
 
+  statement(const statement & ) = delete;
+  statement(statement && ) noexcept = default;
+
+  statement& operator=(const statement & ) = delete;
+  statement& operator=(statement && ) noexcept = default;
+
+
   bool done() const {return done_;}
 
 
@@ -684,7 +691,7 @@ struct statement_list
     }
     else
     {
-        stmt_ = {};
+        stmt_ = sqlite::statement();
         tail_ = {};
     }
     

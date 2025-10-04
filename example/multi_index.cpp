@@ -390,7 +390,7 @@ void print(std::ostream & os, sqlite::statement rw, boost::source_location loc =
 {
   os << loc.file_name() << "(" << loc.line() << "): ";
   os << "[";
-  for (auto & r : sqlite::statement_range(rw))
+  for (auto & r : sqlite::statement_range<sqlite::row>(rw))
     os << r.at(0).get_text() << ", ";
   os << "]" << std::endl;
 }

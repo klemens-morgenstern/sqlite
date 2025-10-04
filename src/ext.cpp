@@ -6,6 +6,8 @@
 //
 
 #include <boost/sqlite/connection.hpp>
+#include "sqlite3ext.h"
+
 
 BOOST_SQLITE_BEGIN_NAMESPACE
 

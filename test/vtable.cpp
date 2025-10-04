@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(simple_reader)
 
   auto itr = m.names.begin();
   auto qq = conn.prepare("select * from test_table ;");
-  for (auto q : sqlite::statement_range(qq))
+  for (auto q : sqlite::statement_range<sqlite::row>(qq))
   {
     BOOST_CHECK(q.size() == 1);
     BOOST_CHECK(q.at(0).get_text() == *itr++);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(simple_reader)
   m.names.emplace_back("marcelo");
   itr = m.names.begin();
   qq = conn.prepare("select * from test_table ;");
-  for (auto q : sqlite::statement_range(qq))
+  for (auto q : sqlite::statement_range<sqlite::row>(qq))
   {
     BOOST_CHECK(q.size() == 1);
     BOOST_CHECK(q.at(0).get_text() == *itr++);

@@ -146,7 +146,11 @@ namespace detail
                         }
                         else if (f.type() != required_field_type(v))
                         {
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
                             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                             ei.format("unexpected type [%s] in column %d, expected [%s]",
                                       value_type_name(f.type()), i, value_type_name(required_field_type(v)));
                         }
@@ -240,7 +244,11 @@ namespace detail
                                 }
                                 else if (f.type() != required_field_type(r))
                                 {
-                                    BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                                     ei.format("unexpected type [%s] in column %s, expected [%s]",
                                               value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
                                 }
@@ -334,7 +342,11 @@ namespace detail
                                 }
                                 else if (f.type() != required_field_type(r))
                                 {
-                                    BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#if defined(SQLITE_CONSTRAINT_DATATYPE)
+                            BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_DATATYPE);
+#else
+                                    BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT);
+#endif
                                     ei.format("unexpected type [%s] in column %s, expected [%s]",
                                               value_type_name(f.type()), D.name, value_type_name(required_field_type(r)));
                                 }
