@@ -207,7 +207,7 @@ struct statement
   handle_type release() && {return impl_.release(); }
 
 
-  statement() noexcept = default;
+  statement() noexcept {}
   explicit statement(handle_type h) noexcept : impl_(h) {}
 
   statement(const statement & ) = delete;
