@@ -96,11 +96,11 @@ struct connection
     bool valid() const {return impl_ != nullptr;}
 
     BOOST_SQLITE_DECL void execute(
-        std::string_view q,
+        core::string_view q,
         system::error_code &ec,
         error_info & ei);
 
-    BOOST_SQLITE_DECL void execute(std::string_view q);
+    BOOST_SQLITE_DECL void execute(core::string_view q);
 
     ///@{
     /// Preparse a query with or without bound parameters. Can only contain a single statement.

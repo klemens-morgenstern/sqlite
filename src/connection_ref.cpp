@@ -81,7 +81,7 @@ statement_list connection_ref::prepare_many(core::string_view q)
 }
 
 void connection_ref::execute(
-        std::string_view q,
+        core::string_view q,
         system::error_code &ec,
         error_info & ei)
 {
@@ -97,7 +97,7 @@ void connection_ref::execute(
     }
 }        
 
-void connection_ref::execute(std::string_view q)
+void connection_ref::execute(core::string_view q)
 {
     system::error_code ec;
     error_info ei;

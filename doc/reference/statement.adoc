@@ -152,7 +152,7 @@ struct statement_list
   // The current statement
   statement & current();
   // The unparsed sql.
-  std::string_view tail();
+  core::string_view tail();
 
   // Prepare the next statement. Returns current() after preparing
   void prepare_next();
