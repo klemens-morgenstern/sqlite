@@ -67,8 +67,9 @@ BOOST_AUTO_TEST_CASE(map)
   );
   auto q = conn.prepare("select * from author where first_name = $name;");
   q.bind({{"name", 42}});
-  auto qe = conn.prepare("select * from nothing where name = $name;");
-  BOOST_CHECK_THROW(qe.bind({{"n4ame", 123}}), boost::system::system_error);
+
+  BOOST_CHECK_THROW(conn.prepare("select * from nothing where name = $name;"), boost::system::system_error);
+  BOOST_CHECK_THROW(q.bind({{"n4ame", 123}}), boost::system::system_error);
 
   std::unordered_map<std::string, variant2::variant<int, std::string>> params = {{"name", 42}};
   q = conn.prepare("select * from author where first_name = $name;");

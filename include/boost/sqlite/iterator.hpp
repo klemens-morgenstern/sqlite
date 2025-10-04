@@ -142,7 +142,7 @@ namespace detail
                         if (f.is_null() && !field_type_is_nullable(v))
                         {
                             BOOST_SQLITE_ASSIGN_EC(ec, SQLITE_CONSTRAINT_NOTNULL);
-                            ei.format("unexpected null in column %d", i);
+                            ei.format("unexpected null in column %d", static_cast<int>(i));
                         }
                         else if (f.type() != required_field_type(v))
                         {
