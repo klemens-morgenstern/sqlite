@@ -1,0 +1,21 @@
+= Handles
+
+If a class has an internal sqlite3 handle, it will have a `handle_type` type alias,
+and a `handle()` type to obtain this handle.
+If the class is owning, the destructor will close the handle. 
+An owning class will also have a `release() &&`, which removes the handle from the class, 
+to avoid automatic closing on destruction.
+
+[cols="1,1,1"]  
+|=== 
+|Class | Sqlite Handle | Close function (if owning)
+
+| `connection`     | `sqlite3*`       |  
+| `connection_ref` | `sqlite3*`       | `sqlite3_close_v2` 
+| `blob_handle`    | `sqlite3_blob*`  | `sqlite3_blob_close`
+| `statement`      | `sqlite3_stmt*`  | `sqlite3_finalize`
+| `value`          | `sqlite3_value*` | 
+|=== 
+
+
+
