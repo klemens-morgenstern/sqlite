@@ -22,6 +22,7 @@ It sticks as close as possible to the sqlite API, but adopts thing like errors o
 It is therefore highly recommended to study the https://www.sqlite.org/docs.html[sqlite documentation].
 
 include::tutorial.adoc[]
+include::api.adoc[]
 include::functions.adoc[]
 include::extensions.adoc[]
 include::vtable.adoc[]
