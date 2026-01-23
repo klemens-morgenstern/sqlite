@@ -38,10 +38,15 @@ namespace detail
 
     inline void convert_field(sqlite_int64 & target, const field & f) {target = f.get_int();}
 
-    template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value>>
-    inline void convert_field(std::int64_t & target, const field & f)
+    // Overload for std::int64_t only when it differs from sqlite_int64
+    template<typename Int64 = std::int64_t>
+    inline typename std::enable_if<
+        !std::is_same<Int64, sqlite_int64>::value && std::is_same<Int64, std::int64_t>::value,
+        void
+    >::type
+    convert_field(Int64 & target, const field & f)
     {
-        target = static_cast<std::int64_t>(f.get_int());
+        target = static_cast<Int64>(f.get_int());
     }
 
     inline void convert_field(double & target, const field & f) {target = f.get_double();}
@@ -89,8 +94,13 @@ namespace detail
 
     inline value_type required_field_type(const sqlite3_int64 &) {return value_type::integer;}
 
-    template<typename = std::enable_if_t<!std::is_same<std::int64_t, sqlite_int64>::value>>
-    inline value_type required_field_type(const std::int64_t &) {return value_type::integer;}
+    // Overload for std::int64_t only when it differs from sqlite_int64
+    template<typename Int64 = std::int64_t>
+    inline typename std::enable_if<
+        !std::is_same<Int64, sqlite_int64>::value && std::is_same<Int64, std::int64_t>::value,
+        value_type
+    >::type
+    required_field_type(const Int64 &) {return value_type::integer;}
 
     template<typename Allocator, typename Traits>
     inline value_type required_field_type(const std::basic_string<char, Allocator, Traits> & )
